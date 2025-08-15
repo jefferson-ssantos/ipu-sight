@@ -2,41 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* IPU-Sight FinOps Design System 
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core FinOps Brand Colors */
+    --background: 240 10% 98%;
+    --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Professional Corporate Blue */
+    --primary: 217 91% 35%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 217 91% 45%;
+    --primary-dark: 217 91% 25%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Financial Success Green */
+    --secondary: 142 76% 36%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-light: 142 76% 46%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Warning: Cost Alert Orange */
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 98%;
+    --warning-light: 25 95% 63%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Muted: Clean Neutral Grays */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --destructive: 0 84.2% 60.2%;
+    --accent: 217 32% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 217 91% 35%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Financial KPI Colors */
+    --cost-high: 0 84% 60%;
+    --cost-medium: 25 95% 53%;
+    --cost-low: 142 76% 36%;
+    --profit: 142 76% 36%;
+    --neutral: 240 4% 46%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 35%), hsl(217 91% 45%));
+    --gradient-cost: linear-gradient(135deg, hsl(0 84% 60%), hsl(25 95% 53%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(240 5% 98%));
+
+    /* Shadows */
+    --shadow-soft: 0 1px 3px hsla(240, 4%, 46%, 0.12), 0 1px 2px hsla(240, 4%, 46%, 0.24);
+    --shadow-medium: 0 4px 6px hsla(240, 4%, 46%, 0.07), 0 2px 4px hsla(240, 4%, 46%, 0.06);
+    --shadow-strong: 0 10px 15px hsla(240, 4%, 46%, 0.1), 0 4px 6px hsla(240, 4%, 46%, 0.05);
+    --shadow-glow: 0 0 20px hsla(217, 91%, 35%, 0.15);
+
+    /* Typography */
+    --font-heading: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
