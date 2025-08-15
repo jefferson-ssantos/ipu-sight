@@ -147,6 +147,8 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
     document.body.removeChild(link);
   };
 
+  const totalIPUs = metrics.reduce((sum, metric) => sum + metric.consumption_ipu, 0);
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -174,12 +176,20 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
 
         <Card className="flex-1 overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-lg">
-              Resumo por Métrica
-              <Badge variant="secondary" className="ml-2">
-                {metrics.length} métricas
-              </Badge>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                Resumo por Métrica
+                <Badge variant="secondary" className="ml-2">
+                  {metrics.length} métricas
+                </Badge>
+              </CardTitle>
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground">Total IPUs Consumidas</div>
+                <div className="text-lg font-bold text-primary">
+                  {formatIPU(totalIPUs)}
+                </div>
+              </div>
+            </div>
           </CardHeader>
           
           <CardContent className="overflow-auto max-h-[60vh]">
