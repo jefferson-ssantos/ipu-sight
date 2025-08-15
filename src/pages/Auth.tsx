@@ -13,7 +13,7 @@ export default function Auth() {
           <div className="text-primary-foreground space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                <div className="p-3 bg-secondary/20 rounded-xl backdrop-blur-sm">
                   <TrendingUp className="h-10 w-10" />
                 </div>
                 <div>
