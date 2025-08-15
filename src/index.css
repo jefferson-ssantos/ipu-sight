@@ -8,66 +8,66 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Core FinOps Brand Colors - Inspired by Orys */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* Core FinOps Brand Colors */
+    --background: 240 10% 98%;
+    --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 224 71% 4%;
 
-    /* Primary: Modern Tech Blue - Orys Inspired */
-    --primary: 220 90% 48%;
+    /* Primary: Professional Corporate Blue */
+    --primary: 217 91% 35%;
     --primary-foreground: 0 0% 98%;
-    --primary-light: 220 90% 58%;
-    --primary-dark: 220 90% 38%;
+    --primary-light: 217 91% 45%;
+    --primary-dark: 217 91% 25%;
 
-    /* Secondary: Innovation Teal */
-    --secondary: 195 85% 45%;
+    /* Secondary: Financial Success Green */
+    --secondary: 142 76% 36%;
     --secondary-foreground: 0 0% 98%;
-    --secondary-light: 195 85% 55%;
+    --secondary-light: 142 76% 46%;
 
-    /* Warning: Alert Coral */
-    --warning: 15 85% 60%;
+    /* Warning: Cost Alert Orange */
+    --warning: 25 95% 53%;
     --warning-foreground: 0 0% 98%;
-    --warning-light: 15 85% 70%;
+    --warning-light: 25 95% 63%;
 
-    /* Muted: Sophisticated Neutrals */
-    --muted: 215 20% 95%;
-    --muted-foreground: 215 15% 50%;
+    /* Muted: Clean Neutral Grays */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 195 25% 25%;
+    --accent: 217 32% 17%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 5 85% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 220 90% 48%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 217 91% 35%;
 
     --radius: 0.75rem;
 
-    /* Financial KPI Colors - Orys Style */
-    --cost-high: 5 85% 55%;
-    --cost-medium: 15 85% 60%;
-    --cost-low: 195 85% 45%;
-    --profit: 145 70% 45%;
-    --neutral: 215 15% 50%;
+    /* Financial KPI Colors */
+    --cost-high: 0 84% 60%;
+    --cost-medium: 25 95% 53%;
+    --cost-low: 142 76% 36%;
+    --profit: 142 76% 36%;
+    --neutral: 240 4% 46%;
 
-    /* Modern Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 90% 48%), hsl(220 90% 58%));
-    --gradient-cost: linear-gradient(135deg, hsl(5 85% 55%), hsl(15 85% 60%));
-    --gradient-success: linear-gradient(135deg, hsl(195 85% 45%), hsl(195 85% 55%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(215 20% 98%));
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 35%), hsl(217 91% 45%));
+    --gradient-cost: linear-gradient(135deg, hsl(0 84% 60%), hsl(25 95% 53%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(240 5% 98%));
 
-    /* Enhanced Shadows */
-    --shadow-soft: 0 1px 3px hsla(215, 25%, 15%, 0.08), 0 1px 2px hsla(215, 25%, 15%, 0.16);
-    --shadow-medium: 0 4px 6px hsla(215, 25%, 15%, 0.05), 0 2px 4px hsla(215, 25%, 15%, 0.08);
-    --shadow-strong: 0 10px 15px hsla(215, 25%, 15%, 0.1), 0 4px 6px hsla(215, 25%, 15%, 0.05);
-    --shadow-glow: 0 0 20px hsla(220, 90%, 48%, 0.15);
+    /* Shadows */
+    --shadow-soft: 0 1px 3px hsla(240, 4%, 46%, 0.12), 0 1px 2px hsla(240, 4%, 46%, 0.24);
+    --shadow-medium: 0 4px 6px hsla(240, 4%, 46%, 0.07), 0 2px 4px hsla(240, 4%, 46%, 0.06);
+    --shadow-strong: 0 10px 15px hsla(240, 4%, 46%, 0.1), 0 4px 6px hsla(240, 4%, 46%, 0.05);
+    --shadow-glow: 0 0 20px hsla(217, 91%, 35%, 0.15);
 
     /* Typography */
     --font-heading: 'Inter', system-ui, sans-serif;
