@@ -68,12 +68,12 @@ export function useDashboardData(selectedOrg?: string) {
 
         const configIds = configs.map(config => config.id);
 
-        // Get current billing cycle - get the most recent cycle
+        // Get current billing cycle - get the most recent cycle based on end date
         const { data: currentCycle, error: cycleError } = await supabase
           .from('api_consumosummary')
           .select('billing_period_start_date, billing_period_end_date')
           .in('configuracao_id', configIds)
-          .order('billing_period_start_date', { ascending: false })
+          .order('billing_period_end_date', { ascending: false })
           .limit(1)
           .maybeSingle();
 
