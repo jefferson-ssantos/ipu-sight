@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { CostChart } from "@/components/dashboard/CostChart";
+import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -19,39 +23,73 @@ import {
 import heroImage from "@/assets/finops-hero.jpg";
 import orysLogo from "@/assets/orys-logo.png";
 
-// Mock data - Será substituído pela integração com Supabase
-const mockKPIData = {
-  totalCost: 189500,
-  totalIPU: 1895000,
-  avgDailyCost: 6316,
-  activeOrgs: 3,
-  currentPeriod: "Abril 2025",
-  periodStart: "01/04/2025",
-  periodEnd: "30/04/2025"
-};
-
-const mockHierarchicalData = [
-  {
-    level: "summary",
-    title: "Resumo por Organização",
-    data: [
-      { name: "Org Produção", ipu: 1231750, cost: 123175, percentage: 65 },
-      { name: "Org Desenvolvimento", ipu: 473750, cost: 47375, percentage: 25 },
-      { name: "Org Teste", ipu: 189500, cost: 18950, percentage: 10 }
-    ]
-  }
-];
-
 export default function Dashboard() {
-  const [selectedOrg, setSelectedOrg] = useState("production");
+  const { user } = useAuth();
+  const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState("current");
-  const [isLoading, setIsLoading] = useState(false);
+  const [showAssetTable, setShowAssetTable] = useState(false);
+  const [availableOrgs, setAvailableOrgs] = useState<Array<{value: string, label: string}>>([]);
+  
+  const { data: dashboardData, loading, error, refetch } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg);
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    // TODO: Implementar refresh dos dados via Supabase
-    setTimeout(() => setIsLoading(false), 1500);
-  };
+  // Fetch available organizations
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchOrganizations = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('cliente_id')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile?.cliente_id) return;
+
+        // First get the configuration IDs for this client
+        const { data: configs } = await supabase
+          .from('api_configuracaoidmc')
+          .select('id')
+          .eq('cliente_id', profile.cliente_id);
+
+        if (!configs || configs.length === 0) return;
+
+        const configIds = configs.map(config => config.id);
+
+        const { data: orgs } = await supabase
+          .from('api_consumosummary')
+          .select('org_id, org_name')
+          .in('configuracao_id', configIds);
+
+        if (orgs) {
+          const uniqueOrgs = Array.from(
+            new Map(orgs.map(org => [org.org_id, org])).values()
+          ).filter(org => org.org_id && org.org_name);
+
+          setAvailableOrgs([
+            { value: "all", label: "Todas as Organizações" },
+            ...uniqueOrgs.map(org => ({
+              value: org.org_id,
+              label: org.org_name || org.org_id
+            }))
+          ]);
+
+          // Set default to production org if available
+          const prodOrg = uniqueOrgs.find(org => 
+            org.org_name?.toLowerCase().includes('produção') || 
+            org.org_name?.toLowerCase().includes('production')
+          );
+          if (prodOrg) {
+            setSelectedOrg(prodOrg.org_id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+      }
+    };
+
+    fetchOrganizations();
+  }, [user]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -65,9 +103,33 @@ export default function Dashboard() {
   const formatIPU = (value: number) => {
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`;
     }
-    return `${(value / 1000).toFixed(0)}K`;
+    return value.toLocaleString();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Erro ao carregar dados: {error}</p>
+          <Button onClick={refetch}>Tentar novamente</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -88,19 +150,21 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-heading font-bold mb-2">
                   FinOps Dashboard
                 </h1>
-              <p className="text-primary-foreground/80 text-lg">
-                Monitoramento de custos IDMC - {mockKPIData.currentPeriod}
-              </p>
-              <div className="flex items-center gap-4 mt-3">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {mockKPIData.periodStart} - {mockKPIData.periodEnd}
-                </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  <Building2 className="h-3 w-3 mr-1" />
-                  Org de Produção
-                </Badge>
-              </div>
+                <p className="text-primary-foreground/80 text-lg">
+                  Monitoramento de custos IDMC - {dashboardData?.currentPeriod || 'Sem dados'}
+                </p>
+                <div className="flex items-center gap-4 mt-3">
+                  {dashboardData?.periodStart && dashboardData?.periodEnd && (
+                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {dashboardData.periodStart} - {dashboardData.periodEnd}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                    <Building2 className="h-3 w-3 mr-1" />
+                    {selectedOrg === "all" ? "Todas as Orgs" : availableOrgs.find(o => o.value === selectedOrg)?.label || selectedOrg}
+                  </Badge>
+                </div>
               </div>
             </div>
 
@@ -110,20 +174,22 @@ export default function Dashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="production">Org de Produção</SelectItem>
-                  <SelectItem value="development">Org de Desenvolvimento</SelectItem>
-                  <SelectItem value="test">Org de Teste</SelectItem>
+                  {availableOrgs.map(org => (
+                    <SelectItem key={org.value} value={org.value}>
+                      {org.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={handleRefresh}
-                disabled={isLoading}
+                onClick={refetch}
+                disabled={loading}
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                 Atualizar
               </Button>
             </div>
@@ -170,49 +236,34 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title="Custo Total"
-            value={formatCurrency(mockKPIData.totalCost)}
-            subtitle={`${formatIPU(mockKPIData.totalIPU)} IPUs`}
+            value={formatCurrency(dashboardData?.totalCost || 0)}
+            subtitle={`${formatIPU(dashboardData?.totalIPU || 0)} IPUs`}
             icon={DollarSign}
             variant="cost"
-            trend={{
-              value: 12.5,
-              label: "vs. ciclo anterior",
-              direction: "up"
-            }}
           />
 
           <KPICard
             title="Custo Médio Diário"
-            value={formatCurrency(mockKPIData.avgDailyCost)}
+            value={formatCurrency(dashboardData?.avgDailyCost || 0)}
             subtitle="Baseado no período atual"
             icon={Activity}
             variant="default"
-            trend={{
-              value: 3.2,
-              label: "vs. média histórica",
-              direction: "down"
-            }}
           />
 
           <KPICard
             title="Organizações Ativas"
-            value={mockKPIData.activeOrgs}
+            value={dashboardData?.activeOrgs || 0}
             subtitle="Com consumo no período"
             icon={Building2}
             variant="success"
           />
 
           <KPICard
-            title="Eficiência de Custos"
-            value="87%"
-            subtitle="Score de otimização"
+            title="Total IPUs"
+            value={formatIPU(dashboardData?.totalIPU || 0)}
+            subtitle="Consumo total do período"
             icon={TrendingUp}
             variant="warning"
-            trend={{
-              value: 5.8,
-              label: "melhoria",
-              direction: "up"
-            }}
           />
         </div>
 
@@ -242,7 +293,11 @@ export default function Dashboard() {
                   Navegue pelos níveis de detalhamento dos dados de consumo
                 </CardDescription>
               </div>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowAssetTable(true)}
+              >
                 <Users className="h-4 w-4 mr-2" />
                 Ver por Asset
               </Button>
@@ -250,44 +305,56 @@ export default function Dashboard() {
           </CardHeader>
 
           <CardContent>
-            {mockHierarchicalData.map((section, index) => (
-              <div key={index} className="space-y-4">
-                <h3 className="font-medium text-foreground mb-3">
-                  {section.title}
-                </h3>
-                
-                <div className="space-y-3">
-                  {section.data.map((item, itemIndex) => (
+            <div className="space-y-4">
+              <h3 className="font-medium text-foreground mb-3">
+                Resumo por Organização
+              </h3>
+              
+              <div className="space-y-3">
+                {dashboardData?.organizations.length ? (
+                  dashboardData.organizations.map((org, index) => (
                     <div 
-                      key={itemIndex}
+                      key={index}
                       className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-8 bg-primary rounded-full" />
                         <div>
-                          <p className="font-medium text-foreground">{item.name}</p>
+                          <p className="font-medium text-foreground">{org.org_name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatIPU(item.ipu)} IPUs
+                            {formatIPU(org.consumption_ipu)} IPUs
                           </p>
                         </div>
                       </div>
 
                       <div className="text-right">
                         <p className="font-bold text-lg text-foreground">
-                          {formatCurrency(item.cost)}
+                          {formatCurrency(org.cost)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {item.percentage}% do total
+                          {org.percentage}% do total
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum dado de organização encontrado para o período selecionado.
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Asset Details Table Modal */}
+      {showAssetTable && (
+        <AssetDetailsTable 
+          onClose={() => setShowAssetTable(false)}
+          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+        />
+      )}
     </div>
   );
 }
