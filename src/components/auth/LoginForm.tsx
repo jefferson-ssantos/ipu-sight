@@ -93,9 +93,9 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full h-11 bg-gradient-primary hover:bg-primary-dark 
+            className="w-full h-11 bg-secondary hover:bg-secondary/90 
                      shadow-medium hover:shadow-strong transition-all duration-300 
-                     font-medium text-primary-foreground"
+                     font-medium text-secondary-foreground"
             disabled={isLoading}
           >
             {isLoading ? "Entrando..." : "Entrar"}
