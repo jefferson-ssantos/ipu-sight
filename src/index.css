@@ -2,133 +2,106 @@
 @tailwind components;
 @tailwind utilities;
 
-/* IPU-Sight FinOps Design System - Orys Palette
-All colors MUST be HSL.
-*/
-
+/* IPU-Sight FinOps Design System - Paleta Orys (Corrigida) */
 @layer base {
   :root {
-    /* Orys-Inspired Palette */
-    --background: 0 0% 98%; /* Almost white */
-    --foreground: 210 15% 12%; /* Dark Blueish Gray */
+    /* Cores baseadas nos HEX codes fornecidos */
+    --background: 220 13% 95%; /* #F3F4F6 */
+    --foreground: 215 25% 27%; /* #1F2937 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 15% 12%;
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 215 25% 27%; /* #1F2937 */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 15% 12%;
+    --popover-foreground: 215 25% 27%;
 
-    /* Primary: Orys Dark Blue */
-    --primary: 210 100% 12%; /* #001f3f */
-    --primary-foreground: 0 0% 98%;
-    --primary-light: 210 100% 22%;
-    --primary-dark: 210 100% 7%;
+    /* Primária: Azul Escuro Orys */
+    --primary: 220 33% 25%; /* #2A3A59 */
+    --primary-foreground: 0 0% 98%; /* Branco para contraste */
+    --primary-dark: 220 33% 20%; /* Tom mais escuro para hover */
 
-    /* Secondary: Orys Green */
-    --secondary: 145 63% 49%; /* #2ECC40 */
-    --secondary-foreground: 0 0% 98%;
-    --secondary-light: 145 63% 59%;
+    /* Secundária / Destaque: Laranja Orys */
+    --secondary: 25 95% 53%; /* #F97316 */
+    --secondary-foreground: 0 0% 98%; /* Branco para contraste */
 
-    /* Warning: Adjust as needed */
-    --warning: 45 100% 50%; /* A generic warning yellow */
-    --warning-foreground: 0 0% 98%;
-    --warning-light: 45 100% 60%;
+    /* Muted */
+    --muted: 220 13% 95%;
+    --muted-foreground: 215 9% 47%; /* #6B7280 */
 
-    /* Muted: Light Gray */
-    --muted: 0 0% 96%; /* #F5F5F5 */
-    --muted-foreground: 210 10% 46%;
-
-    --accent: 145 63% 49%; /* Orys Green as accent */
+    --accent: 25 95% 53%; /* #F97316 */
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84% 55%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 210 15% 88%;
-    --input: 210 15% 88%;
-    --ring: 145 63% 49%;
+    --border: 220 13% 88%; /* Tom de cinza um pouco mais escuro que o fundo */
+    --input: 220 13% 88%;
+    --ring: 25 95% 53%; /* Laranja para anel de foco */
 
     --radius: 0.75rem;
 
-    /* Financial KPI Colors - Orys Palette */
-    --cost-high: 0 84% 55%;
-    --cost-medium: 45 100% 50%;
-    --cost-low: 145 63% 49%;
-    --profit: 145 63% 49%;
-    --neutral: 210 10% 46%;
+    /* Cores de KPI Financeiro - Paleta Ajustada */
+    --cost-high: 0 84% 55%; /* Vermelho para custo alto */
+    --cost-medium: 39 100% 50%; /* Laranja/Amarelo para alerta */
+    --cost-low: 145 63% 49%; /* Verde para custo baixo */
+    --success: 145 63% 49%; /* Verde para sucesso */
+    --neutral: 215 9% 47%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 100% 12%), hsl(145 63% 49%));
-    --gradient-cost: linear-gradient(135deg, hsl(0 84% 55%), hsl(45 100% 50%));
-    --gradient-success: linear-gradient(135deg, hsl(145 63% 49%), hsl(145 63% 59%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 96%));
+    /* Gradientes */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(220, 33%, 35%));
+    --gradient-cost: linear-gradient(135deg, hsl(var(--cost-high)), hsl(var(--cost-medium)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(145, 63%, 59%));
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(var(--muted)));
 
-    /* Shadows */
-    --shadow-soft: 0 1px 3px hsla(240, 4%, 46%, 0.12), 0 1px 2px hsla(240, 4%, 46%, 0.24);
-    --shadow-medium: 0 4px 6px hsla(240, 4%, 46%, 0.07), 0 2px 4px hsla(240, 4%, 46%, 0.06);
-    --shadow-strong: 0 10px 15px hsla(240, 4%, 46%, 0.1), 0 4px 6px hsla(240, 4%, 46%, 0.05);
-    --shadow-glow: 0 0 20px hsla(210, 100%, 12%, 0.15);
+    /* Sombras */
+    --shadow-soft: 0 1px 3px hsla(220, 25%, 27%, 0.12), 0 1px 2px hsla(220, 25%, 27%, 0.24);
+    --shadow-medium: 0 4px 6px hsla(220, 25%, 27%, 0.07), 0 2px 4px hsla(220, 25%, 27%, 0.06);
+    --shadow-strong: 0 10px 15px hsla(220, 25%, 27%, 0.1), 0 4px 6px hsla(220, 25%, 27%, 0.05);
+    --shadow-glow: 0 0 20px hsla(220, 33%, 25%, 0.15);
 
-    /* Typography */
+    /* Tipografia */
     --font-heading: 'Inter', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 210 100% 12%;
-
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 27%;
+    --sidebar-primary: 220 33% 25%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 145 63% 49%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 215 25% 27%;
+    --sidebar-border: 220 13% 88%;
+    --sidebar-ring: 25 95% 53%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 215 25% 15%;
+    --foreground: 220 13% 95%;
+    --card: 215 25% 20%;
+    --card-foreground: 220 13% 95%;
+    --popover: 215 25% 15%;
+    --popover-foreground: 220 13% 95%;
+    --primary: 220 13% 85%;
+    --primary-foreground: 215 25% 10%;
+    --secondary: 25 95% 53%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 215 25% 25%;
+    --muted-foreground: 215 9% 55%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 25% 30%;
+    --input: 215 25% 30%;
+    --ring: 25 95% 53%;
+    --sidebar-background: 215 25% 20%;
+    --sidebar-foreground: 220 13% 95%;
+    --sidebar-primary: 25 95% 53%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 215 25% 25%;
+    --sidebar-accent-foreground: 220 13% 95%;
+    --sidebar-border: 215 25% 30%;
+    --sidebar-ring: 25 95% 53%;
   }
 }
 
