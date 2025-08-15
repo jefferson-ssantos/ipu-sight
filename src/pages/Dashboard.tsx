@@ -17,6 +17,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import heroImage from "@/assets/finops-hero.jpg";
+import orysLogo from "@/assets/orys-logo.png";
 
 // Mock data - Será substituído pela integração com Supabase
 const mockKPIData = {
@@ -81,10 +82,12 @@ export default function Dashboard() {
         
         <div className="relative z-10 p-8 text-primary-foreground">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-heading font-bold mb-2">
-                FinOps Dashboard
-              </h1>
+            <div className="flex items-center gap-6">
+              <img src={orysLogo} alt="Orys Logo" className="h-12" />
+              <div>
+                <h1 className="text-3xl font-heading font-bold mb-2">
+                  FinOps Dashboard
+                </h1>
               <p className="text-primary-foreground/80 text-lg">
                 Monitoramento de custos IDMC - {mockKPIData.currentPeriod}
               </p>
@@ -97,6 +100,7 @@ export default function Dashboard() {
                   <Building2 className="h-3 w-3 mr-1" />
                   Org de Produção
                 </Badge>
+              </div>
               </div>
             </div>
 

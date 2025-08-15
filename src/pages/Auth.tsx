@@ -1,5 +1,6 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 import { TrendingUp, BarChart3, PieChart, Building2 } from "lucide-react";
+import orysLogo from "@/assets/orys-logo.png";
 
 export default function Auth() {
   return (
@@ -13,9 +14,7 @@ export default function Auth() {
           <div className="text-primary-foreground space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-secondary/20 rounded-xl backdrop-blur-sm">
-                  <TrendingUp className="h-10 w-10" />
-                </div>
+                <img src={orysLogo} alt="Orys Logo" className="h-16" />
                 <div>
                   <h1 className="text-4xl font-heading font-bold">IPU-Sight</h1>
                   <p className="text-primary-foreground/80 text-lg">FinOps Dashboard</p>
