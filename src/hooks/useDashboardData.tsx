@@ -42,7 +42,7 @@ export function useDashboardData(selectedOrg?: string) {
           .from('profiles')
           .select('cliente_id')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) throw profileError;
         if (!profile?.cliente_id) throw new Error('Cliente não encontrado');
@@ -52,9 +52,10 @@ export function useDashboardData(selectedOrg?: string) {
           .from('api_clientes')
           .select('preco_por_ipu')
           .eq('id', profile.cliente_id)
-          .single();
+          .maybeSingle();
 
         if (clientError) throw clientError;
+        if (!client?.preco_por_ipu) throw new Error('Informações de preço não encontradas para o cliente');
 
         // Get current billing cycle
         const today = new Date().toISOString().split('T')[0];
