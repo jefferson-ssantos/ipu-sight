@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { SignupForm } from "@/components/auth/SignupForm";
 import { TrendingUp, BarChart3, PieChart, Building2 } from "lucide-react";
 import orysLogo from "@/assets/orys-logo.png";
 
 export default function Auth() {
+  const [isSignup, setIsSignup] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
       {/* Background Pattern */}
@@ -92,16 +96,32 @@ export default function Auth() {
             </div>
           </div>
 
-          {/* Right Side - Login Form */}
+          {/* Right Side - Auth Form */}
           <div className="flex justify-center lg:justify-end">
-            <LoginForm />
+            {isSignup ? (
+              <SignupForm />
+            ) : (
+              <LoginForm onSwitchToSignup={() => setIsSignup(true)} />
+            )}
           </div>
         </div>
 
         {/* Bottom Notice */}
         <div className="text-center mt-12 text-primary-foreground/60 text-sm">
           <p>
-            Conecte-se ao Supabase para acessar dados reais de consumo IDMC
+            {isSignup ? (
+              <>
+                Já tem uma conta?{" "}
+                <button 
+                  onClick={() => setIsSignup(false)}
+                  className="text-secondary hover:text-secondary/80 underline"
+                >
+                  Fazer login
+                </button>
+              </>
+            ) : (
+              "Conecte-se ao sistema para acessar dados reais de consumo IDMC"
+            )}
           </p>
         </div>
       </div>

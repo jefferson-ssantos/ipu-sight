@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   BarChart3,
   Building2,
@@ -13,6 +14,7 @@ import {
   LogOut,
   ChevronDown
 } from "lucide-react";
+import orysLogo from "@/assets/orys-logo.png";
 
 import {
   Sidebar,
@@ -91,6 +93,7 @@ const configItems = [
 ];
 
 export function AppSidebar() {
+  const { signOut } = useAuth();
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -110,8 +113,7 @@ export function AppSidebar() {
   };
 
   const handleLogout = () => {
-    // TODO: Implement logout
-    console.log("Logout");
+    signOut();
   };
 
   return (
@@ -122,9 +124,7 @@ export function AppSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-primary rounded-lg shadow-glow">
-            <TrendingUp className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src={orysLogo} alt="Orys Logo" className="h-8 w-8" />
           {open && (
             <div>
               <h2 className="font-heading font-bold text-lg text-foreground">IPU-Sight</h2>

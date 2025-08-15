@@ -1,85 +1,114 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import orysLogo from "@/assets/orys-logo.png";
 
-export function LoginForm() {
-  const [showPassword, setShowPassword] = useState(false);
+interface LoginFormProps {
+  onSwitchToSignup: () => void;
+}
+
+export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
+  const { signIn } = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // TODO: Implement actual authentication with Supabase
-    setTimeout(() => {
+
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Erro de login",
+            description: "Email ou senha incorretos",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Email não confirmado",
+            description: "Verifique seu email e clique no link de confirmação",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro de login",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+
       toast({
-        title: "Login necessário",
-        description: "Configure o Supabase para habilitar autenticação",
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo ao IPU-Sight FinOps Dashboard",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente em alguns momentos",
         variant: "destructive"
       });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
-    <Card className="w-full max-w-md bg-gradient-card shadow-strong border-0">
-      <CardHeader className="text-center pb-6">
-        <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-secondary rounded-xl shadow-glow">
-            <TrendingUp className="h-8 w-8 text-primary-foreground" />
-          </div>
+    <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50 shadow-soft">
+      <CardHeader className="text-center">
+        <div className="flex justify-center mb-4">
+          <img src={orysLogo} alt="Orys Logo" className="h-12" />
         </div>
-        <CardTitle className="text-2xl font-heading font-bold text-foreground">
-          IPU-Sight
+        <CardTitle className="text-2xl font-heading text-foreground">
+          Login
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Acesse sua plataforma de FinOps IDMC
+          Acesse sua conta IPU-Sight
         </CardDescription>
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              Email
-            </Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="seu.email@empresa.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-11 transition-all duration-200 focus:shadow-glow"
+              placeholder="seu@email.com"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium">
-              Senha
-            </Label>
+            <Label htmlFor="password">Senha</Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-11 pr-12 transition-all duration-200 focus:shadow-glow"
+                placeholder="Sua senha"
                 required
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
@@ -93,20 +122,24 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full h-11 bg-secondary hover:bg-secondary/90 
-                     shadow-medium hover:shadow-strong transition-all duration-300 
-                     font-medium text-secondary-foreground"
+            className="w-full"
+            size="lg"
             disabled={isLoading}
           >
-            {isLoading ? "Entrando..." : "Entrar"}
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Entrar
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Não tem uma conta?{" "}
-            <Button variant="link" className="p-0 h-auto text-primary hover:text-primary-light">
-              Solicite acesso
+            Ainda não tem uma conta?{" "}
+            <Button
+              variant="link"
+              onClick={onSwitchToSignup}
+              className="p-0 h-auto text-secondary hover:text-secondary/80"
+            >
+              Criar conta
             </Button>
           </p>
         </div>
