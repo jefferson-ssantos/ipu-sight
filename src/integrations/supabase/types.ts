@@ -747,6 +747,35 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          cliente_id: number | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id?: number | null
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: number | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "api_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
