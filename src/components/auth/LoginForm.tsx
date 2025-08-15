@@ -32,7 +32,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md bg-gradient-card shadow-strong border-0">
       <CardHeader className="text-center pb-6">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-gradient-primary rounded-xl shadow-glow">
+          <div className="p-3 bg-secondary rounded-xl shadow-glow">
             <TrendingUp className="h-8 w-8 text-primary-foreground" />
           </div>
         </div>
