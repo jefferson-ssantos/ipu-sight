@@ -98,6 +98,7 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
           });
 
           const metricsArray = Array.from(groupedData.values())
+            .filter(metric => metric.consumption_ipu > 0)
             .sort((a, b) => b.consumption_ipu - a.consumption_ipu);
 
           setMetrics(metricsArray);

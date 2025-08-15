@@ -16,7 +16,7 @@ import {
   Cell
 } from "recharts";
 import { Download, TrendingUp, Calendar } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 const mockData = [
@@ -28,10 +28,19 @@ const mockData = [
   { period: "Abr/25", ipu: 2100000, cost: 210000, date: "2025-04" }
 ];
 
+const STABLE_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--secondary))", 
+  "hsl(var(--accent))",
+  "hsl(var(--warning))",
+  "hsl(var(--destructive))",
+  "hsl(var(--muted))"
+];
+
 const orgData = [
-  { name: "Produção", value: 65, cost: 136500, color: "hsl(var(--primary))" },
-  { name: "Desenvolvimento", value: 25, cost: 52500, color: "hsl(var(--secondary))" },
-  { name: "Teste", value: 10, cost: 21000, color: "hsl(var(--warning))" }
+  { name: "Produção", value: 65, cost: 136500, color: STABLE_COLORS[0] },
+  { name: "Desenvolvimento", value: 25, cost: 52500, color: STABLE_COLORS[1] },
+  { name: "Teste", value: 10, cost: 21000, color: STABLE_COLORS[2] }
 ];
 
 interface CostChartProps {
@@ -55,6 +64,16 @@ export function CostChart({
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>(data || mockData);
   const { getChartData } = useDashboardData();
+
+  const stableChartData = useMemo(() => {
+    if (type === 'pie') {
+      return chartData.map((item, index) => ({
+        ...item,
+        color: STABLE_COLORS[index % STABLE_COLORS.length]
+      }));
+    }
+    return chartData;
+  }, [chartData, type]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -145,7 +164,7 @@ export function CostChart({
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={chartData}
+                data={stableChartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -153,7 +172,7 @@ export function CostChart({
                 paddingAngle={2}
                 dataKey="value"
               >
-                {chartData.map((entry, index) => (
+                {stableChartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -257,7 +276,7 @@ export function CostChart({
         
         {type === "pie" && (
           <div className="flex justify-center mt-4 gap-6 flex-wrap">
-            {chartData.slice(0, 4).map((entry, index) => (
+            {stableChartData.slice(0, 4).map((entry, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div 
                   className="w-3 h-3 rounded-full"
