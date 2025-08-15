@@ -57,18 +57,6 @@ export function useDashboardData(selectedOrg?: string) {
         if (clientError) throw clientError;
         if (!client?.preco_por_ipu) throw new Error('Informações de preço não encontradas para o cliente');
 
-        // Get current billing cycle
-        const today = new Date().toISOString().split('T')[0];
-        const { data: currentCycle, error: cycleError } = await supabase
-          .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date')
-          .lte('billing_period_start_date', today)
-          .gte('billing_period_end_date', today)
-          .limit(1)
-          .maybeSingle();
-
-        if (cycleError) throw cycleError;
-
         // First get the configuration IDs for this client
         const { data: configs, error: configError } = await supabase
           .from('api_configuracaoidmc')
@@ -79,6 +67,17 @@ export function useDashboardData(selectedOrg?: string) {
         if (!configs || configs.length === 0) throw new Error('Nenhuma configuração encontrada');
 
         const configIds = configs.map(config => config.id);
+
+        // Get current billing cycle - get the most recent cycle
+        const { data: currentCycle, error: cycleError } = await supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date')
+          .in('configuracao_id', configIds)
+          .order('billing_period_start_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cycleError) throw cycleError;
 
         let consumptionQuery = supabase
           .from('api_consumosummary')
