@@ -68,25 +68,27 @@ export function useDashboardData(selectedOrg?: string) {
 
         const configIds = configs.map(config => config.id);
 
-        // Get the most recent consumption_date
-        const { data: latestDateResult, error: latestDateError } = await supabase
+        // Get current billing cycle - get the most recent cycle
+        const { data: currentCycle, error: cycleError } = await supabase
           .from('api_consumosummary')
-          .select('consumption_date')
+          .select('billing_period_start_date, billing_period_end_date')
           .in('configuracao_id', configIds)
-          .order('consumption_date', { ascending: false })
+          .order('billing_period_start_date', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (latestDateError) throw latestDateError;
+        if (cycleError) throw cycleError;
 
         let consumptionQuery = supabase
           .from('api_consumosummary')
           .select('*')
           .in('configuracao_id', configIds);
 
-        // Filter by the most recent consumption_date if available
-        if (latestDateResult?.consumption_date) {
-          consumptionQuery = consumptionQuery.eq('consumption_date', latestDateResult.consumption_date);
+        // Filter by current cycle if available
+        if (currentCycle) {
+          consumptionQuery = consumptionQuery
+            .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+            .eq('billing_period_end_date', currentCycle.billing_period_end_date);
         }
 
         // Filter by organization if selected
@@ -104,17 +106,17 @@ export function useDashboardData(selectedOrg?: string) {
             totalIPU: 0,
             avgDailyCost: 0,
             activeOrgs: 0,
-            currentPeriod: latestDateResult?.consumption_date ? 
-              new Date(latestDateResult.consumption_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
+            currentPeriod: currentCycle ? 
+              new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
               'Sem dados',
-            periodStart: latestDateResult?.consumption_date ? 
-              new Date(latestDateResult.consumption_date).toLocaleDateString('pt-BR') : 
+            periodStart: currentCycle ? 
+              new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR') : 
               '',
-            periodEnd: latestDateResult?.consumption_date ? 
-              new Date(latestDateResult.consumption_date).toLocaleDateString('pt-BR') : 
+            periodEnd: currentCycle ? 
+              new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR') : 
               '',
             organizations: [],
-            currentCycle: null
+            currentCycle
           });
           return;
         }
@@ -125,8 +127,11 @@ export function useDashboardData(selectedOrg?: string) {
         // Calculate total cost
         const totalCost = totalIPU * client.preco_por_ipu;
 
-        // Calculate average daily cost based on 30 days
-        const avgDailyCost = totalCost / 30;
+        // Calculate average daily cost
+        const days = currentCycle ? 
+          Math.max(1, Math.ceil((new Date(currentCycle.billing_period_end_date).getTime() - new Date(currentCycle.billing_period_start_date).getTime()) / (1000 * 60 * 60 * 24))) :
+          30;
+        const avgDailyCost = totalCost / days;
 
         // Group by organization
         const orgMap = new Map();
@@ -160,17 +165,17 @@ export function useDashboardData(selectedOrg?: string) {
           totalIPU,
           avgDailyCost,
           activeOrgs: organizations.length,
-          currentPeriod: latestDateResult?.consumption_date ? 
-            new Date(latestDateResult.consumption_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
+          currentPeriod: currentCycle ? 
+            new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
             'Período atual',
-          periodStart: latestDateResult?.consumption_date ? 
-            new Date(latestDateResult.consumption_date).toLocaleDateString('pt-BR') : 
+          periodStart: currentCycle ? 
+            new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR') : 
             '',
-          periodEnd: latestDateResult?.consumption_date ? 
-            new Date(latestDateResult.consumption_date).toLocaleDateString('pt-BR') : 
+          periodEnd: currentCycle ? 
+            new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR') : 
             '',
           organizations,
-          currentCycle: null
+          currentCycle
         });
 
       } catch (err) {
