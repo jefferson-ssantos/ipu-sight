@@ -189,5 +189,138 @@ export function useDashboardData(selectedOrg?: string) {
     fetchDashboardData();
   }, [user, selectedOrg]);
 
-  return { data, loading, error, refetch: () => window.location.reload() };
+  const getChartData = async (type: 'evolution' | 'distribution', selectedOrg?: string) => {
+    if (!user) return [];
+
+    try {
+      // Get user's client information
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('cliente_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError || !profile?.cliente_id) return [];
+
+      // Get client's price per IPU
+      const { data: client, error: clientError } = await supabase
+        .from('api_clientes')
+        .select('preco_por_ipu')
+        .eq('id', profile.cliente_id)
+        .maybeSingle();
+
+      if (clientError || !client?.preco_por_ipu) return [];
+
+      // Get configuration IDs
+      const { data: configs, error: configError } = await supabase
+        .from('api_configuracaoidmc')
+        .select('id')
+        .eq('cliente_id', profile.cliente_id);
+
+      if (configError || !configs || configs.length === 0) return [];
+
+      const configIds = configs.map(config => config.id);
+
+      if (type === 'evolution') {
+        // Get data for multiple billing periods for evolution chart
+        let query = supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date, consumption_ipu')
+          .in('configuracao_id', configIds);
+
+        if (selectedOrg) {
+          query = query.eq('org_id', selectedOrg);
+        }
+
+        const { data: evolutionData } = await query;
+
+        if (!evolutionData) return [];
+
+        // Group by billing period and sum IPUs
+        const periodMap = new Map();
+        evolutionData.forEach(item => {
+          const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          if (periodMap.has(key)) {
+            periodMap.get(key).totalIPU += item.consumption_ipu || 0;
+          } else {
+            periodMap.set(key, {
+              period: new Date(item.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+              totalIPU: item.consumption_ipu || 0,
+              billing_period_start_date: item.billing_period_start_date,
+              billing_period_end_date: item.billing_period_end_date
+            });
+          }
+        });
+
+        return Array.from(periodMap.values())
+          .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
+          .slice(-6) // Last 6 periods
+          .map(item => ({
+            period: item.period,
+            ipu: item.totalIPU,
+            cost: item.totalIPU * client.preco_por_ipu
+          }));
+
+      } else { // distribution
+        // Get current billing cycle
+        const { data: currentCycle } = await supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date')
+          .in('configuracao_id', configIds)
+          .order('billing_period_end_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!currentCycle) return [];
+
+        let query = supabase
+          .from('api_consumosummary')
+          .select('org_id, org_name, consumption_ipu')
+          .in('configuracao_id', configIds)
+          .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+          .eq('billing_period_end_date', currentCycle.billing_period_end_date);
+
+        if (selectedOrg) {
+          query = query.eq('org_id', selectedOrg);
+        }
+
+        const { data: distributionData } = await query;
+
+        if (!distributionData) return [];
+
+        // Group by organization
+        const orgMap = new Map();
+        distributionData.forEach(item => {
+          const orgId = item.org_id || 'unknown';
+          const orgName = item.org_name || orgId;
+          const ipu = item.consumption_ipu || 0;
+          
+          if (orgMap.has(orgId)) {
+            orgMap.get(orgId).consumption_ipu += ipu;
+          } else {
+            orgMap.set(orgId, {
+              org_id: orgId,
+              org_name: orgName,
+              consumption_ipu: ipu
+            });
+          }
+        });
+
+        const orgs = Array.from(orgMap.values());
+        const totalIPU = orgs.reduce((sum, org) => sum + org.consumption_ipu, 0);
+
+        return orgs.map(org => ({
+          name: org.org_name,
+          value: totalIPU > 0 ? Math.round((org.consumption_ipu / totalIPU) * 100) : 0,
+          cost: org.consumption_ipu * client.preco_por_ipu,
+          color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
+        })).sort((a, b) => b.value - a.value);
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+      return [];
+    }
+  };
+
+  return { data, loading, error, refetch: () => window.location.reload(), getChartData };
 }

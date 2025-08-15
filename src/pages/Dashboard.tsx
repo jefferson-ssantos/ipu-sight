@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { CostChart } from "@/components/dashboard/CostChart";
 import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
+import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState("current");
   const [showAssetTable, setShowAssetTable] = useState(false);
+  const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{value: string, label: string}>>([]);
   
   const { data: dashboardData, loading, error, refetch } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg);
@@ -102,11 +104,11 @@ export default function Dashboard() {
 
   const formatIPU = (value: number) => {
     if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M`;
+      return `${(value / 1000000).toFixed(1).replace('.', ',')}M`;
     } else if (value >= 1000) {
       return `${(value / 1000).toFixed(0)}K`;
     }
-    return value.toLocaleString();
+    return value.toLocaleString('pt-BR');
   };
 
   if (loading) {
@@ -272,12 +274,14 @@ export default function Dashboard() {
           <CostChart
             title="Evolução de Custos"
             type="area"
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
           />
 
           <CostChart
             title="Distribuição por Organização"
             type="pie"
             showFilters={false}
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
           />
         </div>
 
@@ -316,6 +320,7 @@ export default function Dashboard() {
                     <div 
                       key={index}
                       className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedOrgForDetails(org.org_id)}
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-8 bg-primary rounded-full" />
@@ -353,6 +358,15 @@ export default function Dashboard() {
         <AssetDetailsTable 
           onClose={() => setShowAssetTable(false)}
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+        />
+      )}
+
+      {/* Organization Details Modal */}
+      {selectedOrgForDetails && (
+        <OrgDetailsModal 
+          orgId={selectedOrgForDetails}
+          onClose={() => setSelectedOrgForDetails(null)}
+          billingPeriod={dashboardData?.currentCycle}
         />
       )}
     </div>

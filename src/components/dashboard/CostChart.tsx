@@ -16,7 +16,8 @@ import {
   Cell
 } from "recharts";
 import { Download, TrendingUp, Calendar } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const mockData = [
   { period: "Nov/24", ipu: 1250000, cost: 125000, date: "2024-11" },
@@ -39,17 +40,21 @@ interface CostChartProps {
   data?: any[];
   showFilters?: boolean;
   className?: string;
+  selectedOrg?: string;
 }
 
 export function CostChart({ 
   title, 
   type = "area", 
-  data = mockData, 
+  data, 
   showFilters = true,
-  className 
+  className,
+  selectedOrg
 }: CostChartProps) {
   const [period, setPeriod] = useState("6-months");
   const [metric, setMetric] = useState("cost");
+  const [chartData, setChartData] = useState<any[]>(data || mockData);
+  const { getChartData } = useDashboardData();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -60,9 +65,22 @@ export function CostChart({
     }).format(value);
   };
 
+  useEffect(() => {
+    if (data) {
+      setChartData(data);
+    } else if (getChartData) {
+      const fetchData = async () => {
+        const chartType = type === 'pie' ? 'distribution' : 'evolution';
+        const realData = await getChartData(chartType, selectedOrg);
+        setChartData(realData.length > 0 ? realData : (type === 'pie' ? orgData : mockData));
+      };
+      fetchData();
+    }
+  }, [data, type, selectedOrg, getChartData]);
+
   const formatIPU = (value: number) => {
     if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M IPUs`;
+      return `${(value / 1000000).toFixed(1).replace('.', ',')}M IPUs`;
     }
     return `${(value / 1000).toFixed(0)}K IPUs`;
   };
@@ -100,7 +118,7 @@ export function CostChart({
       case "bar":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="period" 
@@ -127,7 +145,7 @@ export function CostChart({
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={orgData}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -135,7 +153,7 @@ export function CostChart({
                 paddingAngle={2}
                 dataKey="value"
               >
-                {orgData.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -152,7 +170,7 @@ export function CostChart({
       default: // area
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -238,8 +256,8 @@ export function CostChart({
         {renderChart()}
         
         {type === "pie" && (
-          <div className="flex justify-center mt-4 gap-6">
-            {orgData.map((entry, index) => (
+          <div className="flex justify-center mt-4 gap-6 flex-wrap">
+            {chartData.slice(0, 4).map((entry, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div 
                   className="w-3 h-3 rounded-full"
