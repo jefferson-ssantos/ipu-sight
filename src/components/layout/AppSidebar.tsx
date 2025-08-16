@@ -14,7 +14,7 @@ import {
   LogOut,
   ChevronDown
 } from "lucide-react";
-import orysLogo from "@/assets/orys-logo.png";
+import orysLogo from "@/assets/logo-laranja.png";
 
 import {
   Sidebar,
