@@ -35,14 +35,24 @@ export function CostForecast() {
   const generateForecast = (historical: any[], period: string) => {
     const months = period === "3months" ? 3 : period === "6months" ? 6 : 12;
     
+    if (!historical || historical.length === 0) {
+      return [];
+    }
+    
     // Calculate trend using last 3 data points
-    const recentData = historical.slice(-3);
+    const recentData = historical.slice(-3).filter(item => 
+      item && typeof item.value === 'number' && !isNaN(item.value)
+    );
     let avgGrowth = 0;
     
     if (recentData.length >= 2) {
       for (let i = 1; i < recentData.length; i++) {
-        const growth = (recentData[i].value - recentData[i-1].value) / recentData[i-1].value;
-        avgGrowth += growth;
+        const prevValue = recentData[i-1].value;
+        const currentValue = recentData[i].value;
+        if (prevValue > 0) {
+          const growth = (currentValue - prevValue) / prevValue;
+          avgGrowth += growth;
+        }
       }
       avgGrowth = avgGrowth / (recentData.length - 1);
     }
@@ -55,11 +65,11 @@ export function CostForecast() {
       const futureDate = new Date(lastDate);
       futureDate.setMonth(futureDate.getMonth() + i);
       
-      const projectedValue = lastValue * Math.pow(1 + avgGrowth, i);
+      const projectedValue = lastValue * Math.pow(1 + (avgGrowth || 0), i);
       
       forecast.push({
         name: futureDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
-        value: Math.max(0, projectedValue),
+        value: Math.max(0, projectedValue || 0),
         isForecast: true
       });
     }
@@ -81,18 +91,35 @@ export function CostForecast() {
   };
 
   const calculateForecastSummary = () => {
-    if (forecastData.length === 0) return { total: 0, average: 0, trend: "estável" };
+    if (forecastData.length === 0 || chartData.length === 0) {
+      return { total: 0, average: 0, trend: "estável", growthRate: 0 };
+    }
     
-    const total = forecastData.reduce((sum, item) => sum + item.value, 0);
+    const total = forecastData.reduce((sum, item) => sum + (item.value || 0), 0);
     const average = total / forecastData.length;
-    const currentAvg = chartData.slice(-3).reduce((sum, item) => sum + item.value, 0) / 3;
     
-    const growthRate = ((average - currentAvg) / currentAvg) * 100;
+    const recentData = chartData.slice(-3).filter(item => item.value !== undefined && item.value !== null);
+    if (recentData.length === 0) {
+      return { total, average, trend: "estável", growthRate: 0 };
+    }
+    
+    const currentAvg = recentData.reduce((sum, item) => sum + item.value, 0) / recentData.length;
+    
+    let growthRate = 0;
+    if (currentAvg > 0) {
+      growthRate = ((average - currentAvg) / currentAvg) * 100;
+    }
+    
     let trend = "estável";
     if (growthRate > 5) trend = "crescimento";
     else if (growthRate < -5) trend = "redução";
     
-    return { total, average, trend, growthRate: Math.abs(growthRate) };
+    return { 
+      total: total || 0, 
+      average: average || 0, 
+      trend, 
+      growthRate: Math.abs(growthRate) || 0 
+    };
   };
 
   const summary = calculateForecastSummary();
