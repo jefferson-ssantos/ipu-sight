@@ -141,6 +141,11 @@ export function MetricBreakdown() {
     'hsl(var(--chart-3))',
     'hsl(var(--chart-4))',
     'hsl(var(--chart-5))',
+    'hsl(var(--primary))',
+    'hsl(var(--secondary))',
+    'hsl(var(--accent))',
+    'hsl(var(--muted))',
+    'hsl(var(--destructive))',
   ];
 
   const chartData = data.slice(0, 8).map((item, index) => ({
