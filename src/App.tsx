@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Analysis from "./pages/Analysis";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 
@@ -67,10 +68,7 @@ const App = () => (
           <Route path="/analysis" element={
             <ProtectedRoute>
               <AppLayout>
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Análise de Custos</h1>
-                  <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-                </div>
+                <Analysis />
               </AppLayout>
             </ProtectedRoute>
           } />
