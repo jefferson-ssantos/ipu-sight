@@ -457,6 +457,48 @@ export type Database = {
           },
         ]
       }
+      api_tags_customizadas: {
+        Row: {
+          asset_name: string | null
+          asset_type: string | null
+          configuracao_id: number
+          created_at: string
+          folder_name: string | null
+          id: number
+          meter_id: string | null
+          project_name: string | null
+          tag_color: string | null
+          tag_name: string
+          updated_at: string
+        }
+        Insert: {
+          asset_name?: string | null
+          asset_type?: string | null
+          configuracao_id: number
+          created_at?: string
+          folder_name?: string | null
+          id?: number
+          meter_id?: string | null
+          project_name?: string | null
+          tag_color?: string | null
+          tag_name: string
+          updated_at?: string
+        }
+        Update: {
+          asset_name?: string | null
+          asset_type?: string | null
+          configuracao_id?: number
+          created_at?: string
+          folder_name?: string | null
+          id?: number
+          meter_id?: string | null
+          project_name?: string | null
+          tag_color?: string | null
+          tag_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       auth_group: {
         Row: {
           id: number
