@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
+import ConsumptionAssets from "./pages/ConsumptionAssets";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 
@@ -70,6 +71,11 @@ const App = () => (
               <AppLayout>
                 <Analysis />
               </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/consumption/assets" element={
+            <ProtectedRoute>
+              <ConsumptionAssets />
             </ProtectedRoute>
           } />
           <Route path="/consumption/*" element={
