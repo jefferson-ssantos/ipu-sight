@@ -42,12 +42,12 @@ export default function ConsumptionAssets() {
           </div>
           
           <div className="flex gap-2">
-            <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+            <Select value={selectedOrg || "all"} onValueChange={(value) => setSelectedOrg(value === "all" ? "" : value)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Todas as organizações" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as organizações</SelectItem>
+                <SelectItem value="all">Todas as organizações</SelectItem>
                 {data?.organizations?.map((org) => (
                   <SelectItem key={org.org_id} value={org.org_id}>
                     {org.org_name || org.org_id}
