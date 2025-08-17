@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import ConsumptionAssets from "./pages/ConsumptionAssets";
+import ConsumptionDetails from "./pages/ConsumptionDetails";
+import Configuration from "./pages/Configuration";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 
@@ -78,6 +80,11 @@ const App = () => (
               <ConsumptionAssets />
             </ProtectedRoute>
           } />
+          <Route path="/consumption/details" element={
+            <ProtectedRoute>
+              <ConsumptionDetails />
+            </ProtectedRoute>
+          } />
           <Route path="/consumption/*" element={
             <ProtectedRoute>
               <AppLayout>
@@ -88,14 +95,14 @@ const App = () => (
               </AppLayout>
             </ProtectedRoute>
           } />
+          <Route path="/config" element={
+            <ProtectedRoute>
+              <Configuration />
+            </ProtectedRoute>
+          } />
           <Route path="/config/*" element={
             <ProtectedRoute>
-              <AppLayout>
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Configurações</h1>
-                  <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-                </div>
-              </AppLayout>
+              <Configuration />
             </ProtectedRoute>
           } />
           
