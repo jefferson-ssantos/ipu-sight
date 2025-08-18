@@ -28,7 +28,7 @@ const mockData = [
   { period: "Abr/25", ipu: 2100000, cost: 210000, date: "2025-04" }
 ];
 
-const STABLE_COLORS = [
+export const STABLE_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--secondary))", 
   "hsl(var(--accent))",
@@ -50,6 +50,7 @@ interface CostChartProps {
   showFilters?: boolean;
   className?: string;
   selectedOrg?: string;
+  selectedPeriod?: string;
 }
 
 export function CostChart({ 
@@ -58,11 +59,13 @@ export function CostChart({
   data, 
   showFilters = true,
   className,
-  selectedOrg
+  selectedOrg,
+  selectedPeriod
 }: CostChartProps) {
-  const [period, setPeriod] = useState("6-months");
+  const [period, setPeriod] = useState(selectedPeriod || "6-months");
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>(data || mockData);
+  const [billingData, setBillingData] = useState<any>(null);
   const { getChartData } = useDashboardData();
 
   const stableChartData = useMemo(() => {
@@ -85,15 +88,38 @@ export function CostChart({
   };
 
   useEffect(() => {
+    if (selectedPeriod) {
+      setPeriod(selectedPeriod);
+    }
+  }, [selectedPeriod]);
+
+  useEffect(() => {
     if (data) {
       setChartData(data);
     } else if (getChartData) {
       const fetchData = async () => {
         console.log('CostChart: Fetching data with period:', period, 'metric:', metric, 'type:', type);
-        const chartType = type === 'pie' ? 'distribution' : 'evolution';
-        const realData = await getChartData(chartType, selectedOrg);
-        console.log('CostChart: Received data:', realData);
-        setChartData(realData.length > 0 ? realData : (type === 'pie' ? orgData : mockData));
+        
+        if (type === 'bar') {
+          // Special handling for billing periods stacked bar chart
+          const billingResult = await getChartData('billing-periods', selectedOrg, period);
+          console.log('CostChart: Billing periods data:', billingResult);
+          if (billingResult && typeof billingResult === 'object' && 'data' in billingResult) {
+            setBillingData(billingResult);
+            setChartData(billingResult.data);
+          } else {
+            setChartData(mockData);
+          }
+        } else {
+          const chartType = type === 'pie' ? 'distribution' : 'evolution';
+          const realData = await getChartData(chartType, selectedOrg, period);
+          console.log('CostChart: Received data:', realData);
+          if (Array.isArray(realData)) {
+            setChartData(realData.length > 0 ? realData : (type === 'pie' ? orgData : mockData));
+          } else {
+            setChartData(type === 'pie' ? orgData : mockData);
+          }
+        }
       };
       fetchData();
     }
@@ -149,14 +175,32 @@ export function CostChart({
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                tickFormatter={metric === 'cost' ? formatCurrency : formatIPU}
+                tickFormatter={formatCurrency}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar 
-                dataKey={metric} 
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
+              <Tooltip 
+                formatter={(value: any, name: any) => [formatCurrency(value), name]}
+                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
               />
+              {billingData?.meters?.map((meter: string, index: number) => (
+                <Bar 
+                  key={meter}
+                  dataKey={meter} 
+                  stackId="metrics"
+                  fill={billingData.colors[index]}
+                  radius={index === billingData.meters.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                />
+              )) || (
+                <Bar 
+                  dataKey={metric} 
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+              )}
             </BarChart>
           </ResponsiveContainer>
         );

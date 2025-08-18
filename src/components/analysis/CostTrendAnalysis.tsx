@@ -19,7 +19,8 @@ export function CostTrendAnalysis() {
         console.log('CostTrendAnalysis: Fetching data with period:', period, 'metric:', metric);
         const evolutionData = await getChartData('evolution');
         console.log('CostTrendAnalysis: Received data:', evolutionData);
-        setChartData(evolutionData || []);
+        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
+        setChartData(dataArray);
       } catch (error) {
         console.error('Error fetching trend data:', error);
         setChartData([]);

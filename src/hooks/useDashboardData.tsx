@@ -2,11 +2,21 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+const STABLE_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--secondary))", 
+  "hsl(var(--accent))",
+  "hsl(var(--warning))",
+  "hsl(var(--destructive))",
+  "hsl(var(--muted))"
+];
+
 interface DashboardData {
   totalCost: number;
   totalIPU: number;
   avgDailyCost: number;
   activeOrgs: number;
+  contractedIPUs: number;
   currentPeriod: string;
   periodStart: string;
   periodEnd: string;
@@ -51,7 +61,7 @@ export function useDashboardData(selectedOrg?: string) {
         if (profileError) throw profileError;
         if (!profile?.cliente_id) throw new Error('Cliente não encontrado');
 
-        // Get client's price per IPU
+        // Get client's price per IPU and contracted IPUs
         const { data: client, error: clientError } = await supabase
           .from('api_clientes')
           .select('preco_por_ipu')
@@ -110,6 +120,7 @@ export function useDashboardData(selectedOrg?: string) {
             totalIPU: 0,
             avgDailyCost: 0,
             activeOrgs: 0,
+            contractedIPUs: 0, // Temporarily set to 0 until column exists
             currentPeriod: currentCycle ? 
               new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
               'Sem dados',
@@ -169,6 +180,7 @@ export function useDashboardData(selectedOrg?: string) {
           totalIPU,
           avgDailyCost,
           activeOrgs: organizations.length,
+          contractedIPUs: 0, // Temporarily set to 0 until column exists
           currentPeriod: currentCycle ? 
             new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
             'Período atual',
@@ -193,7 +205,7 @@ export function useDashboardData(selectedOrg?: string) {
     fetchDashboardData();
   }, [user, selectedOrg]);
 
-  const getChartData = async (type: 'evolution' | 'distribution', selectedOrg?: string) => {
+  const getChartData = async (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedPeriod?: string) => {
     if (!user) {
       console.log('getChartData: No user found');
       return [];
@@ -229,7 +241,66 @@ export function useDashboardData(selectedOrg?: string) {
 
       const configIds = configs.map(config => config.id);
 
-      if (type === 'evolution') {
+      if (type === 'billing-periods') {
+        // Get data grouped by billing periods for stacked bar chart
+        let query = supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
+          .in('configuracao_id', configIds);
+
+        if (selectedOrg) {
+          query = query.eq('org_id', selectedOrg);
+        }
+
+        const { data: periodData } = await query;
+
+        if (!periodData) return [];
+
+        // Group by billing period and meter
+        const periodMap = new Map();
+        periodData.forEach(item => {
+          const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          const meterName = item.meter_name || 'Outros';
+          
+          if (!periodMap.has(periodKey)) {
+            periodMap.set(periodKey, {
+              period: new Date(item.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+              billing_period_start_date: item.billing_period_start_date,
+              billing_period_end_date: item.billing_period_end_date,
+              metrics: new Map()
+            });
+          }
+
+          const periodData = periodMap.get(periodKey);
+          const currentMetric = periodData.metrics.get(meterName) || 0;
+          periodData.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
+        });
+
+        // Get all unique meter names
+        const allMeters = new Set<string>();
+        periodMap.forEach(period => {
+          period.metrics.forEach((_, meter) => allMeters.add(meter));
+        });
+
+        // Convert to chart format
+        const chartData = Array.from(periodMap.values())
+          .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
+          .slice(-6) // Last 6 periods
+          .map(period => {
+            const dataPoint: any = { period: period.period };
+            allMeters.forEach(meter => {
+              dataPoint[meter] = (period.metrics.get(meter) || 0) * client.preco_por_ipu;
+            });
+            return dataPoint;
+          });
+
+        return { 
+          data: chartData, 
+          meters: Array.from(allMeters),
+          colors: Array.from(allMeters).map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
+        };
+
+      } else if (type === 'evolution') {
         // Get data for multiple billing periods for evolution chart
         let query = supabase
           .from('api_consumosummary')

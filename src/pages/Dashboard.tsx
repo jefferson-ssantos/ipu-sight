@@ -235,7 +235,7 @@ export default function Dashboard() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <KPICard
             title="Custo Total"
             value={formatCurrency(dashboardData?.totalCost || 0)}
@@ -253,36 +253,58 @@ export default function Dashboard() {
           />
 
           <KPICard
+            title="IPUs Contratadas"
+            value={formatIPU(dashboardData?.contractedIPUs || 0)}
+            subtitle="Total de IPUs no contrato"
+            icon={TrendingUp}
+            variant="success"
+          />
+
+          <KPICard
             title="Organizações Ativas"
             value={dashboardData?.activeOrgs || 0}
             subtitle="Com consumo no período"
             icon={Building2}
-            variant="success"
+            variant="default"
           />
 
           <KPICard
             title="Total IPUs"
             value={formatIPU(dashboardData?.totalIPU || 0)}
             subtitle="Consumo total do período"
-            icon={TrendingUp}
+            icon={Activity}
             variant="warning"
           />
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Stacked Bar Chart by Billing Cycle */}
           <CostChart
-            title="Evolução de Custos"
-            type="area"
+            title="Métricas por Ciclo de Consumo"
+            type="bar"
             selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-          />
-
-          <CostChart
-            title="Distribuição por Organização"
-            type="pie"
+            selectedPeriod={selectedPeriod}
             showFilters={false}
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
           />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CostChart
+              title="Evolução de Custos"
+              type="area"
+              selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+              selectedPeriod={selectedPeriod}
+              showFilters={false}
+            />
+
+            <CostChart
+              title="Distribuição por Organização"
+              type="pie"
+              showFilters={false}
+              selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+              selectedPeriod={selectedPeriod}
+            />
+          </div>
         </div>
 
         {/* Hierarchical Cost View */}

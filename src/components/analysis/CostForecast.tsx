@@ -18,11 +18,12 @@ export function CostForecast() {
     const fetchData = async () => {
       try {
         const evolutionData = await getChartData('evolution');
-        setChartData(evolutionData);
+        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
+        setChartData(dataArray);
 
         // Simple linear regression for forecast
-        if (evolutionData.length >= 2) {
-          const forecast = generateForecast(evolutionData, forecastPeriod);
+        if (dataArray.length >= 2) {
+          const forecast = generateForecast(dataArray, forecastPeriod);
           setForecastData(forecast);
         }
       } catch (error) {
