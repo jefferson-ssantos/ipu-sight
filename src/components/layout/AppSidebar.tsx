@@ -14,7 +14,7 @@ import {
   LogOut,
   ChevronDown
 } from "lucide-react";
-import orysLogo from "@/assets/logo-laranja-branca.png";
+import orysLogo from "@/assets/logo-laranja.png";
 
 import {
   Sidebar,
@@ -124,13 +124,7 @@ export function AppSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img src={orysLogo} alt="Orys Logo" className="h-8 w-8" />
-          {open && (
-            <div>
-              <h2 className="font-heading font-bold text-lg text-foreground">IPU-Sight</h2>
-              <p className="text-xs text-muted-foreground">FinOps Dashboard</p>
-            </div>
-          )}
+          <img src={orysLogo} alt="Orys Logo" className="h-8 w-16" />
         </div>
       </div>
 
