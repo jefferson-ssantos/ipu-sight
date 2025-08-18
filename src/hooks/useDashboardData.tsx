@@ -248,7 +248,7 @@ export function useDashboardData(selectedOrg?: string) {
           .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
           .in('configuracao_id', configIds);
 
-        if (selectedOrg && selectedOrg !== 'all') {
+        if (selectedOrg) {
           query = query.eq('org_id', selectedOrg);
         }
 

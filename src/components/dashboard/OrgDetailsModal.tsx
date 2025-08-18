@@ -162,15 +162,10 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
                 Detalhamento por métrica para o período de {billingPeriod?.billing_period_start_date} a {billingPeriod?.billing_period_end_date}
               </DialogDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={exportData}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={exportData}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
           </div>
         </DialogHeader>
 
