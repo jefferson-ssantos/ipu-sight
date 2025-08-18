@@ -173,7 +173,7 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild className="h-12">
                     <NavLink
-                      to="/consumption/assets"
+                      to="/consumption"
                       className={getNavClasses("/consumption")}
                       title={!open ? "Detalhamento - Visões específicas" : undefined}
                       onClick={() => setIsConsumptionOpen(!isConsumptionOpen)}

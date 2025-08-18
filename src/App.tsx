@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import ConsumptionAssets from "./pages/ConsumptionAssets";
+import ConsumptionOverview from "./pages/ConsumptionOverview";
 import ConsumptionDetails from "./pages/ConsumptionDetails";
 import Configuration from "./pages/Configuration";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -76,6 +77,11 @@ const App = () => (
               <AppLayout>
                 <Analysis />
               </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/consumption" element={
+            <ProtectedRoute>
+              <ConsumptionOverview />
             </ProtectedRoute>
           } />
           <Route path="/consumption/assets" element={
