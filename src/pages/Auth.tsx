@@ -27,7 +27,7 @@ export default function Auth() {
 
               <h2 className="text-3xl lg:text-4xl font-heading font-bold leading-tight">
                 Monitore e otimize seus custos{" "}
-                <span className="text-yellow-300">IDMC</span> com precisão
+                <span className="text-secondary">IDMC</span> com precisão
               </h2>
 
               <p className="text-xl text-primary-foreground/80 leading-relaxed">
@@ -39,7 +39,7 @@ export default function Auth() {
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="flex items-center gap-3 p-4 bg-white/5 rounded-lg backdrop-blur-sm">
-                <BarChart3 className="h-8 w-8 text-yellow-300 flex-shrink-0" />
+                <BarChart3 className="h-8 w-8 text-secondary flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold">Análise em Tempo Real</h3>
                   <p className="text-sm text-primary-foreground/70">
@@ -82,7 +82,7 @@ export default function Auth() {
             {/* Stats */}
             <div className="flex items-center gap-8 pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-300">99.9%</div>
+                <div className="text-2xl font-bold text-secondary">99.9%</div>
                 <div className="text-sm text-primary-foreground/70">Uptime</div>
               </div>
               <div className="text-center">
