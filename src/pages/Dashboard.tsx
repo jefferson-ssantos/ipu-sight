@@ -147,7 +147,7 @@ export default function Dashboard() {
         <div className="relative z-10 p-8 text-primary-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <img src={orysLogo} alt="Orys Logo" className="h-18" />
+              <img src={orysLogo} alt="Orys Logo" className="h-13" />
               <div>
                 <h1 className="text-3xl font-heading font-bold mb-2">
                   FinOps Dashboard
