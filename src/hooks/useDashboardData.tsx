@@ -259,27 +259,28 @@ export function useDashboardData(selectedOrg?: string) {
         // Group by billing period and meter
         const periodMap = new Map();
         periodData.forEach(item => {
-          const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          // Use start date month/year as the key instead of full period range
+          const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
+          const monthKey = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
           const meterName = item.meter_name || 'Outros';
           
-          if (!periodMap.has(periodKey)) {
-            // Parse the date string properly and format it
-            const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
+          if (!periodMap.has(monthKey)) {
             const periodLabel = startDate.toLocaleDateString('pt-BR', { 
               month: 'short', 
               year: '2-digit',
               timeZone: 'America/Sao_Paulo'
             });
             
-            periodMap.set(periodKey, {
+            periodMap.set(monthKey, {
               period: periodLabel,
               billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date,
+              monthKey: monthKey,
               metrics: new Map()
             });
           }
 
-          const periodData = periodMap.get(periodKey);
+          const periodData = periodMap.get(monthKey);
           const currentMetric = periodData.metrics.get(meterName) || 0;
           periodData.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
         });
@@ -302,8 +303,8 @@ export function useDashboardData(selectedOrg?: string) {
 
         // Convert to chart format
         const chartData = Array.from(periodMap.values())
-          .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
-          .slice(-6) // Last 6 periods
+          .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+          .slice(-6) // Last 6 months
           .map(period => {
             const dataPoint: any = { period: period.period };
             nonZeroMeters.forEach(meter => {
