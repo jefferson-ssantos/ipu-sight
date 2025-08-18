@@ -193,6 +193,7 @@ export function CostChart({
                   stackId="metrics"
                   fill={billingData.colors[index]}
                   radius={index === billingData.meters.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  name={meter}
                 />
               )) || (
                 <Bar 

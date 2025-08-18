@@ -276,11 +276,21 @@ export function useDashboardData(selectedOrg?: string) {
           periodData.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
         });
 
-        // Get all unique meter names
+        // Get all unique meter names with non-zero values
         const allMeters = new Set<string>();
+        const meterTotals = new Map<string, number>();
+        
         periodMap.forEach(period => {
-          period.metrics.forEach((_, meter) => allMeters.add(meter));
+          period.metrics.forEach((value, meter) => {
+            if (value > 0) { // Only include meters with positive values
+              allMeters.add(meter);
+              meterTotals.set(meter, (meterTotals.get(meter) || 0) + value);
+            }
+          });
         });
+
+        // Filter out meters that have zero total across all periods
+        const nonZeroMeters = Array.from(allMeters).filter(meter => (meterTotals.get(meter) || 0) > 0);
 
         // Convert to chart format
         const chartData = Array.from(periodMap.values())
@@ -288,16 +298,17 @@ export function useDashboardData(selectedOrg?: string) {
           .slice(-6) // Last 6 periods
           .map(period => {
             const dataPoint: any = { period: period.period };
-            allMeters.forEach(meter => {
-              dataPoint[meter] = (period.metrics.get(meter) || 0) * client.preco_por_ipu;
+            nonZeroMeters.forEach(meter => {
+              const value = period.metrics.get(meter) || 0;
+              dataPoint[meter] = value > 0 ? value * client.preco_por_ipu : 0;
             });
             return dataPoint;
           });
 
         return { 
           data: chartData, 
-          meters: Array.from(allMeters),
-          colors: Array.from(allMeters).map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
+          meters: nonZeroMeters,
+          colors: nonZeroMeters.map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
         };
 
       } else if (type === 'evolution') {
