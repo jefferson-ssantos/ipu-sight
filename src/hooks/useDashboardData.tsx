@@ -256,12 +256,14 @@ export function useDashboardData(selectedOrg?: string) {
 
         if (!periodData) return [];
 
-        // Group by billing period and meter
+        // Group by month and meter
         const periodMap = new Map();
         periodData.forEach(item => {
-          // Use start date month/year as the key instead of full period range
+          // Use start date month/year as the key
           const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
-          const monthKey = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+          const month = startDate.getMonth() + 1; // 1-12
+          const year = startDate.getFullYear();
+          const monthKey = `${year}-${String(month).padStart(2, '0')}`;
           const meterName = item.meter_name || 'Outros';
           
           if (!periodMap.has(monthKey)) {
@@ -273,9 +275,8 @@ export function useDashboardData(selectedOrg?: string) {
             
             periodMap.set(monthKey, {
               period: periodLabel,
-              billing_period_start_date: item.billing_period_start_date,
-              billing_period_end_date: item.billing_period_end_date,
               monthKey: monthKey,
+              sortKey: year * 100 + month, // For proper sorting
               metrics: new Map()
             });
           }
@@ -301,10 +302,9 @@ export function useDashboardData(selectedOrg?: string) {
         // Filter out meters that have zero total across all periods
         const nonZeroMeters = Array.from(allMeters).filter(meter => (meterTotals.get(meter) || 0) > 0);
 
-        // Convert to chart format
+        // Convert to chart format - show all months with data
         const chartData = Array.from(periodMap.values())
-          .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-          .slice(-6) // Last 6 months
+          .sort((a, b) => a.sortKey - b.sortKey) // Sort by year/month properly
           .map(period => {
             const dataPoint: any = { period: period.period };
             nonZeroMeters.forEach(meter => {
