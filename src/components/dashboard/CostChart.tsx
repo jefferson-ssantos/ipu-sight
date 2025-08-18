@@ -13,7 +13,8 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LabelList
 } from "recharts";
 import { Download, TrendingUp, Calendar } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -134,23 +135,27 @@ export function CostChart({
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // Filter out zero values for stacked bar chart
+      const nonZeroPayload = type === 'bar' ? 
+        payload.filter((entry: any) => entry.value > 0) : 
+        payload;
+
+      if (nonZeroPayload.length === 0) return null;
+
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-strong">
           <p className="font-medium text-foreground mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {nonZeroPayload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full" 
                 style={{ backgroundColor: entry.color }}
               />
               <span className="text-sm text-muted-foreground">
-                {entry.dataKey === 'cost' ? 'Custo: ' : 'IPU: '}
+                {entry.name || entry.dataKey}: 
               </span>
               <span className="font-medium text-foreground">
-                {entry.dataKey === 'cost' 
-                  ? formatCurrency(entry.value) 
-                  : formatIPU(entry.value)
-                }
+                {formatCurrency(entry.value)}
               </span>
             </div>
           ))}
@@ -158,6 +163,31 @@ export function CostChart({
       );
     }
     return null;
+  };
+
+  // Custom label for total value above bars
+  const renderTotalLabel = (props: any) => {
+    const { payload, x, y, width } = props;
+    if (!payload || !billingData?.meters) return null;
+    
+    const total = billingData.meters.reduce((sum: number, meter: string) => {
+      return sum + (payload[meter] || 0);
+    }, 0);
+
+    if (total === 0) return null;
+
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y - 5} 
+        fill="hsl(var(--foreground))" 
+        textAnchor="middle" 
+        fontSize="12"
+        fontWeight="bold"
+      >
+        {formatCurrency(total)}
+      </text>
+    );
   };
 
   const renderChart = () => {
@@ -178,13 +208,7 @@ export function CostChart({
                 tickFormatter={formatCurrency}
               />
               <Tooltip 
-                formatter={(value: any, name: any) => [formatCurrency(value), name]}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
-                }}
+                content={<CustomTooltip />}
               />
               {billingData?.meters?.map((meter: string, index: number) => (
                 <Bar 
@@ -194,7 +218,9 @@ export function CostChart({
                   fill={billingData.colors[index]}
                   radius={index === billingData.meters.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                   name={meter}
-                />
+                >
+                  {index === 0 && <LabelList content={renderTotalLabel} />}
+                </Bar>
               )) || (
                 <Bar 
                   dataKey={metric} 
