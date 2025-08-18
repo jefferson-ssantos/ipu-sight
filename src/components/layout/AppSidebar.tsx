@@ -124,7 +124,7 @@ export function AppSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img src={orysLogo} alt="Orys Logo" className="h-8 w-16" />
+          <img src={orysLogo} alt="Orys Logo" className="h-12 w-30" />
         </div>
       </div>
 
