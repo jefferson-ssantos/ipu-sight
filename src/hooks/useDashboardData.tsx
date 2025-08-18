@@ -286,33 +286,38 @@ export function useDashboardData(selectedOrg?: string) {
           periodData.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
         });
 
-        // Get all unique meter names with non-zero values
+        // Get all unique meter names with non-zero values across all periods
         const allMeters = new Set<string>();
         const meterTotals = new Map<string, number>();
         
+        // First pass: collect all meters and their totals
         periodMap.forEach(period => {
           period.metrics.forEach((value, meter) => {
-            if (value > 0) { // Only include meters with positive values
-              allMeters.add(meter);
-              meterTotals.set(meter, (meterTotals.get(meter) || 0) + value);
-            }
+            allMeters.add(meter);
+            meterTotals.set(meter, (meterTotals.get(meter) || 0) + value);
           });
         });
 
-        // Filter out meters that have zero total across all periods
+        // Only filter out meters that have zero total across ALL periods
         const nonZeroMeters = Array.from(allMeters).filter(meter => (meterTotals.get(meter) || 0) > 0);
 
-        // Convert to chart format - show all months with data
+        console.log('All periods found:', Array.from(periodMap.keys()));
+        console.log('Meters with data:', nonZeroMeters);
+
+        // Convert to chart format - include ALL months that have any data
         const chartData = Array.from(periodMap.values())
           .sort((a, b) => a.sortKey - b.sortKey) // Sort by year/month properly
           .map(period => {
             const dataPoint: any = { period: period.period };
+            // Include all meters, even if zero for this specific month
             nonZeroMeters.forEach(meter => {
               const value = period.metrics.get(meter) || 0;
-              dataPoint[meter] = value > 0 ? value * client.preco_por_ipu : 0;
+              dataPoint[meter] = value * client.preco_por_ipu; // Don't filter out zeros here
             });
             return dataPoint;
           });
+
+        console.log('Final chart data periods:', chartData.map(d => d.period));
 
         return { 
           data: chartData, 
