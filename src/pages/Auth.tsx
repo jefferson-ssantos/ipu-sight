@@ -106,24 +106,6 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Bottom Notice */}
-        <div className="text-center mt-12 text-primary-foreground/60 text-sm">
-          <p>
-            {isSignup ? (
-              <>
-                Já tem uma conta?{" "}
-                <button 
-                  onClick={() => setIsSignup(false)}
-                  className="text-secondary hover:text-secondary/80 underline"
-                >
-                  Fazer login
-                </button>
-              </>
-            ) : (
-              "Conecte-se ao sistema para acessar dados reais de consumo IDMC"
-            )}
-          </p>
-        </div>
       </div>
     </div>
   );
