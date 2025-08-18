@@ -3,6 +3,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { TrendingUp, BarChart3, PieChart, Building2 } from "lucide-react";
 import orysLogo from "@/assets/orys-logo.png";
+import orysLogoLaranja from "@/assets/logo-laranja.png";
 
 export default function Auth() {
   const [isSignup, setIsSignup] = useState(false);
@@ -18,11 +19,7 @@ export default function Auth() {
           <div className="text-primary-foreground space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-6">
-                <img src={orysLogo} alt="Orys Logo" className="h-16" />
-                <div>
-                  <h1 className="text-4xl font-heading font-bold">IPU-Sight</h1>
-                  <p className="text-primary-foreground/80 text-lg">FinOps Dashboard</p>
-                </div>
+                <img src={orysLogoLaranja} alt="Orys Logo" className="h-16" />
               </div>
 
               <h2 className="text-3xl lg:text-4xl font-heading font-bold leading-tight">
