@@ -171,43 +171,22 @@ export function AppSidebar() {
             <SidebarMenu>
               <Collapsible open={isConsumptionOpen} onOpenChange={setIsConsumptionOpen}>
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="h-12 w-full">
+                  <SidebarMenuButton asChild className="h-12">
+                    <NavLink
+                      to="/consumption/assets"
+                      className={getNavClasses("/consumption/assets")}
+                      title={!open ? "Detalhamento - Visões específicas" : undefined}
+                    >
                       <PieChart className="h-5 w-5 flex-shrink-0" />
                       {open && (
-                        <>
-                          <div className="flex flex-col items-start flex-1">
-                            <span className="font-medium">Detalhamento</span>
-                            <span className="text-xs text-muted-foreground">Visões específicas</span>
-                          </div>
-                          <ChevronDown className={`h-4 w-4 transition-transform ${
-                            isConsumptionOpen ? "rotate-180" : ""
-                          }`} />
-                        </>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Detalhamento</span>
+                          <span className="text-xs opacity-70">Visões específicas</span>
+                        </div>
                       )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                    </NavLink>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
-                
-                {open && (
-                  <CollapsibleContent className="space-y-1">
-                    {consumptionItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild className="h-10 pl-8">
-                          <NavLink
-                            to={item.url}
-                            className={getNavClasses(item.url)}
-                          >
-                            <item.icon className="h-4 w-4 flex-shrink-0" />
-                            <div className="flex flex-col items-start">
-                              <span className="text-sm">{item.title}</span>
-                            </div>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </CollapsibleContent>
-                )}
               </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>

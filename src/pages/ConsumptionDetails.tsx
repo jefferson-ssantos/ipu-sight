@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, FolderOpen, Building, Play } from 'lucide-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -13,7 +13,7 @@ import { JobExecutionDetail } from '@/components/consumption/JobExecutionDetail'
 export default function ConsumptionDetails() {
   const { data, loading } = useDashboardData();
   const [selectedOrg, setSelectedOrg] = useState<string>('');
-  const [activeTab, setActiveTab] = useState('assets');
+  const navigate = useNavigate();
 
   return (
     <AppLayout>
@@ -41,42 +41,40 @@ export default function ConsumptionDetails() {
           </Select>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="assets" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Por Asset
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              Por Projeto
-            </TabsTrigger>
-            <TabsTrigger value="organizations" className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Por Organização
-            </TabsTrigger>
-            <TabsTrigger value="jobs" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Execução de Jobs
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="assets" className="space-y-4">
-            <AssetDetail selectedOrg={selectedOrg} />
-          </TabsContent>
-          
-          <TabsContent value="projects" className="space-y-4">
-            <ProjectDetail selectedOrg={selectedOrg} />
-          </TabsContent>
-          
-          <TabsContent value="organizations" className="space-y-4">
-            <OrganizationDetail selectedOrg={selectedOrg} />
-          </TabsContent>
-          
-          <TabsContent value="jobs" className="space-y-4">
-            <JobExecutionDetail selectedOrg={selectedOrg} />
-          </TabsContent>
-        </Tabs>
+        <div className="grid w-full grid-cols-4 gap-4 mb-6">
+          <button 
+            onClick={() => navigate('/consumption/assets')}
+            className="flex items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+          >
+            <FileText className="h-5 w-5" />
+            <span className="font-medium">Por Asset</span>
+          </button>
+          <button 
+            onClick={() => navigate('/consumption/projects')}
+            className="flex items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+          >
+            <FolderOpen className="h-5 w-5" />
+            <span className="font-medium">Por Projeto</span>
+          </button>
+          <button 
+            onClick={() => navigate('/consumption/organizations')}
+            className="flex items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+          >
+            <Building className="h-5 w-5" />
+            <span className="font-medium">Por Organização</span>
+          </button>
+          <button 
+            onClick={() => navigate('/consumption/jobs')}
+            className="flex items-center gap-2 p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+          >
+            <Play className="h-5 w-5" />
+            <span className="font-medium">Execução de Jobs</span>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <AssetDetail selectedOrg={selectedOrg} />
+        </div>
       </div>
     </AppLayout>
   );
