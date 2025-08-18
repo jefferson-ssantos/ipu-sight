@@ -30,10 +30,14 @@ export function useDashboardData(selectedOrg?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log('useDashboardData: No user found, skipping data fetch');
+      return;
+    }
 
     const fetchDashboardData = async () => {
       try {
+        console.log('useDashboardData: Starting data fetch for user:', user.id);
         setLoading(true);
         setError(null);
 
@@ -190,9 +194,13 @@ export function useDashboardData(selectedOrg?: string) {
   }, [user, selectedOrg]);
 
   const getChartData = async (type: 'evolution' | 'distribution', selectedOrg?: string) => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getChartData: No user found');
+      return [];
+    }
 
     try {
+      console.log('getChartData: Starting fetch for type:', type, 'selectedOrg:', selectedOrg);
       // Get user's client information
       const { data: profile, error: profileError } = await supabase
         .from('profiles')

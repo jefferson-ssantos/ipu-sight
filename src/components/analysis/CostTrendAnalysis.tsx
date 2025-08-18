@@ -16,13 +16,18 @@ export function CostTrendAnalysis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('CostTrendAnalysis: Fetching data with period:', period, 'metric:', metric);
         const evolutionData = await getChartData('evolution');
-        setChartData(evolutionData);
+        console.log('CostTrendAnalysis: Received data:', evolutionData);
+        setChartData(evolutionData || []);
       } catch (error) {
         console.error('Error fetching trend data:', error);
+        setChartData([]);
       }
     };
-    fetchData();
+    if (getChartData) {
+      fetchData();
+    }
   }, [period, metric, getChartData]);
 
   const formatCurrency = (value: number) => {
@@ -39,8 +44,9 @@ export function CostTrendAnalysis() {
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, isPositive: false };
     
-    const current = chartData[chartData.length - 1]?.value || 0;
-    const previous = chartData[chartData.length - 2]?.value || 0;
+    const currentKey = metric === 'cost' ? 'cost' : 'ipu';
+    const current = chartData[chartData.length - 1]?.[currentKey] || 0;
+    const previous = chartData[chartData.length - 2]?.[currentKey] || 0;
     const percentage = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     
     return {
@@ -119,7 +125,7 @@ export function CostTrendAnalysis() {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
-                  dataKey="name" 
+                  dataKey="period" 
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                 />
@@ -134,7 +140,7 @@ export function CostTrendAnalysis() {
                 <Legend />
                 <Line 
                   type="monotone" 
-                  dataKey="value" 
+                  dataKey={metric === 'cost' ? 'cost' : 'ipu'} 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}

@@ -89,13 +89,15 @@ export function CostChart({
       setChartData(data);
     } else if (getChartData) {
       const fetchData = async () => {
+        console.log('CostChart: Fetching data with period:', period, 'metric:', metric, 'type:', type);
         const chartType = type === 'pie' ? 'distribution' : 'evolution';
         const realData = await getChartData(chartType, selectedOrg);
+        console.log('CostChart: Received data:', realData);
         setChartData(realData.length > 0 ? realData : (type === 'pie' ? orgData : mockData));
       };
       fetchData();
     }
-  }, [data, type, selectedOrg, getChartData]);
+  }, [data, type, selectedOrg, getChartData, period, metric]);
 
   const formatIPU = (value: number) => {
     if (value >= 1000000) {
