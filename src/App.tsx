@@ -15,7 +15,6 @@ import ConsumptionDetails from "./pages/ConsumptionDetails";
 import Configuration from "./pages/Configuration";
 import ConfigTags from "./pages/ConfigTags";
 import ConfigConnections from "./pages/ConfigConnections";
-import ConfigCredentials from "./pages/ConfigCredentials";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 import { ProjectDetail } from "./components/consumption/ProjectDetail";
@@ -145,11 +144,6 @@ const App = () => (
           <Route path="/config/connections" element={
             <ProtectedRoute>
               <ConfigConnections />
-            </ProtectedRoute>
-          } />
-          <Route path="/config/credentials" element={
-            <ProtectedRoute>
-              <ConfigCredentials />
             </ProtectedRoute>
           } />
           {/* Legacy redirects */}

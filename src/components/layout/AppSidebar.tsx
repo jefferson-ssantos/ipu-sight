@@ -12,8 +12,7 @@ import {
   Users,
   Tags,
   LogOut,
-  ChevronDown,
-  Key
+  ChevronDown
 } from "lucide-react";
 import orysLogo from "@/assets/logo-laranja.png";
 
@@ -90,12 +89,6 @@ const configItems = [
     url: "/config/connections",
     icon: Database,
     description: "Configurar conexões IDMC"
-  },
-  {
-    title: "Credenciais",
-    url: "/config/credentials",
-    icon: Key,
-    description: "Gerenciar credenciais"
   }
 ];
 
