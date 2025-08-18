@@ -256,32 +256,38 @@ export function useDashboardData(selectedOrg?: string) {
 
         if (!periodData) return [];
 
-        // Group by month and meter
+        // Group by billing period and meter
         const periodMap = new Map();
         periodData.forEach(item => {
-          // Use start date month/year as the key
-          const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
-          const month = startDate.getMonth() + 1; // 1-12
-          const year = startDate.getFullYear();
-          const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+          // Use full billing period as the key to keep cycles separate
+          const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
           const meterName = item.meter_name || 'Outros';
           
-          if (!periodMap.has(monthKey)) {
-            const periodLabel = startDate.toLocaleDateString('pt-BR', { 
+          if (!periodMap.has(periodKey)) {
+            const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
+            const endDate = new Date(item.billing_period_end_date + 'T00:00:00');
+            const periodLabel = `${startDate.toLocaleDateString('pt-BR', { 
+              day: '2-digit',
+              month: 'short',
+              timeZone: 'America/Sao_Paulo'
+            })} - ${endDate.toLocaleDateString('pt-BR', { 
+              day: '2-digit',
               month: 'short', 
               year: '2-digit',
               timeZone: 'America/Sao_Paulo'
-            });
+            })}`;
             
-            periodMap.set(monthKey, {
+            periodMap.set(periodKey, {
               period: periodLabel,
-              monthKey: monthKey,
-              sortKey: year * 100 + month, // For proper sorting
+              periodKey: periodKey,
+              sortKey: startDate.getTime(), // For proper sorting by start date
+              billing_period_start_date: item.billing_period_start_date,
+              billing_period_end_date: item.billing_period_end_date,
               metrics: new Map()
             });
           }
 
-          const periodData = periodMap.get(monthKey);
+          const periodData = periodMap.get(periodKey);
           const currentMetric = periodData.metrics.get(meterName) || 0;
           periodData.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
         });
