@@ -22,6 +22,7 @@ export type Database = {
           id: number
           nome_cliente: string
           preco_por_ipu: number
+          qtd_ipus_contratadas: number | null
         }
         Insert: {
           ativo: boolean
@@ -30,6 +31,7 @@ export type Database = {
           id?: number
           nome_cliente: string
           preco_por_ipu: number
+          qtd_ipus_contratadas?: number | null
         }
         Update: {
           ativo?: boolean
@@ -38,6 +40,7 @@ export type Database = {
           id?: number
           nome_cliente?: string
           preco_por_ipu?: number
+          qtd_ipus_contratadas?: number | null
         }
         Relationships: []
       }

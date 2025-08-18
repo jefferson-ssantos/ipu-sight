@@ -64,7 +64,7 @@ export function useDashboardData(selectedOrg?: string) {
         // Get client's price per IPU and contracted IPUs
         const { data: client, error: clientError } = await supabase
           .from('api_clientes')
-          .select('preco_por_ipu')
+          .select('preco_por_ipu, qtd_ipus_contratadas')
           .eq('id', profile.cliente_id)
           .maybeSingle();
 
@@ -120,7 +120,7 @@ export function useDashboardData(selectedOrg?: string) {
             totalIPU: 0,
             avgDailyCost: 0,
             activeOrgs: 0,
-            contractedIPUs: 0, // Temporarily set to 0 until column exists
+            contractedIPUs: client.qtd_ipus_contratadas || 0,
             currentPeriod: currentCycle ? 
               new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
               'Sem dados',
@@ -180,7 +180,7 @@ export function useDashboardData(selectedOrg?: string) {
           totalIPU,
           avgDailyCost,
           activeOrgs: organizations.length,
-          contractedIPUs: 0, // Temporarily set to 0 until column exists
+          contractedIPUs: client.qtd_ipus_contratadas || 0,
           currentPeriod: currentCycle ? 
             new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
             'Período atual',
