@@ -19,7 +19,7 @@ export default function Auth() {
           <div className="text-primary-foreground space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-6">
-                <img src={orysLogoLaranja} alt="Orys Logo" className="h-16" />
+                <img src={orysLogoLaranjaBranca} alt="Orys Logo" className="h-16" />
               </div>
 
               <h2 className="text-3xl lg:text-4xl font-heading font-bold leading-tight">
