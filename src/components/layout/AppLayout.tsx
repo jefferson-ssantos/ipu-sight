@@ -1,14 +1,20 @@
+import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Bell, Search, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { SearchModal } from "./SearchModal";
+import { NotificationsDropdown } from "./NotificationsDropdown";
+import { UserDropdown } from "./UserDropdown";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const [searchOpen, setSearchOpen] = useState(false);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -30,24 +36,20 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <div className="flex items-center gap-3">
                 {/* Search */}
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-9 w-9 p-0"
+                  onClick={() => setSearchOpen(true)}
+                >
                   <Search className="h-4 w-4" />
                 </Button>
 
                 {/* Notifications */}
-                <div className="relative">
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                    <Bell className="h-4 w-4" />
-                  </Button>
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-cost-high">
-                    3
-                  </Badge>
-                </div>
+                <NotificationsDropdown />
 
                 {/* User Menu */}
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                  <User className="h-4 w-4" />
-                </Button>
+                <UserDropdown />
               </div>
             </div>
           </header>
@@ -57,6 +59,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             {children}
           </main>
         </div>
+        
+        <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       </div>
     </SidebarProvider>
   );

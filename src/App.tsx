@@ -13,6 +13,9 @@ import ConsumptionAssets from "./pages/ConsumptionAssets";
 import ConsumptionOverview from "./pages/ConsumptionOverview";
 import ConsumptionDetails from "./pages/ConsumptionDetails";
 import Configuration from "./pages/Configuration";
+import ConfigTags from "./pages/ConfigTags";
+import ConfigConnections from "./pages/ConfigConnections";
+import ConfigCredentials from "./pages/ConfigCredentials";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 import { ProjectDetail } from "./components/consumption/ProjectDetail";
@@ -134,16 +137,24 @@ const App = () => (
               </AppLayout>
             </ProtectedRoute>
           } />
-          <Route path="/config" element={
+          <Route path="/config/tags" element={
             <ProtectedRoute>
-              <Configuration />
+              <ConfigTags />
             </ProtectedRoute>
           } />
-          <Route path="/config/*" element={
+          <Route path="/config/connections" element={
             <ProtectedRoute>
-              <Configuration />
+              <ConfigConnections />
             </ProtectedRoute>
           } />
+          <Route path="/config/credentials" element={
+            <ProtectedRoute>
+              <ConfigCredentials />
+            </ProtectedRoute>
+          } />
+          {/* Legacy redirects */}
+          <Route path="/config" element={<Navigate to="/config/tags" replace />} />
+          <Route path="/configuration" element={<Navigate to="/config/tags" replace />} />
           
           {/* Fallback */}
           <Route path="*" element={<NotFound />} />

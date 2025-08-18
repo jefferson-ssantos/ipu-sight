@@ -3,7 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Settings, Tags } from 'lucide-react';
 import { TagManager } from '@/components/consumption/TagManager';
 
-export default function Configuration() {
+export default function ConfigTags() {
   return (
     <AppLayout>
       <div className="space-y-6">
