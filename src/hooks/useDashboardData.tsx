@@ -234,9 +234,12 @@ export function useDashboardData(selectedOrg?: string) {
       // Get configuration IDs
       const { data: configs, error: configError } = await supabase
         .from('api_configuracaoidmc')
-        .select('id')
+        .select('id, cliente_id')
         .eq('cliente_id', profile.cliente_id);
 
+      console.log('User profile cliente_id:', profile.cliente_id);
+      console.log('Available configs for client:', configs);
+      
       if (configError || !configs || configs.length === 0) return [];
 
       const configIds = configs.map(config => config.id);
@@ -246,7 +249,8 @@ export function useDashboardData(selectedOrg?: string) {
         let query = supabase
           .from('api_consumosummary')
           .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
-          .in('configuracao_id', configIds);
+          .in('configuracao_id', configIds)
+          .gt('consumption_ipu', 0); // Only include records with actual consumption
 
         if (selectedOrg) {
           query = query.eq('org_id', selectedOrg);
@@ -254,7 +258,9 @@ export function useDashboardData(selectedOrg?: string) {
 
         const { data: periodData } = await query;
         console.log('Raw period data count:', periodData?.length);
+        console.log('Config IDs being used:', configIds);
         console.log('All unique periods in data:', [...new Set(periodData?.map(item => `${item.billing_period_start_date} to ${item.billing_period_end_date}`) || [])]);
+        console.log('Sample data from each period:', periodData?.slice(0, 10));
 
         if (!periodData) return [];
 
