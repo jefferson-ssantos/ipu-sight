@@ -37,23 +37,13 @@ interface IDMCConfig {
   ultima_extracao_enddate: string | null;
 }
 
-interface ClienteData {
-  id: number;
-  nome_cliente: string;
-  email_contato: string;
-  preco_por_ipu: number;
-  ativo: boolean;
-}
 
 export default function ConfigConnections() {
   const { user } = useAuth();
   const [configs, setConfigs] = useState<IDMCConfig[]>([]);
-  const [clientes, setClientes] = useState<ClienteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<IDMCConfig | null>(null);
-  const [editingClient, setEditingClient] = useState<ClienteData | null>(null);
 
   const [configForm, setConfigForm] = useState({
     apelido_configuracao: '',
@@ -63,16 +53,8 @@ export default function ConfigConnections() {
     ativo: true
   });
 
-  const [clientForm, setClientForm] = useState({
-    nome_cliente: '',
-    email_contato: '',
-    preco_por_ipu: 0,
-    ativo: true
-  });
-
   useEffect(() => {
     fetchConfigs();
-    fetchClientes();
   }, []);
 
   const fetchConfigs = async () => {
@@ -87,21 +69,6 @@ export default function ConfigConnections() {
     } catch (error) {
       console.error('Erro ao buscar configurações:', error);
       toast.error('Erro ao carregar configurações');
-    }
-  };
-
-  const fetchClientes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('api_clientes')
-        .select('*')
-        .order('nome_cliente');
-
-      if (error) throw error;
-      setClientes(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar clientes:', error);
-      toast.error('Erro ao carregar organizações');
     } finally {
       setLoading(false);
     }
@@ -154,43 +121,6 @@ export default function ConfigConnections() {
     }
   };
 
-  const handleSaveClient = async () => {
-    try {
-      if (editingClient) {
-        const { error } = await supabase
-          .from('api_clientes')
-          .update(clientForm)
-          .eq('id', editingClient.id);
-
-        if (error) throw error;
-        toast.success('Organização atualizada com sucesso');
-      } else {
-        const { error } = await supabase
-          .from('api_clientes')
-          .insert({
-            ...clientForm,
-            data_criacao: new Date().toISOString()
-          });
-
-        if (error) throw error;
-        toast.success('Organização criada com sucesso');
-      }
-
-      setIsClientDialogOpen(false);
-      setEditingClient(null);
-      setClientForm({
-        nome_cliente: '',
-        email_contato: '',
-        preco_por_ipu: 0,
-        ativo: true
-      });
-      fetchClientes();
-    } catch (error) {
-      console.error('Erro ao salvar organização:', error);
-      toast.error('Erro ao salvar organização');
-    }
-  };
-
   const handleEditConfig = (config: IDMCConfig) => {
     setEditingConfig(config);
     setConfigForm({
@@ -201,17 +131,6 @@ export default function ConfigConnections() {
       ativo: config.ativo
     });
     setIsConfigDialogOpen(true);
-  };
-
-  const handleEditClient = (client: ClienteData) => {
-    setEditingClient(client);
-    setClientForm({
-      nome_cliente: client.nome_cliente,
-      email_contato: client.email_contato,
-      preco_por_ipu: client.preco_por_ipu,
-      ativo: client.ativo
-    });
-    setIsClientDialogOpen(true);
   };
 
   const handleDeleteConfig = async (id: number) => {
@@ -232,6 +151,7 @@ export default function ConfigConnections() {
     }
   };
 
+
   if (loading) {
     return (
       <AppLayout>
@@ -250,339 +170,182 @@ export default function ConfigConnections() {
           <div>
             <h1 className="text-3xl font-bold">Conexões</h1>
             <p className="text-muted-foreground">
-              Gerencie conexões IDMC e organizações
+              Gerencie suas configurações IDMC
             </p>
           </div>
         </div>
 
-        <Tabs defaultValue="configurations" className="w-full">
-          <TabsList>
-            <TabsTrigger value="configurations">Configurações IDMC</TabsTrigger>
-            <TabsTrigger value="organizations">Organizações</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="configurations" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  Configurações IDMC
-                </CardTitle>
-                <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => {
-                      setEditingConfig(null);
-                      setConfigForm({
-                        apelido_configuracao: '',
-                        iics_pod_url: '',
-                        iics_username: '',
-                        iics_password: '',
-                        ativo: true
-                      });
-                    }}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nova Configuração
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingConfig ? 'Editar' : 'Nova'} Configuração IDMC
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="apelido">Apelido da Configuração</Label>
-                        <Input
-                          id="apelido"
-                          value={configForm.apelido_configuracao}
-                          onChange={(e) => setConfigForm(prev => ({
-                            ...prev,
-                            apelido_configuracao: e.target.value
-                          }))}
-                          placeholder="Ex: Produção IICS"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="pod_url">URL do Pod IICS</Label>
-                        <Input
-                          id="pod_url"
-                          value={configForm.iics_pod_url}
-                          onChange={(e) => setConfigForm(prev => ({
-                            ...prev,
-                            iics_pod_url: e.target.value
-                          }))}
-                          placeholder="https://your-pod.informaticacloud.com"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="username">Username</Label>
-                        <Input
-                          id="username"
-                          value={configForm.iics_username}
-                          onChange={(e) => setConfigForm(prev => ({
-                            ...prev,
-                            iics_username: e.target.value
-                          }))}
-                          placeholder="username@domain.com"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={configForm.iics_password}
-                          onChange={(e) => setConfigForm(prev => ({
-                            ...prev,
-                            iics_password: e.target.value
-                          }))}
-                          placeholder="••••••••"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="ativo"
-                          checked={configForm.ativo}
-                          onCheckedChange={(checked) => setConfigForm(prev => ({
-                            ...prev,
-                            ativo: checked
-                          }))}
-                        />
-                        <Label htmlFor="ativo">Configuração Ativa</Label>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={handleSaveConfig} className="flex-1">
-                          {editingConfig ? 'Atualizar' : 'Criar'}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setIsConfigDialogOpen(false)}
-                          className="flex-1"
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </CardHeader>
-              <CardContent>
-                {configs.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nenhuma configuração encontrada
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Configurações IDMC
+            </CardTitle>
+            <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => {
+                  setEditingConfig(null);
+                  setConfigForm({
+                    apelido_configuracao: '',
+                    iics_pod_url: '',
+                    iics_username: '',
+                    iics_password: '',
+                    ativo: true
+                  });
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Configuração
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingConfig ? 'Editar' : 'Nova'} Configuração IDMC
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="apelido">Apelido da Configuração</Label>
+                    <Input
+                      id="apelido"
+                      value={configForm.apelido_configuracao}
+                      onChange={(e) => setConfigForm(prev => ({
+                        ...prev,
+                        apelido_configuracao: e.target.value
+                      }))}
+                      placeholder="Ex: Produção IICS"
+                    />
                   </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Apelido</TableHead>
-                        <TableHead>URL do Pod</TableHead>
-                        <TableHead>Username</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Última Extração</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {configs.map((config) => (
-                        <TableRow key={config.id}>
-                          <TableCell className="font-medium">
-                            {config.apelido_configuracao}
-                          </TableCell>
-                          <TableCell>{config.iics_pod_url}</TableCell>
-                          <TableCell>{config.iics_username}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              config.ativo 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {config.ativo ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {config.ultima_extracao_enddate 
-                              ? new Date(config.ultima_extracao_enddate).toLocaleDateString('pt-BR')
-                              : 'Nunca'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditConfig(config)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteConfig(config.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="organizations" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Organizações
-                </CardTitle>
-                <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => {
-                      setEditingClient(null);
-                      setClientForm({
-                        nome_cliente: '',
-                        email_contato: '',
-                        preco_por_ipu: 0,
-                        ativo: true
-                      });
-                    }}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nova Organização
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingClient ? 'Editar' : 'Nova'} Organização
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="nome_cliente">Nome da Organização</Label>
-                        <Input
-                          id="nome_cliente"
-                          value={clientForm.nome_cliente}
-                          onChange={(e) => setClientForm(prev => ({
-                            ...prev,
-                            nome_cliente: e.target.value
-                          }))}
-                          placeholder="Ex: Empresa XYZ"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="email_contato">Email de Contato</Label>
-                        <Input
-                          id="email_contato"
-                          type="email"
-                          value={clientForm.email_contato}
-                          onChange={(e) => setClientForm(prev => ({
-                            ...prev,
-                            email_contato: e.target.value
-                          }))}
-                          placeholder="contato@empresa.com"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="preco_por_ipu">Preço por IPU (R$)</Label>
-                        <Input
-                          id="preco_por_ipu"
-                          type="number"
-                          step="0.01"
-                          value={clientForm.preco_por_ipu}
-                          onChange={(e) => setClientForm(prev => ({
-                            ...prev,
-                            preco_por_ipu: parseFloat(e.target.value) || 0
-                          }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="ativo_cliente"
-                          checked={clientForm.ativo}
-                          onCheckedChange={(checked) => setClientForm(prev => ({
-                            ...prev,
-                            ativo: checked
-                          }))}
-                        />
-                        <Label htmlFor="ativo_cliente">Organização Ativa</Label>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={handleSaveClient} className="flex-1">
-                          {editingClient ? 'Atualizar' : 'Criar'}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setIsClientDialogOpen(false)}
-                          className="flex-1"
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </CardHeader>
-              <CardContent>
-                {clientes.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nenhuma organização encontrada
+                  <div>
+                    <Label htmlFor="pod_url">URL do Pod IICS</Label>
+                    <Input
+                      id="pod_url"
+                      value={configForm.iics_pod_url}
+                      onChange={(e) => setConfigForm(prev => ({
+                        ...prev,
+                        iics_pod_url: e.target.value
+                      }))}
+                      placeholder="https://your-pod.informaticacloud.com"
+                    />
                   </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Preço/IPU</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clientes.map((cliente) => (
-                        <TableRow key={cliente.id}>
-                          <TableCell className="font-medium">
-                            {cliente.nome_cliente}
-                          </TableCell>
-                          <TableCell>{cliente.email_contato}</TableCell>
-                          <TableCell>
-                            R$ {cliente.preco_por_ipu.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              cliente.ativo 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {cliente.ativo ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditClient(cliente)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={configForm.iics_username}
+                      onChange={(e) => setConfigForm(prev => ({
+                        ...prev,
+                        iics_username: e.target.value
+                      }))}
+                      placeholder="username@domain.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={configForm.iics_password}
+                      onChange={(e) => setConfigForm(prev => ({
+                        ...prev,
+                        iics_password: e.target.value
+                      }))}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="ativo"
+                      checked={configForm.ativo}
+                      onCheckedChange={(checked) => setConfigForm(prev => ({
+                        ...prev,
+                        ativo: checked
+                      }))}
+                    />
+                    <Label htmlFor="ativo">Configuração Ativa</Label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveConfig} className="flex-1">
+                      {editingConfig ? 'Atualizar' : 'Criar'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsConfigDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
+          <CardContent>
+            {configs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma configuração encontrada
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Apelido</TableHead>
+                    <TableHead>URL do Pod</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Última Extração</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {configs.map((config) => (
+                    <TableRow key={config.id}>
+                      <TableCell className="font-medium">
+                        {config.apelido_configuracao}
+                      </TableCell>
+                      <TableCell>{config.iics_pod_url}</TableCell>
+                      <TableCell>{config.iics_username}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          config.ativo 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {config.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {config.ultima_extracao_enddate 
+                          ? new Date(config.ultima_extracao_enddate).toLocaleDateString('pt-BR')
+                          : 'Nunca'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditConfig(config)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteConfig(config.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );
