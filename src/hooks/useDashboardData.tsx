@@ -263,8 +263,16 @@ export function useDashboardData(selectedOrg?: string) {
           const meterName = item.meter_name || 'Outros';
           
           if (!periodMap.has(periodKey)) {
+            // Parse the date string properly and format it
+            const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
+            const periodLabel = startDate.toLocaleDateString('pt-BR', { 
+              month: 'short', 
+              year: '2-digit',
+              timeZone: 'America/Sao_Paulo'
+            });
+            
             periodMap.set(periodKey, {
-              period: new Date(item.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+              period: periodLabel,
               billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date,
               metrics: new Map()
@@ -333,8 +341,15 @@ export function useDashboardData(selectedOrg?: string) {
           if (periodMap.has(key)) {
             periodMap.get(key).totalIPU += item.consumption_ipu || 0;
           } else {
+            const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
+            const periodLabel = startDate.toLocaleDateString('pt-BR', { 
+              month: 'short', 
+              year: '2-digit',
+              timeZone: 'America/Sao_Paulo'
+            });
+            
             periodMap.set(key, {
-              period: new Date(item.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+              period: periodLabel,
               totalIPU: item.consumption_ipu || 0,
               billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date
