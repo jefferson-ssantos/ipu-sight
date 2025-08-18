@@ -56,9 +56,9 @@ export default function ConsumptionAssets() {
               </SelectContent>
             </Select>
             
-            <Button onClick={() => navigate('/consumption/details')}>
+            <Button onClick={() => navigate('/consumption/assets')}>
               <FileText className="h-4 w-4 mr-2" />
-              Ver Detalhamentos
+              Atualizar Dados
             </Button>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function ConsumptionAssets() {
                   <Button 
                     variant="outline" 
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => navigate('/consumption/details?tab=assets')}
+                    onClick={() => navigate('/consumption/assets')}
                   >
                     <FileText className="h-6 w-6" />
                     <span>Por Asset</span>
@@ -160,7 +160,7 @@ export default function ConsumptionAssets() {
                   <Button 
                     variant="outline" 
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => navigate('/consumption/details?tab=projects')}
+                    onClick={() => navigate('/consumption/projects')}
                   >
                     <FolderOpen className="h-6 w-6" />
                     <span>Por Projeto</span>
@@ -169,7 +169,7 @@ export default function ConsumptionAssets() {
                   <Button 
                     variant="outline" 
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => navigate('/consumption/details?tab=organizations')}
+                    onClick={() => navigate('/consumption/organizations')}
                   >
                     <Building className="h-6 w-6" />
                     <span>Por Organização</span>
@@ -178,7 +178,7 @@ export default function ConsumptionAssets() {
                   <Button 
                     variant="outline" 
                     className="h-20 flex flex-col gap-2"
-                    onClick={() => navigate('/consumption/details?tab=jobs')}
+                    onClick={() => navigate('/consumption/jobs')}
                   >
                     <Play className="h-6 w-6" />
                     <span>Execução de Jobs</span>

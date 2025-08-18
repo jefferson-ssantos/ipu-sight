@@ -80,7 +80,7 @@ const App = () => (
           } />
           <Route path="/consumption/assets" element={
             <ProtectedRoute>
-              <ConsumptionDetails />
+              <ConsumptionAssets />
             </ProtectedRoute>
           } />
           <Route path="/consumption/projects" element={
