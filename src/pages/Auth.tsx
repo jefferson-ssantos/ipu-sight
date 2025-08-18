@@ -3,7 +3,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { TrendingUp, BarChart3, PieChart, Building2 } from "lucide-react";
 import orysLogo from "@/assets/orys-logo.png";
-import orysLogoLaranja from "@/assets/logo-laranja.png";
+import orysLogoLaranjaBranca from "@/assets/logo-laranja-branca.png";
 
 export default function Auth() {
   const [isSignup, setIsSignup] = useState(false);
