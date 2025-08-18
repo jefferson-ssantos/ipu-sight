@@ -18,6 +18,7 @@ interface AssetData {
   project_name: string | null;
   folder_name: string | null;
   meter_id: string | null;
+  meter_name: string | null;
   tier: string | null;
   runtime_environment: string | null;
   org_id: string | null;
@@ -46,6 +47,7 @@ export function AssetDetail({ selectedOrg }: AssetDetailProps) {
     } else {
       const filtered = assets.filter(asset =>
         asset.asset_name?.toLowerCase().includes(search.toLowerCase()) ||
+        asset.meter_name?.toLowerCase().includes(search.toLowerCase()) ||
         asset.asset_type?.toLowerCase().includes(search.toLowerCase()) ||
         asset.project_name?.toLowerCase().includes(search.toLowerCase())
       );
@@ -131,7 +133,7 @@ export function AssetDetail({ selectedOrg }: AssetDetailProps) {
     const csvContent = [
       ['Asset', 'Tipo', 'IPU', 'Custo', 'Data', 'Projeto', 'Ambiente', 'Organização'].join(','),
       ...filteredAssets.map(asset => [
-        asset.asset_name || '',
+        asset.asset_name || asset.meter_name || '',
         asset.asset_type || '',
         formatIPU(asset.consumption_ipu || 0),
         formatCurrency(asset.cost),
@@ -210,7 +212,7 @@ export function AssetDetail({ selectedOrg }: AssetDetailProps) {
                     filteredAssets.map((asset) => (
                       <TableRow key={asset.id}>
                         <TableCell className="font-medium">
-                          {asset.asset_name || 'N/A'}
+                          {asset.asset_name || asset.meter_name || 'N/A'}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{asset.asset_type || 'N/A'}</Badge>
