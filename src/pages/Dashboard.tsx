@@ -250,9 +250,8 @@ export default function Dashboard() {
           />
 
           <KPICard
-            title="Total IPUs"
+            title="Total IPUs Consumidas no período"
             value={formatIPU(dashboardData?.totalIPU || 0)}
-            subtitle="IPUs consumidas no período"
             icon={Activity}
             variant="warning"
             contractedValue={formatIPU(dashboardData?.contractedIPUs || 0)}
