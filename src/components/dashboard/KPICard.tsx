@@ -15,6 +15,8 @@ interface KPICardProps {
   };
   variant?: "default" | "cost" | "success" | "warning";
   className?: string;
+  contractedValue?: string | number;
+  consumptionPercentage?: number;
 }
 
 export function KPICard({
@@ -24,7 +26,9 @@ export function KPICard({
   icon: Icon,
   trend,
   variant = "default",
-  className
+  className,
+  contractedValue,
+  consumptionPercentage
 }: KPICardProps) {
   const variants = {
     default: {
@@ -74,6 +78,18 @@ export function KPICard({
     return val;
   };
 
+  const getConsumptionStatus = (percentage?: number) => {
+    if (!percentage) return { color: "text-foreground", status: "unknown" };
+    
+    if (percentage <= 80) {
+      return { color: "text-secondary", status: "good" }; // Verde
+    } else if (percentage <= 100) {
+      return { color: "text-warning", status: "warning" }; // Amarelo
+    } else {
+      return { color: "text-destructive", status: "danger" }; // Vermelho
+    }
+  };
+
   return (
     <Card className={cn(
       "transition-all duration-300 hover:shadow-medium",
@@ -107,6 +123,31 @@ export function KPICard({
             <p className="text-sm text-muted-foreground">
               {subtitle}
             </p>
+          )}
+
+          {contractedValue && consumptionPercentage !== undefined && (
+            <div className="space-y-2 mt-3">
+              <div className="text-sm text-muted-foreground">
+                Valor contratado: {formatValue(contractedValue)}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${getConsumptionStatus(consumptionPercentage).color}`}>
+                  {consumptionPercentage.toFixed(1)}% consumido
+                </span>
+                <div className="flex-1 bg-muted rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      getConsumptionStatus(consumptionPercentage).status === 'good' 
+                        ? 'bg-secondary' 
+                        : getConsumptionStatus(consumptionPercentage).status === 'warning'
+                        ? 'bg-warning'
+                        : 'bg-destructive'
+                    }`}
+                    style={{ width: `${Math.min(consumptionPercentage, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           )}
           
           {trend && (

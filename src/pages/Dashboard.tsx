@@ -242,6 +242,12 @@ export default function Dashboard() {
             subtitle={`${formatIPU(dashboardData?.totalIPU || 0)} IPUs`}
             icon={DollarSign}
             variant="cost"
+            contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))}
+            consumptionPercentage={
+              dashboardData?.contractedIPUs && dashboardData?.pricePerIPU 
+                ? ((dashboardData?.totalCost || 0) / ((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))) * 100
+                : 0
+            }
           />
 
           <KPICard
