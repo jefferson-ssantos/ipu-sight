@@ -15,6 +15,7 @@ interface MetricDetail {
   ipu_rate: number;
   scalar: string;
   total_usage: number;
+  cost: number;
 }
 
 interface OrgDetailsModalProps {
@@ -31,6 +32,7 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
   const [metrics, setMetrics] = useState<MetricDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [orgName, setOrgName] = useState<string>('');
+  const [pricePerIPU, setPricePerIPU] = useState<number>(0);
 
   useEffect(() => {
     if (!user || !billingPeriod) return;
@@ -48,6 +50,18 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
 
         if (profileError) throw profileError;
         if (!profile?.cliente_id) throw new Error('Cliente não encontrado');
+
+        // Get client's price per IPU
+        const { data: client, error: clientError } = await supabase
+          .from('api_clientes')
+          .select('preco_por_ipu')
+          .eq('id', profile.cliente_id)
+          .maybeSingle();
+
+        if (clientError) throw clientError;
+        if (!client?.preco_por_ipu) throw new Error('Preço por IPU não encontrado');
+
+        setPricePerIPU(client.preco_por_ipu);
 
         // Get configuration IDs
         const { data: configs, error: configError } = await supabase
@@ -82,17 +96,21 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
             
             if (groupedData.has(key)) {
               const existing = groupedData.get(key)!;
-              existing.consumption_ipu += item.consumption_ipu || 0;
+              const additionalIPU = item.consumption_ipu || 0;
+              existing.consumption_ipu += additionalIPU;
               existing.total_usage += item.meter_usage || 0;
+              existing.cost += additionalIPU * client.preco_por_ipu;
               existing.quantity = `${existing.total_usage.toFixed(2)} ${item.metric_category || ''}`;
             } else {
+              const consumption = item.consumption_ipu || 0;
               groupedData.set(key, {
                 meter_name: item.meter_name || 'N/A',
                 quantity: `${(item.meter_usage || 0).toFixed(2)} ${item.metric_category || ''}`,
-                consumption_ipu: item.consumption_ipu || 0,
+                consumption_ipu: consumption,
                 ipu_rate: item.ipu_rate || 0,
                 scalar: item.scalar || 'N/A',
-                total_usage: item.meter_usage || 0
+                total_usage: item.meter_usage || 0,
+                cost: consumption * client.preco_por_ipu
               });
             }
           });
@@ -122,17 +140,25 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
     return value.toLocaleString('pt-BR');
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
   const exportData = () => {
     if (metrics.length === 0) return;
 
     const csvContent = [
-      ['Nome da Métrica', 'Quantidade', 'Consumo IPU', 'Taxa IPU', 'Escala'].join(','),
+      ['Nome da Métrica', 'Quantidade', 'Consumo IPU', 'Taxa IPU', 'Escala', 'Valor'].join(','),
       ...metrics.map(metric => [
         metric.meter_name,
         metric.quantity,
         metric.consumption_ipu,
         metric.ipu_rate,
-        metric.scalar
+        metric.scalar,
+        metric.cost
       ].join(','))
     ].join('\n');
 
@@ -148,6 +174,7 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
   };
 
   const totalIPUs = metrics.reduce((sum, metric) => sum + metric.consumption_ipu, 0);
+  const totalCost = metrics.reduce((sum, metric) => sum + metric.cost, 0);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -178,10 +205,18 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
                   {metrics.length} métricas
                 </Badge>
               </CardTitle>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Total IPUs Consumidas</div>
-                <div className="text-lg font-bold text-primary">
-                  {formatIPU(totalIPUs)}
+              <div className="text-right space-y-2">
+                <div>
+                  <div className="text-sm text-muted-foreground">Total IPUs Consumidas</div>
+                  <div className="text-lg font-bold text-primary">
+                    {formatIPU(totalIPUs)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Valor Total</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {formatCurrency(totalCost)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -206,6 +241,7 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
                     <TableHead className="text-right">Consumo IPU</TableHead>
                     <TableHead className="text-right">Taxa IPU</TableHead>
                     <TableHead>Escala</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -229,6 +265,9 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
                         <Badge variant="secondary">
                           {metric.scalar}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(metric.cost)}
                       </TableCell>
                     </TableRow>
                   ))}

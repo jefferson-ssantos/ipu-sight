@@ -248,42 +248,36 @@ export function useDashboardData(selectedOrg?: string) {
       const configIds = configs.map(config => config.id);
 
       if (type === 'billing-periods') {
-        // Get data grouped by billing periods for stacked bar chart
+        // Get unique billing periods from consumption data
         let query = supabase
           .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
+          .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name, org_id')
           .in('configuracao_id', configIds)
-          .gt('consumption_ipu', 0); // Only include records with actual consumption
+          .gt('consumption_ipu', 0);
 
         if (selectedOrg) {
           query = query.eq('org_id', selectedOrg);
         }
 
-        const { data: periodData } = await query;
+        const { data: periodData, error: periodError } = await query;
+
+        if (periodError || !periodData) return [];
+
         console.log('Raw period data count:', periodData?.length);
         console.log('Config IDs being used:', configIds);
-        console.log('All unique periods in data:', [...new Set(periodData?.map(item => `${item.billing_period_start_date} to ${item.billing_period_end_date}`) || [])]);
-        console.log('Sample data from each period:', periodData?.slice(0, 10));
-
-        if (!periodData) return [];
 
         // Group by billing period and meter
         const periodMap = new Map();
+        
         periodData.forEach(item => {
-          // Use full billing period as the key to keep cycles separate
           const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
           const meterName = item.meter_name || 'Outros';
           
           if (!periodMap.has(periodKey)) {
             const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
-            const endDate = new Date(item.billing_period_end_date + 'T00:00:00');
+            // Create period label with month/year format
             const periodLabel = `${startDate.toLocaleDateString('pt-BR', { 
-              day: '2-digit',
               month: 'short',
-              timeZone: 'America/Sao_Paulo'
-            })} - ${endDate.toLocaleDateString('pt-BR', { 
-              day: '2-digit',
-              month: 'short', 
               year: '2-digit',
               timeZone: 'America/Sao_Paulo'
             })}`;
@@ -291,7 +285,7 @@ export function useDashboardData(selectedOrg?: string) {
             periodMap.set(periodKey, {
               period: periodLabel,
               periodKey: periodKey,
-              sortKey: startDate.getTime(), // For proper sorting by start date
+              sortKey: startDate.getTime(),
               billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date,
               metrics: new Map()
@@ -343,7 +337,7 @@ export function useDashboardData(selectedOrg?: string) {
         };
 
       } else if (type === 'evolution') {
-        // Get data for multiple billing periods for evolution chart
+        // Get unique billing periods from consumption data
         let query = supabase
           .from('api_consumosummary')
           .select('billing_period_start_date, billing_period_end_date, consumption_ipu')
