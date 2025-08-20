@@ -235,7 +235,7 @@ export default function Dashboard() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title="Custo Total"
             value={formatCurrency(dashboardData?.totalCost || 0)}
@@ -250,6 +250,20 @@ export default function Dashboard() {
           />
 
           <KPICard
+            title="Total IPUs"
+            value={formatIPU(dashboardData?.totalIPU || 0)}
+            subtitle="IPUs consumidas no período"
+            icon={Activity}
+            variant="warning"
+            contractedValue={formatIPU(dashboardData?.contractedIPUs || 0)}
+            consumptionPercentage={
+              dashboardData?.contractedIPUs 
+                ? ((dashboardData?.totalIPU || 0) / (dashboardData?.contractedIPUs || 0)) * 100
+                : 0
+            }
+          />
+
+          <KPICard
             title="Custo Médio Diário"
             value={formatCurrency(dashboardData?.avgDailyCost || 0)}
             subtitle="Baseado no período atual"
@@ -258,27 +272,11 @@ export default function Dashboard() {
           />
 
           <KPICard
-            title="IPUs Contratadas"
-            value={formatIPU(dashboardData?.contractedIPUs || 0)}
-            subtitle="Total de IPUs no contrato"
-            icon={TrendingUp}
-            variant="success"
-          />
-
-          <KPICard
             title="Organizações Ativas"
             value={dashboardData?.activeOrgs || 0}
             subtitle="Com consumo no período"
             icon={Building2}
             variant="default"
-          />
-
-          <KPICard
-            title="Total IPUs"
-            value={formatIPU(dashboardData?.totalIPU || 0)}
-            subtitle="Consumo total do período"
-            icon={Activity}
-            variant="warning"
           />
         </div>
 
