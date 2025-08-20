@@ -128,7 +128,7 @@ export function KPICard({
           {contractedValue && consumptionPercentage !== undefined && (
             <div className="space-y-2 mt-3">
               <div className="text-sm text-muted-foreground">
-                Valor contratado: {formatValue(contractedValue)}
+                {title === "Total IPUs" ? `${formatValue(contractedValue)} IPUs contratadas` : `Valor contratado: ${formatValue(contractedValue)}`}
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-medium ${getConsumptionStatus(consumptionPercentage).color}`}>
