@@ -239,7 +239,6 @@ export default function Dashboard() {
           <KPICard
             title="Custo Total"
             value={formatCurrency(dashboardData?.totalCost || 0)}
-            subtitle={`${formatIPU(dashboardData?.totalIPU || 0)} IPUs`}
             icon={DollarSign}
             variant="cost"
             contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))}

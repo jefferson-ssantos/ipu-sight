@@ -136,7 +136,13 @@ export function KPICard({
                 </span>
                 <div className="flex-1 bg-muted rounded-full h-2">
                   <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${getConsumptionStatus(consumptionPercentage).color.replace('text-', 'bg-')}`}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      getConsumptionStatus(consumptionPercentage).status === 'good' 
+                        ? 'bg-secondary' 
+                        : getConsumptionStatus(consumptionPercentage).status === 'warning'
+                        ? 'bg-warning'
+                        : 'bg-destructive'
+                    }`}
                     style={{ width: `${Math.min(consumptionPercentage, 100)}%` }}
                   />
                 </div>
