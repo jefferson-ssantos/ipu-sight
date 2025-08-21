@@ -28,7 +28,8 @@ export function SignupForm() {
     confirmPassword: "",
     nome_cliente: "",
     email_contato: "",
-    preco_por_ipu: ""
+    preco_por_ipu: "",
+    qtd_ipus_contratadas: ""
   });
 
   // IDMC configurations
@@ -103,6 +104,7 @@ export function SignupForm() {
           nome_cliente: clienteData.nome_cliente,
           email_contato: clienteData.email_contato || clienteData.email,
           preco_por_ipu: parseFloat(clienteData.preco_por_ipu) || 0.10,
+          qtd_ipus_contratadas: clienteData.qtd_ipus_contratadas ? parseFloat(clienteData.qtd_ipus_contratadas) : null,
           ativo: true,
           data_criacao: new Date().toISOString()
         })
@@ -235,6 +237,19 @@ export function SignupForm() {
                   placeholder="contato@empresa.com"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="qtd_ipus_contratadas">IPUs Contratadas</Label>
+                <Input
+                  id="qtd_ipus_contratadas"
+                  type="number"
+                  value={clienteData.qtd_ipus_contratadas}
+                  onChange={(e) => setClienteData({...clienteData, qtd_ipus_contratadas: e.target.value})}
+                  placeholder="1000"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="preco_por_ipu">Preço por IPU (R$)</Label>
                 <Input
