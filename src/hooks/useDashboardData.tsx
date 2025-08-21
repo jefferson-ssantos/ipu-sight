@@ -253,13 +253,10 @@ export function useDashboardData(selectedOrg?: string) {
     const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedPeriod || 'current'}`;
     const now = Date.now();
 
-    // Verificar cache
+    // Para debug - vamos limpar o cache para forçar nova busca das alterações
+    console.log('getChartData: Force clearing cache for debugging purposes');
     if (cacheRef.current.has(cacheKey)) {
-      const cached = cacheRef.current.get(cacheKey);
-      if (now - cached.timestamp < CACHE_DURATION) {
-        console.log('getChartData: Using cached chart data for', type);
-        return cached.data;
-      }
+      cacheRef.current.delete(cacheKey);
     }
 
     try {
@@ -401,19 +398,25 @@ export function useDashboardData(selectedOrg?: string) {
         console.log('All periods found:', Array.from(periodMap.keys()));
         console.log('Meters with data:', nonZeroMeters);
 
-        // Convert to chart format - include ALL cycles (even those with zero consumption)
+        // Convert to chart format - only include cycles with actual consumption data
         const chartData = Array.from(periodMap.values())
           .sort((a, b) => a.sortKey - b.sortKey)
+          .filter(period => {
+            // Only include periods that have actual consumption data
+            let hasData = false;
+            period.metrics.forEach((value) => {
+              if (value > 0) hasData = true;
+            });
+            return hasData;
+          })
           .map(period => {
             const dataPoint: any = { period: period.period };
-            // For periods with no consumption, all meters will have value 0
             if (nonZeroMeters.length > 0) {
               nonZeroMeters.forEach(meter => {
                 const value = period.metrics.get(meter) || 0;
                 dataPoint[meter] = value * client.preco_por_ipu;
               });
             } else {
-              // If no meters have data, add a default zero meter
               dataPoint['Sem dados'] = 0;
             }
             return dataPoint;
@@ -488,12 +491,16 @@ export function useDashboardData(selectedOrg?: string) {
         });
 
         const result = Array.from(finalPeriodMap.values())
+          // Filter out periods with zero consumption
+          .filter(item => item.totalIPU > 0)
           .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
           .map(item => ({
             period: item.period,
             ipu: item.totalIPU,
             cost: item.totalIPU * client.preco_por_ipu
           }));
+
+        console.log('CostChart: Evolution data processed:', result);
 
         // Cache result
         cacheRef.current.set(cacheKey, { data: result, timestamp: now });
@@ -566,6 +573,7 @@ export function useDashboardData(selectedOrg?: string) {
 
   const refetch = useCallback(() => {
     // Limpar cache e forçar nova busca
+    console.log('useDashboardData: Clearing cache and forcing refetch');
     cacheRef.current.clear();
     fetchDashboardData(true);
   }, [fetchDashboardData]);
