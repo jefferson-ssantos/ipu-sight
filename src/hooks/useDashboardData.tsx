@@ -95,6 +95,7 @@ export function useDashboardData(selectedOrg?: string) {
         .eq('id', profile.cliente_id)
         .maybeSingle();
 
+      console.log('Dashboard: Client data fetched:', client);
       if (clientError) throw clientError;
       if (!client?.preco_por_ipu) throw new Error('Informações de preço não encontradas para o cliente');
 
@@ -275,10 +276,11 @@ export function useDashboardData(selectedOrg?: string) {
       // Get client's price per IPU
       const { data: client, error: clientError } = await supabase
         .from('api_clientes')
-        .select('preco_por_ipu')
+        .select('preco_por_ipu, qtd_ipus_contratadas')
         .eq('id', profile.cliente_id)
         .maybeSingle();
 
+      console.log('getChartData: Client data fetched:', client);
       if (clientError || !client?.preco_por_ipu) return [];
 
       // Get configuration IDs
