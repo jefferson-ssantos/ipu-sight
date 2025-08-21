@@ -297,7 +297,53 @@ export function useDashboardData(selectedOrg?: string) {
       const configIds = configs.map(config => config.id);
 
       if (type === 'billing-periods') {
-        // Get unique billing periods from consumption data
+        // Get ALL unique billing periods from consumption data (not filtered by consumption > 0)
+        const { data: allCycles, error: allCyclesError } = await supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date')
+          .in('configuracao_id', configIds)
+          .order('billing_period_start_date', { ascending: true });
+        
+        if (allCyclesError || !allCycles) {
+          console.error('Error fetching all cycles:', allCyclesError);
+          return [];
+        }
+        
+        // Remove duplicates and format
+        const uniqueCycles = Array.from(
+          new Map(allCycles.map(cycle => [
+            `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`,
+            cycle
+          ])).values()
+        );
+        
+        console.log('All unique cycles found:', uniqueCycles.length, uniqueCycles);
+        
+        // Create a map with all cycles
+        const periodMap = new Map();
+        
+        // Initialize all cycles with zero data
+        uniqueCycles.forEach(cycle => {
+          const periodKey = `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`;
+          const startDate = new Date(cycle.billing_period_start_date + 'T00:00:00');
+          
+          const periodLabel = `${startDate.toLocaleDateString('pt-BR', { 
+            month: 'short',
+            year: '2-digit',
+            timeZone: 'America/Sao_Paulo'
+          })}`;
+          
+          periodMap.set(periodKey, {
+            period: periodLabel,
+            periodKey: periodKey,
+            sortKey: startDate.getTime(),
+            billing_period_start_date: cycle.billing_period_start_date,
+            billing_period_end_date: cycle.billing_period_end_date,
+            metrics: new Map()
+          });
+        });
+
+        // Now get consumption data for these periods (only with actual consumption)
         let query = supabase
           .from('api_consumosummary')
           .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name, org_id')
@@ -310,41 +356,26 @@ export function useDashboardData(selectedOrg?: string) {
 
         const { data: periodData, error: periodError } = await query;
 
-        if (periodError || !periodData) return [];
+        if (periodError) {
+          console.error('Error fetching consumption data:', periodError);
+          return [];
+        }
 
-        console.log('Raw period data count:', periodData?.length);
-        console.log('Config IDs being used:', configIds);
+        console.log('Raw consumption data count:', periodData?.length);
 
-        // Group by billing period and meter
-        const periodMap = new Map();
-        
-        periodData.forEach(item => {
-          const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-          const meterName = item.meter_name || 'Outros';
-          
-          if (!periodMap.has(periodKey)) {
-            const startDate = new Date(item.billing_period_start_date + 'T00:00:00');
-            // Create period label with month/year format
-            const periodLabel = `${startDate.toLocaleDateString('pt-BR', { 
-              month: 'short',
-              year: '2-digit',
-              timeZone: 'America/Sao_Paulo'
-            })}`;
+        // Add consumption data to existing cycles
+        if (periodData) {
+          periodData.forEach(item => {
+            const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+            const meterName = item.meter_name || 'Outros';
             
-            periodMap.set(periodKey, {
-              period: periodLabel,
-              periodKey: periodKey,
-              sortKey: startDate.getTime(),
-              billing_period_start_date: item.billing_period_start_date,
-              billing_period_end_date: item.billing_period_end_date,
-              metrics: new Map()
-            });
-          }
-
-          const periodData = periodMap.get(periodKey);
-          const currentMetric = periodData.metrics.get(meterName) || 0;
-          periodData.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
-        });
+            if (periodMap.has(periodKey)) {
+              const period = periodMap.get(periodKey);
+              const currentMetric = period.metrics.get(meterName) || 0;
+              period.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
+            }
+          });
+        }
 
         // Get all unique meter names with non-zero values across all periods
         const allMeters = new Set<string>();
@@ -358,34 +389,38 @@ export function useDashboardData(selectedOrg?: string) {
           });
         });
 
-        // Only filter out meters that have zero total across ALL periods
+        // Only include meters that have non-zero total across ALL periods
         const nonZeroMeters = Array.from(allMeters).filter(meter => (meterTotals.get(meter) || 0) > 0);
 
         console.log('All periods found:', Array.from(periodMap.keys()));
         console.log('Meters with data:', nonZeroMeters);
 
-        // Convert to chart format - include ALL months that have any data
+        // Convert to chart format - include ALL cycles (even those with zero consumption)
         const chartData = Array.from(periodMap.values())
-          .sort((a, b) => a.sortKey - b.sortKey) // Sort by year/month properly
+          .sort((a, b) => a.sortKey - b.sortKey)
           .map(period => {
             const dataPoint: any = { period: period.period };
-            // Include all meters, even if zero for this specific month
-            nonZeroMeters.forEach(meter => {
-              const value = period.metrics.get(meter) || 0;
-              dataPoint[meter] = value * client.preco_por_ipu; // Don't filter out zeros here
-            });
+            // For periods with no consumption, all meters will have value 0
+            if (nonZeroMeters.length > 0) {
+              nonZeroMeters.forEach(meter => {
+                const value = period.metrics.get(meter) || 0;
+                dataPoint[meter] = value * client.preco_por_ipu;
+              });
+            } else {
+              // If no meters have data, add a default zero meter
+              dataPoint['Sem dados'] = 0;
+            }
             return dataPoint;
           });
 
-        console.log('Final chart data periods:', chartData.map(d => d.period));
+        console.log('Final chart data with ALL cycles:', chartData.length, 'periods:', chartData.map(d => d.period));
 
         const result = { 
           data: chartData, 
-          meters: nonZeroMeters,
-          colors: nonZeroMeters.map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
+          meters: nonZeroMeters.length > 0 ? nonZeroMeters : ['Sem dados'],
+          colors: (nonZeroMeters.length > 0 ? nonZeroMeters : ['Sem dados']).map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
         };
 
-        // Cache result
         cacheRef.current.set(cacheKey, { data: result, timestamp: now });
         return result;
 
