@@ -14,7 +14,8 @@ import {
   PieChart,
   Pie,
   Cell,
-  LabelList
+  LabelList,
+  ReferenceLine
 } from "recharts";
 import { Download, TrendingUp, Calendar } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -67,7 +68,8 @@ export function CostChart({
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>(data || mockData);
   const [billingData, setBillingData] = useState<any>(null);
-  const { getChartData } = useDashboardData();
+  const [contractedValue, setContractedValue] = useState<number>(0);
+  const { getChartData, data: dashboardData } = useDashboardData();
 
   const stableChartData = useMemo(() => {
     if (type === 'pie') {
@@ -93,6 +95,13 @@ export function CostChart({
       setPeriod(selectedPeriod);
     }
   }, [selectedPeriod]);
+
+  // Set contracted value when dashboard data is available
+  useEffect(() => {
+    if (dashboardData?.contractedIPUs && dashboardData?.pricePerIPU) {
+      setContractedValue(dashboardData.contractedIPUs * dashboardData.pricePerIPU);
+    }
+  }, [dashboardData]);
 
   useEffect(() => {
     if (data) {
@@ -210,6 +219,15 @@ export function CostChart({
               <Tooltip 
                 content={<CustomTooltip />}
               />
+              {contractedValue > 0 && (
+                <ReferenceLine 
+                  y={contractedValue} 
+                  stroke="hsl(var(--warning))" 
+                  strokeDasharray="5 5"
+                  strokeWidth={2}
+                  label={{ value: "Valor Contratado", position: "top" }}
+                />
+              )}
               {billingData?.meters?.map((meter: string, index: number) => (
                 <Bar 
                   key={meter}
