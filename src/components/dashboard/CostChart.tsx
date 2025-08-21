@@ -207,6 +207,32 @@ export function CostChart({
     );
   };
 
+  // Custom tick component for multi-line labels
+  const CustomXAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    if (!payload?.value) return null;
+    
+    const lines = payload.value.split('\n');
+    
+    return (
+      <g transform={`translate(${x},${y})`}>
+        {lines.map((line: string, index: number) => (
+          <text
+            key={index}
+            x={0}
+            y={index * 14}
+            dy={12}
+            textAnchor="middle"
+            fill="hsl(var(--muted-foreground))"
+            fontSize="12"
+          >
+            {line}
+          </text>
+        ))}
+      </g>
+    );
+  };
+
   const renderChart = () => {
     switch (type) {
       case "bar":
@@ -226,6 +252,9 @@ export function CostChart({
                 dataKey="period" 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
+                tick={<CustomXAxisTick />}
+                height={60}
+                interval={0}
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
@@ -313,6 +342,9 @@ export function CostChart({
                 dataKey="period" 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
+                tick={<CustomXAxisTick />}
+                height={60}
+                interval={0}
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
