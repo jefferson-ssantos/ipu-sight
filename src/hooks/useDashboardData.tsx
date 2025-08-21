@@ -351,9 +351,9 @@ export function useDashboardData(selectedOrg?: string) {
             if (periodMap.has(periodKey)) {
               periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
             } else {
-              const startDate = new Date(item.billing_period_start_date);
-              const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
-              const year = startDate.getFullYear();
+              const endDate = new Date(item.billing_period_end_date);
+              const monthName = endDate.toLocaleDateString('pt-BR', { month: 'short' });
+              const year = endDate.getFullYear().toString().slice(-2);
               const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
               
               periodMap.set(periodKey, {
@@ -392,9 +392,9 @@ export function useDashboardData(selectedOrg?: string) {
             const meterName = item.meter_name || 'Outros';
             
             if (!periodMap.has(periodKey)) {
-              const startDate = new Date(item.billing_period_start_date);
-              const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
-              const year = startDate.getFullYear();
+              const endDate = new Date(item.billing_period_end_date);
+              const monthName = endDate.toLocaleDateString('pt-BR', { month: 'short' });
+              const year = endDate.getFullYear().toString().slice(-2);
               const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
               
               periodMap.set(periodKey, {
