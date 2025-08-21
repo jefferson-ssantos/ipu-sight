@@ -318,8 +318,8 @@ export function useDashboardData(selectedOrg?: string) {
           baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
-        // Filter by period if selected and not 'all'
-        if (selectedPeriod && selectedPeriod !== 'all') {
+        // Filter by period if selected and not 'all' and is a valid date
+        if (selectedPeriod && selectedPeriod !== 'all' && selectedPeriod !== 'current' && selectedPeriod.match(/^\d{4}-\d{2}-\d{2}$/)) {
           baseQuery = baseQuery.eq('billing_period_start_date', selectedPeriod);
         }
 
