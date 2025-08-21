@@ -312,10 +312,9 @@ export function useDashboardData(selectedOrg?: string) {
           if (!cyclesMap.has(key)) {
             // Create display name with cycle number and month/year - with line break
             const startDate = new Date(item.billing_period_start_date);
-            const day = startDate.getDate();
             const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
             const year = startDate.getFullYear();
-            const displayName = `Ciclo ${day}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+            const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
             
             cyclesMap.set(key, {
               ciclo_id: cycleCounter,
