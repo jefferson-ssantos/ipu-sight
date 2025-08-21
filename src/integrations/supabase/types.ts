@@ -14,44 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      api_ciclofaturamento: {
-        Row: {
-          billing_period_end_date: string
-          billing_period_start_date: string
-          ciclo_id: number
-          configuracao_id: number
-          created_at: string
-          id: number
-          updated_at: string
-        }
-        Insert: {
-          billing_period_end_date: string
-          billing_period_start_date: string
-          ciclo_id: number
-          configuracao_id: number
-          created_at: string
-          id?: number
-          updated_at: string
-        }
-        Update: {
-          billing_period_end_date?: string
-          billing_period_start_date?: string
-          ciclo_id?: number
-          configuracao_id?: number
-          created_at?: string
-          id?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "api_ciclofaturamento_configuracao_id_72dce789_fk_api_confi"
-            columns: ["configuracao_id"]
-            isOneToOne: false
-            referencedRelation: "api_configuracaoidmc"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       api_clientes: {
         Row: {
           ativo: boolean
@@ -213,7 +175,6 @@ export type Database = {
           execution_type: string | null
           id: number
           invoked_by: string | null
-          meter_id: string | null
           org_id: string | null
           status: string | null
           total_execution_time_hours: number | null
@@ -230,7 +191,6 @@ export type Database = {
           execution_type?: string | null
           id?: number
           invoked_by?: string | null
-          meter_id?: string | null
           org_id?: string | null
           status?: string | null
           total_execution_time_hours?: number | null
@@ -247,7 +207,6 @@ export type Database = {
           execution_type?: string | null
           id?: number
           invoked_by?: string | null
-          meter_id?: string | null
           org_id?: string | null
           status?: string | null
           total_execution_time_hours?: number | null
@@ -274,7 +233,6 @@ export type Database = {
           environment_name: string | null
           folder_name: string | null
           id: number
-          meter_id: string | null
           meter_id_ref: string | null
           metered_value_ipu: number | null
           obm_task_time_seconds: number | null
@@ -299,7 +257,6 @@ export type Database = {
           environment_name?: string | null
           folder_name?: string | null
           id?: number
-          meter_id?: string | null
           meter_id_ref?: string | null
           metered_value_ipu?: number | null
           obm_task_time_seconds?: number | null
@@ -324,7 +281,6 @@ export type Database = {
           environment_name?: string | null
           folder_name?: string | null
           id?: number
-          meter_id?: string | null
           meter_id_ref?: string | null
           metered_value_ipu?: number | null
           obm_task_time_seconds?: number | null
@@ -870,16 +826,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_billing_cycles_with_data: {
-        Args: { config_ids: number[] }
-        Returns: {
-          billing_period_end_date: string
-          billing_period_start_date: string
-          ciclo_id: number
-          configuracao_id: number
-          has_consumption: boolean
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
