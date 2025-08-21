@@ -67,11 +67,6 @@ export function CycleFilter({ selectedCycleFilter, onCycleFilterChange, availabl
           </SelectContent>
         </Select>
 
-        {availableCycles.length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            {availableCycles.length} ciclo{availableCycles.length !== 1 ? 's' : ''} disponível{availableCycles.length !== 1 ? 'eis' : ''}
-          </div>
-        )}
       </div>
     </Card>
   );

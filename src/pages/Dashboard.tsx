@@ -203,7 +203,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="flex-1 p-6 space-y-6">
-        {/* Period Filters */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-heading font-bold text-foreground">
@@ -215,20 +214,6 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">Ciclo Atual</SelectItem>
-                <SelectItem value="last">Último Ciclo</SelectItem>
-                <SelectItem value="3-months">Últimos 3 Ciclos</SelectItem>
-                <SelectItem value="6-months">Últimos 6 Ciclos</SelectItem>
-                <SelectItem value="12-months">Últimos 12 Ciclos</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               Exportar

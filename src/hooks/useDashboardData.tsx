@@ -154,63 +154,31 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       
       setAvailableCycles(uniqueCycles);
 
-      // Determine which cycles to use based on selectedCycleFilter
-      let cyclesToFilter = uniqueCycles;
-      if (selectedCycleFilter && selectedCycleFilter !== 'all') {
-        const cycleCount = parseInt(selectedCycleFilter);
-        if (!isNaN(cycleCount)) {
-          cyclesToFilter = uniqueCycles.slice(0, cycleCount);
-        }
-      }
+      // KPIs always use current cycle (most recent)
+      const currentCycle = uniqueCycles.length > 0 ? uniqueCycles[0] : null;
 
-      // Get current billing cycle - get the most recent cycle based on end date
-      let currentCycle = null;
-      if (cyclesToFilter.length > 0) {
-        currentCycle = cyclesToFilter[0]; // Most recent cycle after filtering
-      } else if (uniqueCycles.length > 0) {
-        currentCycle = uniqueCycles[0]; // Most recent cycle overall
-      }
-
-      let consumptionQuery = supabase
+      // For KPIs, always use current cycle data
+      let kpiConsumptionQuery = supabase
         .from('api_consumosummary')
         .select('*')
         .in('configuracao_id', configIds);
 
-      // Apply cycle filter if specified
-      if (cyclesToFilter.length > 0 && selectedCycleFilter !== 'all') {
-        const cycleConditions = cyclesToFilter.map(cycle => 
-          `(billing_period_start_date.eq.${cycle.billing_period_start_date},billing_period_end_date.eq.${cycle.billing_period_end_date})`
-        );
-        // For cycle filtering, we'll filter the results after fetching
-      } else if (!selectedCycleFilter || selectedCycleFilter === 'all') {
-        // Get current cycle only if no specific filter is applied
-        const currentCycle = uniqueCycles[0]; // Most recent cycle
-        if (currentCycle) {
-          consumptionQuery = consumptionQuery
-            .eq('billing_period_start_date', currentCycle.billing_period_start_date)
-            .eq('billing_period_end_date', currentCycle.billing_period_end_date);
-        }
+      if (currentCycle) {
+        kpiConsumptionQuery = kpiConsumptionQuery
+          .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+          .eq('billing_period_end_date', currentCycle.billing_period_end_date);
       }
 
       // Filter by organization if selected
       if (selectedOrg && selectedOrg !== 'all') {
-        consumptionQuery = consumptionQuery.eq('org_id', selectedOrg);
+        kpiConsumptionQuery = kpiConsumptionQuery.eq('org_id', selectedOrg);
       }
 
-      const { data: allConsumption, error: consumptionError } = await consumptionQuery;
+      const { data: kpiConsumption, error: consumptionError } = await kpiConsumptionQuery;
 
       if (consumptionError) throw consumptionError;
 
-      // Apply cycle filter to consumption data if needed
-      let consumption = allConsumption || [];
-      if (selectedCycleFilter && selectedCycleFilter !== 'all' && cyclesToFilter.length > 0) {
-        consumption = consumption.filter(item => 
-          cyclesToFilter.some(cycle => 
-            cycle.billing_period_start_date === item.billing_period_start_date &&
-            cycle.billing_period_end_date === item.billing_period_end_date
-          )
-        );
-       }
+      let consumption = kpiConsumption || [];
 
       if (!consumption || consumption.length === 0) {
         const emptyData = {
@@ -322,23 +290,17 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  const getChartData = useCallback(async (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedPeriod?: string) => {
+  const getChartData = useCallback(async (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedCycleFilter?: string) => {
     if (!user) {
       console.log('getChartData: No user found');
       return [];
     }
 
-    const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedPeriod || 'current'}`;
+    const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedCycleFilter || '1'}`;
     const now = Date.now();
 
-    // Para debug - vamos limpar o cache para forçar nova busca das alterações
-    console.log('getChartData: Force clearing cache for debugging purposes');
-    if (cacheRef.current.has(cacheKey)) {
-      cacheRef.current.delete(cacheKey);
-    }
-
     try {
-      console.log('getChartData: Starting fetch for type:', type, 'selectedOrg:', selectedOrg);
+      console.log('getChartData: Starting fetch for type:', type, 'selectedOrg:', selectedOrg, 'selectedCycleFilter:', selectedCycleFilter);
       // Get user's client information
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -371,6 +333,46 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
         const configIds = configs.map(config => config.id);
 
+        // Get available cycles to apply filter
+        const { data: cyclesData, error: cyclesError } = await supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date')
+          .in('configuracao_id', configIds)
+          .order('billing_period_end_date', { ascending: false });
+
+        if (cyclesError) throw cyclesError;
+
+        // Create unique cycles
+        const cyclesMap = new Map();
+        const sortedCycles = cyclesData?.sort((a, b) => 
+          new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime()
+        ) || [];
+        
+        const uniqueCycles: Array<{
+          billing_period_start_date: string;
+          billing_period_end_date: string;
+        }> = [];
+
+        sortedCycles.forEach(item => {
+          const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          if (!cyclesMap.has(key)) {
+            cyclesMap.set(key, true);
+            uniqueCycles.push({
+              billing_period_start_date: item.billing_period_start_date,
+              billing_period_end_date: item.billing_period_end_date
+            });
+          }
+        });
+
+        // Apply cycle filter
+        let cyclesToUse = uniqueCycles;
+        if (selectedCycleFilter && selectedCycleFilter !== 'all') {
+          const cycleCount = parseInt(selectedCycleFilter);
+          if (!isNaN(cycleCount)) {
+            cyclesToUse = uniqueCycles.slice(0, cycleCount);
+          }
+        }
+
         // Use similar query structure to your SQL - fetch all consumption data first
         let baseQuery = supabase
           .from('api_consumosummary')
@@ -388,11 +390,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
-        // Filter by period if selected and not 'all' and is a valid date
-        if (selectedPeriod && selectedPeriod !== 'all' && selectedPeriod !== 'current' && selectedPeriod.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          baseQuery = baseQuery.eq('billing_period_start_date', selectedPeriod);
-        }
-
         const { data: allConsumption, error: consumptionError } = await baseQuery
           .order('configuracao_id')
           .order('meter_name')
@@ -408,14 +405,25 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return [];
         }
 
-        console.log('Total consumption records fetched:', allConsumption.length);
+        // Apply cycle filter to consumption data
+        let consumption = allConsumption;
+        if (selectedCycleFilter && selectedCycleFilter !== 'all' && cyclesToUse.length > 0) {
+          consumption = allConsumption.filter(item => 
+            cyclesToUse.some(cycle => 
+              cycle.billing_period_start_date === item.billing_period_start_date &&
+              cycle.billing_period_end_date === item.billing_period_end_date
+            )
+          );
+        }
+
+        console.log('Filtered consumption records:', consumption.length);
 
         if (type === 'evolution') {
           // Group by billing period and sum consumption_ipu - similar to your SQL
           const periodMap = new Map();
           let cycleCounter = 1;
           
-          allConsumption.forEach(item => {
+          consumption.forEach(item => {
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             
             if (periodMap.has(periodKey)) {
@@ -457,7 +465,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           const periodMap = new Map();
           let cycleCounter = 1;
           
-          allConsumption.forEach(item => {
+          consumption.forEach(item => {
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             const meterName = item.meter_name || 'Outros';
             
