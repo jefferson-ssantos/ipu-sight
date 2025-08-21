@@ -563,11 +563,6 @@ export function useDashboardData(selectedOrg?: string) {
           query = query.eq('org_id', selectedOrg);
         }
 
-        // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
-        if (!selectedOrg || selectedOrg === 'all') {
-          query = query.neq('meter_name', 'Sandbox Organizations IPU Usage');
-        }
-
         const { data: distributionData } = await query;
 
         if (!distributionData) return [];
