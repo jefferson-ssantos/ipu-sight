@@ -253,7 +253,7 @@ export function CostChart({
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tick={<CustomXAxisTick />}
-                height={60}
+                height={80}
                 interval={0}
               />
               <YAxis 
@@ -343,7 +343,7 @@ export function CostChart({
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tick={<CustomXAxisTick />}
-                height={60}
+                height={80}
                 interval={0}
               />
               <YAxis 

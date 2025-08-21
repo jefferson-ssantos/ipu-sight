@@ -343,6 +343,7 @@ export function useDashboardData(selectedOrg?: string) {
         if (type === 'evolution') {
           // Group by billing period and sum consumption_ipu - similar to your SQL
           const periodMap = new Map();
+          let cycleCounter = 1;
           
           allConsumption.forEach(item => {
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
@@ -353,15 +354,17 @@ export function useDashboardData(selectedOrg?: string) {
               const startDate = new Date(item.billing_period_start_date);
               const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
               const year = startDate.getFullYear();
-              const displayName = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+              const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
               
               periodMap.set(periodKey, {
                 period: displayName,
                 totalIPU: item.consumption_ipu || 0,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
-                configuracao_id: item.configuracao_id
+                configuracao_id: item.configuracao_id,
+                cycleCounter: cycleCounter
               });
+              cycleCounter++;
             }
           });
 
@@ -382,6 +385,7 @@ export function useDashboardData(selectedOrg?: string) {
         if (type === 'billing-periods') {
           // Group by billing period and meter_name - similar to your SQL structure
           const periodMap = new Map();
+          let cycleCounter = 1;
           
           allConsumption.forEach(item => {
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
@@ -391,15 +395,17 @@ export function useDashboardData(selectedOrg?: string) {
               const startDate = new Date(item.billing_period_start_date);
               const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
               const year = startDate.getFullYear();
-              const displayName = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+              const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
               
               periodMap.set(periodKey, {
                 period: displayName,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
                 configuracao_id: item.configuracao_id,
+                cycleCounter: cycleCounter,
                 meters: new Map()
               });
+              cycleCounter++;
             }
             
             const period = periodMap.get(periodKey);
