@@ -138,11 +138,6 @@ export function useDashboardData(selectedOrg?: string) {
         consumptionQuery = consumptionQuery.eq('org_id', selectedOrg);
       }
 
-      // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
-      if (!selectedOrg || selectedOrg === 'all') {
-        consumptionQuery = consumptionQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
-      }
-
       const { data: consumption, error: consumptionError } = await consumptionQuery;
 
       if (consumptionError) throw consumptionError;
@@ -174,10 +169,15 @@ export function useDashboardData(selectedOrg?: string) {
         return;
       }
 
-      // Calculate total IPU consumption
-      const totalIPU = consumption.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
+      // Para o cálculo dos KPIs principais, excluir "Sandbox Organizations IPU Usage" na visão "Todas as Organizações"
+      const consumptionForKPIs = (!selectedOrg || selectedOrg === 'all') 
+        ? consumption.filter(item => item.meter_name !== 'Sandbox Organizations IPU Usage')
+        : consumption;
+
+      // Calculate total IPU consumption for KPIs
+      const totalIPU = consumptionForKPIs.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
       
-      // Calculate total cost
+      // Calculate total cost for KPIs
       const totalCost = totalIPU * client.preco_por_ipu;
 
       // Calculate average daily cost
@@ -186,7 +186,7 @@ export function useDashboardData(selectedOrg?: string) {
         30;
       const avgDailyCost = totalCost / days;
 
-      // Group by organization
+      // Para o detalhamento hierárquico de custos, usar TODOS os dados (incluindo "Sandbox Organizations IPU Usage")
       const orgMap = new Map();
       consumption.forEach(item => {
         const orgId = item.org_id || 'unknown';
@@ -206,11 +206,14 @@ export function useDashboardData(selectedOrg?: string) {
         }
       });
 
+      // Calculate total IPU for organizations (including all meters)
+      const totalIPUForOrgs = consumption.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
+
       // Calculate costs and percentages for organizations
       const organizations = Array.from(orgMap.values()).map(org => ({
         ...org,
         cost: org.consumption_ipu * client.preco_por_ipu,
-        percentage: totalIPU > 0 ? Math.round((org.consumption_ipu / totalIPU) * 100) : 0
+        percentage: totalIPUForOrgs > 0 ? Math.round((org.consumption_ipu / totalIPUForOrgs) * 100) : 0
       })).sort((a, b) => b.consumption_ipu - a.consumption_ipu);
 
       const newData = {
