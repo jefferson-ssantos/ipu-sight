@@ -288,7 +288,7 @@ export function useDashboardData(selectedOrg?: string) {
       console.log('getChartData: Client data fetched:', client);
       if (clientError || !client?.preco_por_ipu) return [];
 
-      // Get configuration IDs
+      // Get configuration IDs - similar to your SQL query
       const { data: configs, error: configError } = await supabase
         .from('api_configuracaoidmc')
         .select('id, cliente_id')
@@ -301,307 +301,219 @@ export function useDashboardData(selectedOrg?: string) {
 
         const configIds = configs.map(config => config.id);
 
-        // Get all unique billing cycles from consumosummary
-        const { data: consumptionCycles, error: cyclesError } = await supabase
+        // Use similar query structure to your SQL - fetch all consumption data first
+        let baseQuery = supabase
           .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date, configuracao_id')
-          .in('configuracao_id', configIds);
-
-        if (cyclesError) throw cyclesError;
-
-        // Create unique cycles map
-        const cyclesMap = new Map();
-        let cycleCounter = 1;
-        const sortedCycles = consumptionCycles
-          ?.sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime()) || [];
-        
-        sortedCycles.forEach(item => {
-          const key = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
-          if (!cyclesMap.has(key)) {
-            // Create display name with cycle number and month/year - with line break
-            const startDate = new Date(item.billing_period_start_date);
-            const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
-            const year = startDate.getFullYear();
-            const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
-            
-            cyclesMap.set(key, {
-              ciclo_id: cycleCounter,
-              display_name: displayName,
-              billing_period_start_date: item.billing_period_start_date,
-              billing_period_end_date: item.billing_period_end_date,
-              configuracao_id: item.configuracao_id
-            });
-            cycleCounter++;
-          }
-        });
-        
-        const allCycles = Array.from(cyclesMap.values());
-        console.log('All unique cycles found:', allCycles?.length, allCycles);
-
-        if (type === 'billing-periods') {
-          // Use all available cycles
-          const cyclesWithData = allCycles || [];
-          
-          if (cyclesWithData.length === 0) {
-            return {
-              data: [],
-              meters: ['Sem dados'],
-              colors: [STABLE_COLORS[0]]
-            };
-          }
-          
-          // Create a map with all cycles
-          const periodMap = new Map();
-          
-          // Initialize all cycles with zero data
-          cyclesWithData.forEach(cycle => {
-            const periodKey = `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}_${cycle.configuracao_id}`;
-            const startDate = new Date(cycle.billing_period_start_date + 'T00:00:00');
-            
-            periodMap.set(periodKey, {
-              period: cycle.display_name,
-              periodKey: periodKey,
-              sortKey: startDate.getTime(),
-              billing_period_start_date: cycle.billing_period_start_date,
-              billing_period_end_date: cycle.billing_period_end_date,
-              ciclo_id: cycle.ciclo_id,
-              configuracao_id: cycle.configuracao_id,
-              metrics: new Map()
-            });
-          });
-
-        // Now get consumption data for these periods (only with actual consumption)
-        let query = supabase
-          .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name, org_id, configuracao_id')
+          .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds)
           .gt('consumption_ipu', 0);
 
-        if (selectedOrg) {
-          query = query.eq('org_id', selectedOrg);
+        // Filter by organization if selected and not 'all'
+        if (selectedOrg && selectedOrg !== 'all') {
+          baseQuery = baseQuery.eq('org_id', selectedOrg);
         }
 
-        // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
-        if (!selectedOrg || selectedOrg === 'all') {
-          query = query.neq('meter_name', 'Sandbox Organizations IPU Usage');
+        // Exclude "Sandbox Organizations IPU Usage" for evolution and billing-periods charts in "Todas as Organizações" view
+        if ((type === 'evolution' || type === 'billing-periods') && (!selectedOrg || selectedOrg === 'all')) {
+          baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
-        const { data: periodData, error: periodError } = await query;
+        // Filter by period if selected and not 'all'
+        if (selectedPeriod && selectedPeriod !== 'all') {
+          baseQuery = baseQuery.eq('billing_period_start_date', selectedPeriod);
+        }
 
-        if (periodError) {
-          console.error('Error fetching consumption data:', periodError);
+        const { data: allConsumption, error: consumptionError } = await baseQuery
+          .order('configuracao_id')
+          .order('meter_name')
+          .order('billing_period_start_date');
+
+        if (consumptionError) {
+          console.error('Error fetching consumption data:', consumptionError);
           return [];
         }
 
-        console.log('Raw consumption data count:', periodData?.length);
+        if (!allConsumption || allConsumption.length === 0) {
+          console.log('No consumption data found');
+          return [];
+        }
 
-        // Add consumption data to existing cycles
-        if (periodData) {
-          periodData.forEach(item => {
-            // Find matching cycle based on period and configuracao_id
-             const matchingCycle = cyclesWithData.find(cycle => 
-               cycle.billing_period_start_date === item.billing_period_start_date &&
-               cycle.billing_period_end_date === item.billing_period_end_date &&
-               cycle.configuracao_id === item.configuracao_id
-             );
+        console.log('Total consumption records fetched:', allConsumption.length);
 
-            if (!matchingCycle) return;
-
-            const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}_${matchingCycle.configuracao_id}`;
-            const meterName = item.meter_name || 'Outros';
+        if (type === 'evolution') {
+          // Group by billing period and sum consumption_ipu - similar to your SQL
+          const periodMap = new Map();
+          
+          allConsumption.forEach(item => {
+            const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             
             if (periodMap.has(periodKey)) {
-              const period = periodMap.get(periodKey);
-              const currentMetric = period.metrics.get(meterName) || 0;
-              period.metrics.set(meterName, currentMetric + (item.consumption_ipu || 0));
+              periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
+            } else {
+              const startDate = new Date(item.billing_period_start_date);
+              const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
+              const year = startDate.getFullYear();
+              const displayName = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+              
+              periodMap.set(periodKey, {
+                period: displayName,
+                totalIPU: item.consumption_ipu || 0,
+                billing_period_start_date: item.billing_period_start_date,
+                billing_period_end_date: item.billing_period_end_date,
+                configuracao_id: item.configuracao_id
+              });
             }
           });
+
+          const result = Array.from(periodMap.values())
+            .filter(item => item.totalIPU > 0)
+            .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
+            .map(item => ({
+              period: item.period,
+              ipu: item.totalIPU,
+              cost: item.totalIPU * client.preco_por_ipu
+            }));
+
+          console.log('Evolution chart data:', result);
+          cacheRef.current.set(cacheKey, { data: result, timestamp: now });
+          return result;
         }
 
-        // Get all unique meter names with non-zero values across all periods
-        const allMeters = new Set<string>();
-        const meterTotals = new Map<string, number>();
-        
-        // First pass: collect all meters and their totals
-        periodMap.forEach(period => {
-          period.metrics.forEach((value, meter) => {
-            allMeters.add(meter);
-            meterTotals.set(meter, (meterTotals.get(meter) || 0) + value);
+        if (type === 'billing-periods') {
+          // Group by billing period and meter_name - similar to your SQL structure
+          const periodMap = new Map();
+          
+          allConsumption.forEach(item => {
+            const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
+            const meterName = item.meter_name || 'Outros';
+            
+            if (!periodMap.has(periodKey)) {
+              const startDate = new Date(item.billing_period_start_date);
+              const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
+              const year = startDate.getFullYear();
+              const displayName = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+              
+              periodMap.set(periodKey, {
+                period: displayName,
+                billing_period_start_date: item.billing_period_start_date,
+                billing_period_end_date: item.billing_period_end_date,
+                configuracao_id: item.configuracao_id,
+                meters: new Map()
+              });
+            }
+            
+            const period = periodMap.get(periodKey);
+            const currentValue = period.meters.get(meterName) || 0;
+            period.meters.set(meterName, currentValue + (item.consumption_ipu || 0));
           });
-        });
 
-        // Only include meters that have non-zero total across ALL periods
-        const nonZeroMeters = Array.from(allMeters).filter(meter => (meterTotals.get(meter) || 0) > 0);
-
-        console.log('All periods found:', Array.from(periodMap.keys()));
-        console.log('Meters with data:', nonZeroMeters);
-
-        // Convert to chart format - only include cycles with actual consumption data
-        const chartData = Array.from(periodMap.values())
-          .sort((a, b) => a.sortKey - b.sortKey)
-          .filter(period => {
-            // Only include periods that have actual consumption data
-            let hasData = false;
-            period.metrics.forEach((value) => {
-              if (value > 0) hasData = true;
+          // Get all unique meter names across all periods
+          const allMeters = new Set<string>();
+          periodMap.forEach(period => {
+            period.meters.forEach((value, meter) => {
+              if (value > 0) allMeters.add(meter);
             });
-            return hasData;
-          })
-          .map(period => {
-            const dataPoint: any = { period: period.period };
-            if (nonZeroMeters.length > 0) {
-              nonZeroMeters.forEach(meter => {
-                const value = period.metrics.get(meter) || 0;
+          });
+
+          const meterNames = Array.from(allMeters);
+          
+          // Convert to chart format
+          const chartData = Array.from(periodMap.values())
+            .filter(period => {
+              // Only include periods with actual consumption
+              let hasData = false;
+              period.meters.forEach(value => {
+                if (value > 0) hasData = true;
+              });
+              return hasData;
+            })
+            .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
+            .map(period => {
+              const dataPoint: any = { period: period.period };
+              meterNames.forEach(meter => {
+                const value = period.meters.get(meter) || 0;
                 dataPoint[meter] = value * client.preco_por_ipu;
               });
+              return dataPoint;
+            });
+
+          const result = { 
+            data: chartData, 
+            meters: meterNames.length > 0 ? meterNames : ['Sem dados'],
+            colors: meterNames.map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
+          };
+
+          console.log('Billing periods chart data:', result);
+          cacheRef.current.set(cacheKey, { data: result, timestamp: now });
+          return result;
+
+        } else if (type === 'distribution') {
+          // For distribution, include ALL data including "Sandbox Organizations IPU Usage"
+          // Use allConsumption data but don't apply the meter_name filter
+          let distributionQuery = supabase
+            .from('api_consumosummary')
+            .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
+            .in('configuracao_id', configIds)
+            .gt('consumption_ipu', 0);
+
+          // Filter by organization if selected and not 'all'
+          if (selectedOrg && selectedOrg !== 'all') {
+            distributionQuery = distributionQuery.eq('org_id', selectedOrg);
+          }
+
+          // Get current cycle for distribution
+          const { data: currentCycle } = await supabase
+            .from('api_consumosummary')
+            .select('billing_period_start_date, billing_period_end_date')
+            .in('configuracao_id', configIds)
+            .order('billing_period_end_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (currentCycle) {
+            distributionQuery = distributionQuery
+              .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+              .eq('billing_period_end_date', currentCycle.billing_period_end_date);
+          }
+
+          const { data: distributionData, error: distError } = await distributionQuery;
+
+          if (distError || !distributionData) return [];
+
+          // Group by organization - include all meters including Sandbox Organizations IPU Usage
+          const orgMap = new Map();
+          distributionData.forEach(item => {
+            const orgId = item.org_id || 'unknown';
+            const orgName = item.org_name || orgId;
+            const ipu = item.consumption_ipu || 0;
+            
+            if (orgMap.has(orgId)) {
+              orgMap.get(orgId).consumption_ipu += ipu;
             } else {
-              dataPoint['Sem dados'] = 0;
+              orgMap.set(orgId, {
+                org_id: orgId,
+                org_name: orgName,
+                consumption_ipu: ipu
+              });
             }
-            return dataPoint;
           });
 
-        console.log('Final chart data with ALL cycles:', chartData.length, 'periods:', chartData.map(d => d.period));
+          const orgs = Array.from(orgMap.values());
+          const totalIPU = orgs.reduce((sum, org) => sum + org.consumption_ipu, 0);
 
-        const result = { 
-          data: chartData, 
-          meters: nonZeroMeters.length > 0 ? nonZeroMeters : ['Sem dados'],
-          colors: (nonZeroMeters.length > 0 ? nonZeroMeters : ['Sem dados']).map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
-        };
+          const result = orgs.map(org => ({
+            name: org.org_name,
+            value: totalIPU > 0 ? Math.round((org.consumption_ipu / totalIPU) * 100) : 0,
+            cost: org.consumption_ipu * client.preco_por_ipu,
+            color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
+          })).sort((a, b) => b.value - a.value);
 
-        cacheRef.current.set(cacheKey, { data: result, timestamp: now });
-        return result;
-
-      } else if (type === 'evolution') {
-        // Use all available cycles
-        const cyclesWithData = allCycles || [];
-        
-        if (cyclesWithData.length === 0) {
-          return [];
+          console.log('Distribution chart data:', result);
+          cacheRef.current.set(cacheKey, { data: result, timestamp: now });
+          return result;
         }
 
-        let query = supabase
-          .from('api_consumosummary')
-          .select('configuracao_id, billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
-          .in('configuracao_id', configIds);
-
-        if (selectedOrg) {
-          query = query.eq('org_id', selectedOrg);
-        }
-
-        // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
-        if (!selectedOrg || selectedOrg === 'all') {
-          query = query.neq('meter_name', 'Sandbox Organizations IPU Usage');
-        }
-
-        const { data: evolutionData } = await query;
-        if (!evolutionData) return [];
-
-        // Group by configuracao_id, billing_period_start_date, billing_period_end_date and sum consumption_ipu
-        // This replicates the user's query: 
-        // select configuracao_id,billing_period_start_date,billing_period_end_date, sum(consumption_ipu)
-        // group by configuracao_id,billing_period_start_date,billing_period_end_date
-        const periodMap = new Map();
-        evolutionData.forEach(item => {
-          const key = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
-          
-          // Find the corresponding cycle to get the ciclo_id
-          const matchingCycle = allCycles.find(cycle => 
-            cycle.billing_period_start_date === item.billing_period_start_date &&
-            cycle.billing_period_end_date === item.billing_period_end_date &&
-            cycle.configuracao_id === item.configuracao_id
-          );
-
-          if (!matchingCycle) return;
-
-          if (periodMap.has(key)) {
-            periodMap.get(key).totalIPU += item.consumption_ipu || 0;
-          } else {            
-            periodMap.set(key, {
-              period: matchingCycle.display_name,
-              totalIPU: item.consumption_ipu || 0,
-              billing_period_start_date: item.billing_period_start_date,
-              billing_period_end_date: item.billing_period_end_date,
-              ciclo_id: matchingCycle.ciclo_id,
-              configuracao_id: item.configuracao_id
-            });
-          }
-        });
-
-        const result = Array.from(periodMap.values())
-          // Filter out periods with zero consumption
-          .filter(item => item.totalIPU > 0)
-          .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
-          .map(item => ({
-            period: item.period,
-            ipu: item.totalIPU,
-            cost: item.totalIPU * client.preco_por_ipu
-          }));
-
-        console.log('CostChart: Evolution data processed:', result);
-
-        // Cache result
-        cacheRef.current.set(cacheKey, { data: result, timestamp: now });
-        return result;
-
-      } else { // distribution
-        // Get current billing cycle
-        const { data: currentCycle } = await supabase
-          .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date')
-          .in('configuracao_id', configIds)
-          .order('billing_period_end_date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!currentCycle) return [];
-
-        let query = supabase
-          .from('api_consumosummary')
-          .select('org_id, org_name, consumption_ipu, meter_name')
-          .in('configuracao_id', configIds)
-          .eq('billing_period_start_date', currentCycle.billing_period_start_date)
-          .eq('billing_period_end_date', currentCycle.billing_period_end_date);
-
-        if (selectedOrg) {
-          query = query.eq('org_id', selectedOrg);
-        }
-
-        const { data: distributionData } = await query;
-
-        if (!distributionData) return [];
-
-        // Group by organization
-        const orgMap = new Map();
-        distributionData.forEach(item => {
-          const orgId = item.org_id || 'unknown';
-          const orgName = item.org_name || orgId;
-          const ipu = item.consumption_ipu || 0;
-          
-          if (orgMap.has(orgId)) {
-            orgMap.get(orgId).consumption_ipu += ipu;
-          } else {
-            orgMap.set(orgId, {
-              org_id: orgId,
-              org_name: orgName,
-              consumption_ipu: ipu
-            });
-          }
-        });
-
-        const orgs = Array.from(orgMap.values());
-        const totalIPU = orgs.reduce((sum, org) => sum + org.consumption_ipu, 0);
-
-        const result = orgs.map(org => ({
-          name: org.org_name,
-          value: totalIPU > 0 ? Math.round((org.consumption_ipu / totalIPU) * 100) : 0,
-          cost: org.consumption_ipu * client.preco_por_ipu,
-          color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
-        })).sort((a, b) => b.value - a.value);
-
-        // Cache result
-        cacheRef.current.set(cacheKey, { data: result, timestamp: now });
-        return result;
-      }
+        return [];
     } catch (error) {
       console.error('Error fetching chart data:', error);
       return [];
