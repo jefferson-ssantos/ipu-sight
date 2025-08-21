@@ -297,26 +297,32 @@ export function useDashboardData(selectedOrg?: string) {
       const configIds = configs.map(config => config.id);
 
       if (type === 'billing-periods') {
-        // Get ALL unique billing periods from consumption data (not filtered by consumption > 0)
-        const { data: allCycles, error: allCyclesError } = await supabase
+        // Use the same query logic for billing periods - get cycles with consumption data
+        const { data: cyclesWithConsumption, error: cyclesError } = await supabase
           .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date')
+          .select('billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds)
+          .gt('consumption_ipu', 0)
           .order('billing_period_start_date', { ascending: true });
         
-        if (allCyclesError || !allCycles) {
-          console.error('Error fetching all cycles:', allCyclesError);
+        if (cyclesError || !cyclesWithConsumption) {
+          console.error('Error fetching cycles with consumption:', cyclesError);
           return [];
         }
         
-        // Remove duplicates and format
-        const uniqueCycles = Array.from(
-          new Map(allCycles.map(cycle => [
-            `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`,
-            cycle
-          ])).values()
-        );
+        // Group by billing period to get unique cycles (same logic as user's query)
+        const cycleMap = new Map();
+        cyclesWithConsumption.forEach(item => {
+          const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          if (!cycleMap.has(key)) {
+            cycleMap.set(key, {
+              billing_period_start_date: item.billing_period_start_date,
+              billing_period_end_date: item.billing_period_end_date
+            });
+          }
+        });
         
+        const uniqueCycles = Array.from(cycleMap.values());
         console.log('All unique cycles found:', uniqueCycles.length, uniqueCycles);
         
         // Create a map with all cycles
@@ -425,10 +431,10 @@ export function useDashboardData(selectedOrg?: string) {
         return result;
 
       } else if (type === 'evolution') {
-        // Get unique billing periods from consumption data
+        // Get consumption data and group using the same logic as user's query
         let query = supabase
           .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date, consumption_ipu')
+          .select('configuracao_id, billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds);
 
         if (selectedOrg) {
@@ -436,13 +442,15 @@ export function useDashboardData(selectedOrg?: string) {
         }
 
         const { data: evolutionData } = await query;
-
         if (!evolutionData) return [];
 
-        // Group by billing period and sum IPUs
+        // Group by configuracao_id, billing_period_start_date, billing_period_end_date and sum consumption_ipu
+        // This replicates the user's query: 
+        // select configuracao_id,billing_period_start_date,billing_period_end_date, sum(consumption_ipu)
+        // group by configuracao_id,billing_period_start_date,billing_period_end_date
         const periodMap = new Map();
         evolutionData.forEach(item => {
-          const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          const key = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
           if (periodMap.has(key)) {
             periodMap.get(key).totalIPU += item.consumption_ipu || 0;
           } else {
@@ -457,14 +465,30 @@ export function useDashboardData(selectedOrg?: string) {
               period: periodLabel,
               totalIPU: item.consumption_ipu || 0,
               billing_period_start_date: item.billing_period_start_date,
+              billing_period_end_date: item.billing_period_end_date,
+              configuracao_id: item.configuracao_id
+            });
+          }
+        });
+
+        // Group by billing period (without configuracao_id) for final display
+        const finalPeriodMap = new Map();
+        Array.from(periodMap.values()).forEach(item => {
+          const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          if (finalPeriodMap.has(key)) {
+            finalPeriodMap.get(key).totalIPU += item.totalIPU;
+          } else {
+            finalPeriodMap.set(key, {
+              period: item.period,
+              totalIPU: item.totalIPU,
+              billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date
             });
           }
         });
 
-        const result = Array.from(periodMap.values())
+        const result = Array.from(finalPeriodMap.values())
           .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
-          .slice(-6) // Last 6 periods
           .map(item => ({
             period: item.period,
             ipu: item.totalIPU,
