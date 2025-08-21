@@ -99,7 +99,15 @@ export function CostChart({
   // Set contracted value when dashboard data is available
   useEffect(() => {
     if (dashboardData?.contractedIPUs && dashboardData?.pricePerIPU) {
-      setContractedValue(dashboardData.contractedIPUs * dashboardData.pricePerIPU);
+      const calculatedValue = dashboardData.contractedIPUs * dashboardData.pricePerIPU;
+      console.log('CostChart: Calculating contracted value:', {
+        contractedIPUs: dashboardData.contractedIPUs,
+        pricePerIPU: dashboardData.pricePerIPU,
+        calculatedValue
+      });
+      setContractedValue(calculatedValue);
+    } else {
+      console.log('CostChart: Dashboard data not available for contracted value:', dashboardData);
     }
   }, [dashboardData]);
 
@@ -220,13 +228,16 @@ export function CostChart({
                 content={<CustomTooltip />}
               />
               {contractedValue > 0 && (
-                <ReferenceLine 
-                  y={contractedValue} 
-                  stroke="hsl(var(--warning))" 
-                  strokeDasharray="5 5"
-                  strokeWidth={2}
-                  label={{ value: "Valor Contratado", position: "top" }}
-                />
+                <>
+                  {console.log('CostChart: Rendering ReferenceLine with value:', contractedValue)}
+                  <ReferenceLine 
+                    y={contractedValue} 
+                    stroke="hsl(var(--warning))" 
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{ value: `Valor Contratado: ${formatCurrency(contractedValue)}`, position: "top" }}
+                  />
+                </>
               )}
               {billingData?.meters?.map((meter: string, index: number) => (
                 <Bar 
