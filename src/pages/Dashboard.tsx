@@ -149,7 +149,7 @@ export default function Dashboard() {
         <div className="relative z-10 p-8 text-primary-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <img src={orysLogo} alt="Orys Logo" className="h-12" />
+              <img src={orysLogo} alt="Orys Logo" className="h-20 w-20" />
               <div>
                 <h1 className="text-3xl font-heading font-bold mb-2">
                   FinOps Dashboard
@@ -209,7 +209,7 @@ export default function Dashboard() {
               Indicadores Principais
             </h2>
             <Badge variant="outline" className="text-muted-foreground">
-              Tempo real
+              KPI's
             </Badge>
           </div>
 
@@ -237,7 +237,7 @@ export default function Dashboard() {
           />
 
           <KPICard
-            title="Total IPUs Consumidas no período"
+            title="Total IPUs Consumidas no Período"
             value={formatIPU(dashboardData?.totalIPU || 0)}
             icon={Activity}
             variant="warning"
