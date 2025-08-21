@@ -210,6 +210,14 @@ export function CostChart({
   const renderChart = () => {
     switch (type) {
       case "bar":
+        // Calculate max value for Y-axis domain
+        const maxDataValue = chartData.length > 0 ? Math.max(...chartData.map(d => {
+          const values = Object.values(d).filter((v): v is number => typeof v === 'number' && v > 0);
+          return values.length > 0 ? Math.max(...values) : 0;
+        })) : 0;
+        const maxValue = Math.max(maxDataValue, contractedValue);
+        const yAxisMax = maxValue * 1.1; // 10% above max value
+
         return (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
@@ -223,29 +231,23 @@ export function CostChart({
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickFormatter={formatCurrency}
+                domain={[0, yAxisMax]}
               />
               <Tooltip 
                 content={<CustomTooltip />}
               />
               {contractedValue > 0 && (
-                <>
-                  {console.log('CostChart: Rendering ReferenceLine with value:', contractedValue)}
-                  {console.log('CostChart: Chart data max value:', Math.max(...chartData.map(d => {
-                    const values = Object.values(d).filter(v => typeof v === 'number');
-                    return Math.max(...values);
-                  })))}
-                  <ReferenceLine 
-                    y={contractedValue} 
-                    stroke="hsl(var(--destructive))" 
-                    strokeDasharray="5 5"
-                    strokeWidth={3}
-                    label={{ 
-                      value: `Valor Contratado: ${formatCurrency(contractedValue)}`, 
-                      position: "top",
-                      style: { fill: "hsl(var(--destructive))", fontWeight: "bold" }
-                    }}
-                  />
-                </>
+                <ReferenceLine 
+                  y={contractedValue} 
+                  stroke="hsl(var(--destructive))" 
+                  strokeDasharray="5 5"
+                  strokeWidth={3}
+                  label={{ 
+                    value: `Valor Contratado: ${formatCurrency(contractedValue)}`, 
+                    position: "top",
+                    style: { fill: "hsl(var(--destructive))", fontWeight: "bold" }
+                  }}
+                />
               )}
               {billingData?.meters?.map((meter: string, index: number) => (
                 <Bar 
