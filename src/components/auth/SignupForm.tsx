@@ -236,7 +236,7 @@ export function SignupForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="preco_por_ipu">Preço por IPU (USD)</Label>
+                <Label htmlFor="preco_por_ipu">Preço por IPU (R$)</Label>
                 <Input
                   id="preco_por_ipu"
                   type="number"
