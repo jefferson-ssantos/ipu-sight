@@ -138,6 +138,11 @@ export function useDashboardData(selectedOrg?: string) {
         consumptionQuery = consumptionQuery.eq('org_id', selectedOrg);
       }
 
+      // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
+      if (!selectedOrg || selectedOrg === 'all') {
+        consumptionQuery = consumptionQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
+      }
+
       const { data: consumption, error: consumptionError } = await consumptionQuery;
 
       if (consumptionError) throw consumptionError;
@@ -373,6 +378,11 @@ export function useDashboardData(selectedOrg?: string) {
           query = query.eq('org_id', selectedOrg);
         }
 
+        // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
+        if (!selectedOrg || selectedOrg === 'all') {
+          query = query.neq('meter_name', 'Sandbox Organizations IPU Usage');
+        }
+
         const { data: periodData, error: periodError } = await query;
 
         if (periodError) {
@@ -468,11 +478,16 @@ export function useDashboardData(selectedOrg?: string) {
 
         let query = supabase
           .from('api_consumosummary')
-          .select('configuracao_id, billing_period_start_date, billing_period_end_date, consumption_ipu')
+          .select('configuracao_id, billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
           .in('configuracao_id', configIds);
 
         if (selectedOrg) {
           query = query.eq('org_id', selectedOrg);
+        }
+
+        // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
+        if (!selectedOrg || selectedOrg === 'all') {
+          query = query.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
         const { data: evolutionData } = await query;
@@ -539,13 +554,18 @@ export function useDashboardData(selectedOrg?: string) {
 
         let query = supabase
           .from('api_consumosummary')
-          .select('org_id, org_name, consumption_ipu')
+          .select('org_id, org_name, consumption_ipu, meter_name')
           .in('configuracao_id', configIds)
           .eq('billing_period_start_date', currentCycle.billing_period_start_date)
           .eq('billing_period_end_date', currentCycle.billing_period_end_date);
 
         if (selectedOrg) {
           query = query.eq('org_id', selectedOrg);
+        }
+
+        // Exclude "Sandbox Organizations IPU Usage" only for "Todas as Organizações" view
+        if (!selectedOrg || selectedOrg === 'all') {
+          query = query.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
         const { data: distributionData } = await query;
