@@ -330,7 +330,7 @@ export function CostChart({
       default: // area
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData}>
+            <AreaChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
               <defs>
                 <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
