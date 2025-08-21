@@ -53,6 +53,8 @@ interface CostChartProps {
   className?: string;
   selectedOrg?: string;
   selectedPeriod?: string;
+  selectedCycleFilter?: string;
+  getChartData?: (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedPeriod?: string) => Promise<any>;
 }
 
 export function CostChart({ 
@@ -62,14 +64,16 @@ export function CostChart({
   showFilters = true,
   className,
   selectedOrg,
-  selectedPeriod
+  selectedPeriod,
+  selectedCycleFilter,
+  getChartData
 }: CostChartProps) {
   const [period, setPeriod] = useState(selectedPeriod || "6-months");
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>(data || mockData);
   const [billingData, setBillingData] = useState<any>(null);
   const [contractedValue, setContractedValue] = useState<number>(0);
-  const { getChartData, data: dashboardData } = useDashboardData();
+  const { data: dashboardData } = useDashboardData();
 
   const stableChartData = useMemo(() => {
     if (type === 'pie') {
@@ -116,11 +120,11 @@ export function CostChart({
       setChartData(data);
     } else if (getChartData) {
       const fetchData = async () => {
-        console.log('CostChart: Fetching data with period:', period, 'metric:', metric, 'type:', type);
+        console.log('CostChart: Fetching data with cycleFilter:', selectedCycleFilter, 'metric:', metric, 'type:', type);
         
         if (type === 'bar') {
           // Special handling for billing periods stacked bar chart
-          const billingResult = await getChartData('billing-periods', selectedOrg, period);
+          const billingResult = await getChartData('billing-periods', selectedOrg, selectedCycleFilter);
           console.log('CostChart: Billing periods data:', billingResult);
           if (billingResult && typeof billingResult === 'object' && 'data' in billingResult) {
             setBillingData(billingResult);
@@ -130,7 +134,7 @@ export function CostChart({
           }
         } else {
           const chartType = type === 'pie' ? 'distribution' : 'evolution';
-          const realData = await getChartData(chartType, selectedOrg, period);
+          const realData = await getChartData(chartType, selectedOrg, selectedCycleFilter);
           console.log('CostChart: Received data:', realData);
           if (Array.isArray(realData)) {
             setChartData(realData.length > 0 ? realData : (type === 'pie' ? orgData : mockData));
@@ -141,7 +145,7 @@ export function CostChart({
       };
       fetchData();
     }
-  }, [data, type, selectedOrg, getChartData, period, metric]);
+  }, [data, type, selectedOrg, getChartData, selectedCycleFilter, metric]);
 
   const formatIPU = (value: number) => {
     if (value >= 1000000) {

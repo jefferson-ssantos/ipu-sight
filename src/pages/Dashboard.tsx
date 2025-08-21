@@ -7,6 +7,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { CostChart } from "@/components/dashboard/CostChart";
 import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
+import { CycleFilter } from "@/components/dashboard/CycleFilter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,11 +29,12 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState("current");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("1");
   const [showAssetTable, setShowAssetTable] = useState(false);
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{value: string, label: string}>>([]);
   
-  const { data: dashboardData, loading, error, refetch } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg);
+  const { data: dashboardData, loading, error, refetch, getChartData, availableCycles } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
 
   // Fetch available organizations
   useEffect(() => {
@@ -279,6 +281,13 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Cycle Filter */}
+        <CycleFilter 
+          selectedCycleFilter={selectedCycleFilter}
+          onCycleFilterChange={setSelectedCycleFilter}
+          availableCycles={availableCycles}
+        />
+
         {/* Charts Section */}
         <div className="grid grid-cols-1 gap-6">
           {/* Stacked Bar Chart by Billing Cycle */}
@@ -286,7 +295,8 @@ export default function Dashboard() {
             title="Métricas por Ciclo de Consumo"
             type="bar"
             selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-            selectedPeriod={selectedPeriod}
+            selectedCycleFilter={selectedCycleFilter}
+            getChartData={getChartData}
             showFilters={false}
           />
           
@@ -295,16 +305,18 @@ export default function Dashboard() {
               title="Evolução de Custos"
               type="area"
               selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-              selectedPeriod={selectedPeriod}
+              selectedCycleFilter={selectedCycleFilter}
+              getChartData={getChartData}
               showFilters={false}
             />
 
             <CostChart
               title="Distribuição por Organização"
               type="pie"
-              showFilters={false}
               selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-              selectedPeriod={selectedPeriod}
+              selectedCycleFilter={selectedCycleFilter}
+              getChartData={getChartData}
+              showFilters={false}
             />
           </div>
         </div>

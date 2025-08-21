@@ -34,11 +34,17 @@ interface DashboardData {
   } | null;
 }
 
-export function useDashboardData(selectedOrg?: string) {
+export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: string) {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableCycles, setAvailableCycles] = useState<Array<{
+    ciclo_id: number;
+    billing_period_start_date: string;
+    billing_period_end_date: string;
+    configuracao_id: number;
+  }>>([]);
   
   // Cache para evitar requisições desnecessárias
   const cacheRef = useRef<Map<string, any>>(new Map());
@@ -110,27 +116,80 @@ export function useDashboardData(selectedOrg?: string) {
 
       const configIds = configs.map(config => config.id);
 
-      // Get current billing cycle - get the most recent cycle based on end date
-      const { data: currentCycle, error: cycleError } = await supabase
+      // Get available billing cycles from api_consumosummary
+      const { data: cyclesData, error: cyclesError } = await supabase
         .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date')
+        .select('billing_period_start_date, billing_period_end_date, configuracao_id')
         .in('configuracao_id', configIds)
-        .order('billing_period_end_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('billing_period_end_date', { ascending: false });
 
-      if (cycleError) throw cycleError;
+      if (cyclesError) throw cyclesError;
+      
+      // Create unique cycles map
+      const cyclesMap = new Map();
+      let cycleCounter = 1;
+      const sortedCycles = cyclesData
+        ?.sort((a, b) => new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime()) || [];
+      
+      const uniqueCycles: Array<{
+        ciclo_id: number;
+        billing_period_start_date: string;
+        billing_period_end_date: string;
+        configuracao_id: number;
+      }> = [];
+
+      sortedCycles.forEach(item => {
+        const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+        if (!cyclesMap.has(key)) {
+          cyclesMap.set(key, true);
+          uniqueCycles.push({
+            ciclo_id: cycleCounter,
+            billing_period_start_date: item.billing_period_start_date,
+            billing_period_end_date: item.billing_period_end_date,
+            configuracao_id: item.configuracao_id
+          });
+          cycleCounter++;
+        }
+      });
+      
+      setAvailableCycles(uniqueCycles);
+
+      // Determine which cycles to use based on selectedCycleFilter
+      let cyclesToFilter = uniqueCycles;
+      if (selectedCycleFilter && selectedCycleFilter !== 'all') {
+        const cycleCount = parseInt(selectedCycleFilter);
+        if (!isNaN(cycleCount)) {
+          cyclesToFilter = uniqueCycles.slice(0, cycleCount);
+        }
+      }
+
+      // Get current billing cycle - get the most recent cycle based on end date
+      let currentCycle = null;
+      if (cyclesToFilter.length > 0) {
+        currentCycle = cyclesToFilter[0]; // Most recent cycle after filtering
+      } else if (uniqueCycles.length > 0) {
+        currentCycle = uniqueCycles[0]; // Most recent cycle overall
+      }
 
       let consumptionQuery = supabase
         .from('api_consumosummary')
         .select('*')
         .in('configuracao_id', configIds);
 
-      // Filter by current cycle if available
-      if (currentCycle) {
-        consumptionQuery = consumptionQuery
-          .eq('billing_period_start_date', currentCycle.billing_period_start_date)
-          .eq('billing_period_end_date', currentCycle.billing_period_end_date);
+      // Apply cycle filter if specified
+      if (cyclesToFilter.length > 0 && selectedCycleFilter !== 'all') {
+        const cycleConditions = cyclesToFilter.map(cycle => 
+          `(billing_period_start_date.eq.${cycle.billing_period_start_date},billing_period_end_date.eq.${cycle.billing_period_end_date})`
+        );
+        // For cycle filtering, we'll filter the results after fetching
+      } else if (!selectedCycleFilter || selectedCycleFilter === 'all') {
+        // Get current cycle only if no specific filter is applied
+        const currentCycle = uniqueCycles[0]; // Most recent cycle
+        if (currentCycle) {
+          consumptionQuery = consumptionQuery
+            .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+            .eq('billing_period_end_date', currentCycle.billing_period_end_date);
+        }
       }
 
       // Filter by organization if selected
@@ -138,9 +197,20 @@ export function useDashboardData(selectedOrg?: string) {
         consumptionQuery = consumptionQuery.eq('org_id', selectedOrg);
       }
 
-      const { data: consumption, error: consumptionError } = await consumptionQuery;
+      const { data: allConsumption, error: consumptionError } = await consumptionQuery;
 
       if (consumptionError) throw consumptionError;
+
+      // Apply cycle filter to consumption data if needed
+      let consumption = allConsumption || [];
+      if (selectedCycleFilter && selectedCycleFilter !== 'all' && cyclesToFilter.length > 0) {
+        consumption = consumption.filter(item => 
+          cyclesToFilter.some(cycle => 
+            cycle.billing_period_start_date === item.billing_period_start_date &&
+            cycle.billing_period_end_date === item.billing_period_end_date
+          )
+        );
+       }
 
       if (!consumption || consumption.length === 0) {
         const emptyData = {
@@ -246,7 +316,7 @@ export function useDashboardData(selectedOrg?: string) {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedOrg]);
+  }, [user, selectedOrg, selectedCycleFilter]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -533,5 +603,5 @@ export function useDashboardData(selectedOrg?: string) {
     fetchDashboardData(true);
   }, [fetchDashboardData]);
 
-  return { data, loading, error, refetch, getChartData };
+  return { data, loading, error, refetch, getChartData, availableCycles };
 }
