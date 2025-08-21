@@ -16,7 +16,7 @@ interface CycleFilterProps {
 export function CycleFilter({ selectedCycleFilter, onCycleFilterChange, availableCycles = [] }: CycleFilterProps) {
   const filterOptions = [
     { value: '1', label: 'Ciclo Atual' },
-    { value: '2', label: 'Último Ciclo' },
+    { value: '2', label: 'Últimos 2 Ciclos' },
     { value: '3', label: 'Últimos 3 Ciclos' },
     { value: '6', label: 'Últimos 6 Ciclos' },
     { value: '12', label: 'Últimos 12 Ciclos' },
