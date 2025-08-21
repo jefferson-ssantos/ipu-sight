@@ -230,12 +230,20 @@ export function CostChart({
               {contractedValue > 0 && (
                 <>
                   {console.log('CostChart: Rendering ReferenceLine with value:', contractedValue)}
+                  {console.log('CostChart: Chart data max value:', Math.max(...chartData.map(d => {
+                    const values = Object.values(d).filter(v => typeof v === 'number');
+                    return Math.max(...values);
+                  })))}
                   <ReferenceLine 
                     y={contractedValue} 
-                    stroke="hsl(var(--warning))" 
+                    stroke="hsl(var(--destructive))" 
                     strokeDasharray="5 5"
-                    strokeWidth={2}
-                    label={{ value: `Valor Contratado: ${formatCurrency(contractedValue)}`, position: "top" }}
+                    strokeWidth={3}
+                    label={{ 
+                      value: `Valor Contratado: ${formatCurrency(contractedValue)}`, 
+                      position: "top",
+                      style: { fill: "hsl(var(--destructive))", fontWeight: "bold" }
+                    }}
                   />
                 </>
               )}
