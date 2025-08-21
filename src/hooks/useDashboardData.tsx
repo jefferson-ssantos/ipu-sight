@@ -303,19 +303,27 @@ export function useDashboardData(selectedOrg?: string) {
 
         // Create unique cycles map
         const cyclesMap = new Map();
-        consumptionCycles?.forEach(item => {
+        let cycleCounter = 1;
+        const sortedCycles = consumptionCycles
+          ?.sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime()) || [];
+        
+        sortedCycles.forEach(item => {
           const key = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
           if (!cyclesMap.has(key)) {
-            // Create a "ciclo_id" based on start date for display
+            // Create display name with cycle number and month/year
             const startDate = new Date(item.billing_period_start_date);
-            const cicloId = `${startDate.getFullYear()}${String(startDate.getMonth() + 1).padStart(2, '0')}${String(startDate.getDate()).padStart(2, '0')}`;
+            const monthName = startDate.toLocaleDateString('pt-BR', { month: 'long' });
+            const year = startDate.getFullYear();
+            const displayName = `Ciclo ${cycleCounter} - ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
             
             cyclesMap.set(key, {
-              ciclo_id: cicloId,
+              ciclo_id: cycleCounter,
+              display_name: displayName,
               billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date,
               configuracao_id: item.configuracao_id
             });
+            cycleCounter++;
           }
         });
         
@@ -343,7 +351,7 @@ export function useDashboardData(selectedOrg?: string) {
             const startDate = new Date(cycle.billing_period_start_date + 'T00:00:00');
             
             periodMap.set(periodKey, {
-              period: `Ciclo ${cycle.ciclo_id}`,
+              period: cycle.display_name,
               periodKey: periodKey,
               sortKey: startDate.getTime(),
               billing_period_start_date: cycle.billing_period_start_date,
@@ -491,7 +499,7 @@ export function useDashboardData(selectedOrg?: string) {
             periodMap.get(key).totalIPU += item.consumption_ipu || 0;
           } else {            
             periodMap.set(key, {
-              period: `Ciclo ${matchingCycle.ciclo_id}`,
+              period: matchingCycle.display_name,
               totalIPU: item.consumption_ipu || 0,
               billing_period_start_date: item.billing_period_start_date,
               billing_period_end_date: item.billing_period_end_date,
