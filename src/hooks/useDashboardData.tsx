@@ -589,15 +589,61 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return result;
 
         } else if (type === 'distribution') {
-          // Use optimized function for cost distribution (all data, no period filter)
-          const { data: distributionData, error: distError } = await supabase
-            .rpc('get_cost_distribution_data');
+          // For distribution, use separate query to get current cycle data including all meters
+          let distributionQuery = supabase
+            .from('api_consumosummary')
+            .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
+            .in('configuracao_id', configIds)
+            .neq('meter_name', 'Sandbox Organizations IPU Usage')
+            .gt('consumption_ipu', 0);
+
+          // Filter by organization if selected and not 'all'
+          if (selectedOrg && selectedOrg !== 'all') {
+            distributionQuery = distributionQuery.eq('org_id', selectedOrg);
+          }
+
+          // Get current cycle for distribution
+          const { data: currentCycle } = await supabase
+            .from('api_consumosummary')
+            .select('billing_period_start_date, billing_period_end_date')
+            .in('configuracao_id', configIds)
+            .neq('meter_name', 'Sandbox Organizations IPU Usage')
+            .order('billing_period_end_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (currentCycle) {
+            distributionQuery = distributionQuery
+              .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+              .eq('billing_period_end_date', currentCycle.billing_period_end_date);
+          }
+
+          const { data: distributionData, error: distError } = await distributionQuery;
 
           if (distError || !distributionData) return [];
 
-          const totalIPU = distributionData.reduce((sum, org) => sum + (org.consumption_ipu || 0), 0);
+          // Group by organization
+          const orgMap = new Map();
+          distributionData.forEach(item => {
+            const orgId = item.org_id || 'unknown';
+            const orgName = item.org_name || orgId;
+            const ipu = item.consumption_ipu || 0;
+            
+            if (orgMap.has(orgId)) {
+              orgMap.get(orgId).consumption_ipu += ipu;
+            } else {
+              orgMap.set(orgId, {
+                org_id: orgId,
+                org_name: orgName,
+                consumption_ipu: ipu
+              });
+            }
+          });
 
-          const result = distributionData
+          const orgs = Array.from(orgMap.values());
+          const totalIPU = orgs.reduce((sum, org) => sum + org.consumption_ipu, 0);
+
+          const result = orgs
             .filter(org => org.consumption_ipu > 0)
             .map(org => ({
               name: org.org_name,
