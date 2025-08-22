@@ -75,6 +75,48 @@ export function CostTrendAnalysis() {
 
   return (
     <div className="space-y-4">
+      {/* Insights Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Insights da Análise</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-sm text-muted-foreground">Tendência Atual</div>
+              <div className="text-lg font-semibold flex items-center gap-2">
+                {trend.isPositive ? (
+                  <>
+                    <TrendingUp className="h-4 w-4 text-destructive" />
+                    <span className="text-destructive">Crescimento</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-4 w-4 text-green-600" />
+                    <span className="text-green-600">Redução</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-sm text-muted-foreground">Variação Mensal</div>
+              <div className="text-lg font-semibold">
+                {trend.percentage.toFixed(1)}%
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-sm text-muted-foreground">Status</div>
+              <div className="text-lg font-semibold">
+                {trend.percentage < 5 ? "Estável" : 
+                 trend.percentage < 15 ? "Moderado" : "Significativo"}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -149,48 +191,6 @@ export function CostTrendAnalysis() {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Insights Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Insights da Análise</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">Tendência Atual</div>
-              <div className="text-lg font-semibold flex items-center gap-2">
-                {trend.isPositive ? (
-                  <>
-                    <TrendingUp className="h-4 w-4 text-destructive" />
-                    <span className="text-destructive">Crescimento</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600">Redução</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">Variação Mensal</div>
-              <div className="text-lg font-semibold">
-                {trend.percentage.toFixed(1)}%
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">Status</div>
-              <div className="text-lg font-semibold">
-                {trend.percentage < 5 ? "Estável" : 
-                 trend.percentage < 15 ? "Moderado" : "Significativo"}
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
