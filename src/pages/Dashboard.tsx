@@ -279,23 +279,13 @@ export default function Dashboard() {
 
           <Card className="bg-gradient-card shadow-medium">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-heading font-bold">
-                    Detalhamento Hierárquico de Custos
-                  </CardTitle>
-                  <CardDescription>
-                    Navegue pelos níveis de detalhamento dos dados de consumo
-                  </CardDescription>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowAssetTable(true)}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Ver por Asset
-                </Button>
+              <div>
+                <CardTitle className="text-lg font-heading font-bold">
+                  Detalhamento Hierárquico de Custos
+                </CardTitle>
+                <CardDescription>
+                  Navegue pelos níveis de detalhamento dos dados de consumo
+                </CardDescription>
               </div>
             </CardHeader>
 
@@ -310,21 +300,39 @@ export default function Dashboard() {
                     dashboardData.organizations.map((org, index) => (
                       <div 
                         key={index}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+                        className={`flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer ${
+                          org.level === 1 ? 'ml-6' : ''
+                        }`}
                         onClick={() => setSelectedOrgForDetails(org.org_id)}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-2 h-8 bg-primary rounded-full" />
-                          <div>
-                            <p className="font-medium text-foreground">{org.org_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatIPU(org.consumption_ipu)} IPUs
-                            </p>
+                          <div className={`w-2 h-8 rounded-full ${
+                            org.isPrincipal ? 'bg-primary' : 'bg-secondary'
+                          }`} />
+                          <div className="flex items-center gap-2">
+                            {org.isPrincipal ? (
+                              <Building2 className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <div>
+                              <p className={`font-medium ${
+                                org.isPrincipal ? 'text-foreground' : 'text-muted-foreground'
+                              }`}>
+                                {org.isPrincipal && '🏢 '}{org.org_name}
+                                {org.isPrincipal && ' (Principal)'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatIPU(org.consumption_ipu)} IPUs
+                              </p>
+                            </div>
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <p className="font-bold text-lg text-foreground">
+                          <p className={`font-bold text-lg ${
+                            org.isPrincipal ? 'text-foreground' : 'text-muted-foreground'
+                          }`}>
                             {formatCurrency(org.cost)}
                           </p>
                           <p className="text-sm text-muted-foreground">

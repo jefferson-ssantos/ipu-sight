@@ -27,12 +27,46 @@ interface DashboardData {
     consumption_ipu: number;
     cost: number;
     percentage: number;
+    isPrincipal?: boolean;
+    level?: number;
+    parentOrgId?: string;
   }>;
   currentCycle: {
     billing_period_start_date: string;
     billing_period_end_date: string;
   } | null;
 }
+
+// Helper function to create hierarchical structure
+const createHierarchicalStructure = (orgs: Array<any>) => {
+  if (orgs.length <= 1) return orgs;
+
+  // Sort organizations by consumption (highest first, so the main one becomes principal)
+  const sortedOrgs = [...orgs].sort((a, b) => b.consumption_ipu - a.consumption_ipu);
+  
+  const [principalOrg, ...childOrgs] = sortedOrgs;
+  
+  // Mark principal organization
+  const hierarchicalOrgs = [
+    {
+      ...principalOrg,
+      isPrincipal: true,
+      level: 0
+    }
+  ];
+
+  // Add child organizations
+  childOrgs.forEach(childOrg => {
+    hierarchicalOrgs.push({
+      ...childOrg,
+      isPrincipal: false,
+      level: 1,
+      parentOrgId: principalOrg.org_id
+    });
+  });
+
+  return hierarchicalOrgs;
+};
 
 export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: string) {
   const { user } = useAuth();
@@ -248,11 +282,16 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       const totalIPUForOrgs = consumption.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
 
       // Calculate costs and percentages for organizations
-      const organizations = Array.from(orgMap.values()).map(org => ({
+      let organizations = Array.from(orgMap.values()).map(org => ({
         ...org,
         cost: org.consumption_ipu * client.preco_por_ipu,
         percentage: totalIPUForOrgs > 0 ? Math.round((org.consumption_ipu / totalIPUForOrgs) * 100) : 0
       })).sort((a, b) => b.consumption_ipu - a.consumption_ipu);
+
+      // Create hierarchical structure - first org is principal
+      if (organizations.length > 1) {
+        organizations = createHierarchicalStructure(organizations);
+      }
 
       const newData = {
         totalCost,
