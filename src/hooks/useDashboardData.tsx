@@ -151,17 +151,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
       const configIds = configs.map(config => config.id);
 
-      // Get current cycle (most recent) using the user's specified query logic
-      const { data: currentCycleData, error: currentCycleError } = await supabase
-        .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date')
-        .in('configuracao_id', configIds)
-        .order('billing_period_end_date', { ascending: false })
-        .limit(1);
-
-      if (currentCycleError) throw currentCycleError;
-
-      // Get all available billing cycles from api_consumosummary
+      // Get available billing cycles from api_consumosummary
       const { data: cyclesData, error: cyclesError } = await supabase
         .from('api_consumosummary')
         .select('billing_period_start_date, billing_period_end_date, configuracao_id')
@@ -199,13 +189,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       
       setAvailableCycles(uniqueCycles);
 
-      // KPIs always use current cycle (most recent) - using the specific query result
-      const currentCycle = currentCycleData && currentCycleData.length > 0 ? {
-        billing_period_start_date: currentCycleData[0].billing_period_start_date,
-        billing_period_end_date: currentCycleData[0].billing_period_end_date
-      } : null;
-
-      console.log('Current cycle data from query:', currentCycle);
+      // KPIs always use current cycle (most recent)
+      const currentCycle = uniqueCycles.length > 0 ? uniqueCycles[0] : null;
 
       // For KPIs, always use current cycle data
       let kpiConsumptionQuery = supabase
@@ -363,21 +348,13 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         contractedIPUs: client.qtd_ipus_contratadas || 0,
         pricePerIPU: client.preco_por_ipu,
         currentPeriod: currentCycle ? 
-          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { 
-            month: 'long', 
-            year: 'numeric',
-            timeZone: 'America/Sao_Paulo'
-          }) :
+          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
           'Período atual',
         periodStart: currentCycle ? 
-          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', {
-            timeZone: 'America/Sao_Paulo'
-          }) : 
+          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR') : 
           '',
         periodEnd: currentCycle ? 
-          new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', {
-            timeZone: 'America/Sao_Paulo'
-          }) : 
+          new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR') : 
           '',
         organizations,
         currentCycle
@@ -494,8 +471,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           baseQuery = baseQuery.eq('org_id', selectedOrg);
         }
 
-        // For distribution chart, exclude "Sandbox Organizations IPU Usage"
-        if (type === 'distribution') {
+        // Exclude "Sandbox Organizations IPU Usage" for evolution and billing-periods charts in "Todas as Organizações" view
+        if ((type === 'evolution' || type === 'billing-periods') && (!selectedOrg || selectedOrg === 'all')) {
           baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
@@ -528,15 +505,12 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         console.log('Filtered consumption records:', consumption.length);
 
         if (type === 'evolution') {
-          console.log('Evolution chart - consumption data:', consumption.length, 'records');
-          console.log('Evolution chart - sample records:', consumption.slice(0, 3));
-          console.log('Evolution chart - all meter names:', [...new Set(consumption.map(c => c.meter_name))]);
           // Group by billing period and sum consumption_ipu - similar to your SQL
           const periodMap = new Map();
           let cycleCounter = 1;
           
           consumption.forEach(item => {
-            const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+            const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             
             if (periodMap.has(periodKey)) {
               periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
@@ -551,6 +525,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
                 totalIPU: item.consumption_ipu || 0,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
+                configuracao_id: item.configuracao_id,
                 cycleCounter: cycleCounter
               });
               cycleCounter++;
@@ -572,14 +547,12 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         }
 
         if (type === 'billing-periods') {
-          console.log('Billing periods chart - consumption data:', consumption.length, 'records');
-          console.log('Billing periods chart - sample records:', consumption.slice(0, 3));
           // Group by billing period and meter_name - similar to your SQL structure
           const periodMap = new Map();
           let cycleCounter = 1;
           
           consumption.forEach(item => {
-            const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+            const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             const meterName = item.meter_name || 'Outros';
             
             if (!periodMap.has(periodKey)) {
@@ -592,6 +565,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
                 period: displayName,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
+                configuracao_id: item.configuracao_id,
                 cycleCounter: cycleCounter,
                 meters: new Map()
               });
@@ -650,6 +624,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             .from('api_consumosummary')
             .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
             .in('configuracao_id', configIds)
+            .neq('meter_name', 'Sandbox Organizations IPU Usage')
             .gt('consumption_ipu', 0);
 
           // Filter by organization if selected and not 'all'
