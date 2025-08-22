@@ -151,7 +151,17 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
       const configIds = configs.map(config => config.id);
 
-      // Get available billing cycles from api_consumosummary
+      // Get current cycle (most recent) using the user's specified query logic
+      const { data: currentCycleData, error: currentCycleError } = await supabase
+        .from('api_consumosummary')
+        .select('billing_period_start_date, billing_period_end_date')
+        .in('configuracao_id', configIds)
+        .order('billing_period_end_date', { ascending: false })
+        .limit(1);
+
+      if (currentCycleError) throw currentCycleError;
+
+      // Get all available billing cycles from api_consumosummary
       const { data: cyclesData, error: cyclesError } = await supabase
         .from('api_consumosummary')
         .select('billing_period_start_date, billing_period_end_date, configuracao_id')
@@ -189,8 +199,11 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       
       setAvailableCycles(uniqueCycles);
 
-      // KPIs always use current cycle (most recent)
-      const currentCycle = uniqueCycles.length > 0 ? uniqueCycles[0] : null;
+      // KPIs always use current cycle (most recent) - using the specific query result
+      const currentCycle = currentCycleData && currentCycleData.length > 0 ? {
+        billing_period_start_date: currentCycleData[0].billing_period_start_date,
+        billing_period_end_date: currentCycleData[0].billing_period_end_date
+      } : null;
 
       // For KPIs, always use current cycle data
       let kpiConsumptionQuery = supabase
