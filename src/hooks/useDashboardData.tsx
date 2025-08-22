@@ -539,6 +539,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
           const result = Array.from(periodMap.values())
             .filter(item => item.totalIPU > 0)
+            .filter(item => item.meter_name !== 'Sandbox Organizations IPU Usage')
             .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
             .map(item => ({
               period: item.period,
