@@ -471,8 +471,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           baseQuery = baseQuery.eq('org_id', selectedOrg);
         }
 
-        // No longer exclude "Sandbox Organizations IPU Usage" for evolution and billing-periods charts
-        // All charts now include all meter names
+        // For distribution chart, exclude "Sandbox Organizations IPU Usage"
+        if (type === 'distribution') {
+          baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
+        }
 
         const { data: allConsumption, error: consumptionError } = await baseQuery
           .order('configuracao_id')
