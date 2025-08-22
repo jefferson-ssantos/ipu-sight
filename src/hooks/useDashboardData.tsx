@@ -382,7 +382,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       return [];
     }
 
-    const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedCycleFilter || '1'}`;
+    const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedCycleFilter || '1'}_v2`;
     const now = Date.now();
 
     try {
@@ -506,6 +506,13 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           console.log('Evolution chart - consumption data:', consumption.length, 'records');
           console.log('Evolution chart - sample records:', consumption.slice(0, 3));
           console.log('Evolution chart - all meter names:', [...new Set(consumption.map(c => c.meter_name))]);
+          
+          // Debug: Check for Sandbox Organizations IPU Usage specifically
+          const sandboxRecords = consumption.filter(c => c.meter_name === 'Sandbox Organizations IPU Usage');
+          console.log('Sandbox Organizations IPU Usage records found:', sandboxRecords.length);
+          if (sandboxRecords.length > 0) {
+            console.log('Sample Sandbox records:', sandboxRecords.slice(0, 2));
+          }
           // Group by billing period and sum consumption_ipu - similar to your SQL
           const periodMap = new Map();
           let cycleCounter = 1;
