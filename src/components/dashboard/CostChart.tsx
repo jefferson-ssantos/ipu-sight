@@ -18,8 +18,9 @@ import {
   ReferenceLine
 } from "recharts";
 import { Download, TrendingUp, Calendar } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import html2canvas from "html2canvas";
 
 const mockData = [
   { period: "Nov/24", ipu: 1250000, cost: 125000, date: "2024-11" },
@@ -74,6 +75,7 @@ export function CostChart({
   const [billingData, setBillingData] = useState<any>(null);
   const [contractedValue, setContractedValue] = useState<number>(0);
   const { data: dashboardData } = useDashboardData();
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const stableChartData = useMemo(() => {
     if (type === 'pie') {
@@ -370,8 +372,29 @@ export function CostChart({
     }
   };
 
+  const handleDownload = async () => {
+    if (!chartRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: 'white',
+        scale: 2,
+        logging: false,
+        width: chartRef.current.offsetWidth,
+        height: chartRef.current.offsetHeight,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `${title.replace(/\s+/g, '_')}_chart.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error generating chart image:', error);
+    }
+  };
+
   return (
-    <Card className={`bg-gradient-card shadow-medium border-border ${className}`}>
+    <Card className={`bg-gradient-card shadow-medium border-border ${className}`} ref={chartRef}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -412,7 +435,7 @@ export function CostChart({
               </>
             )}
 
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleDownload}>
               <Download className="h-4 w-4" />
             </Button>
           </div>
