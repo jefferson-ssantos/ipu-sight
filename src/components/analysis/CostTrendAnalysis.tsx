@@ -165,7 +165,7 @@ export function CostTrendAnalysis() {
         <CardContent>
           <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="period" 
