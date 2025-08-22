@@ -72,6 +72,7 @@ export function CostChart({
   const [period, setPeriod] = useState(selectedPeriod || "6-months");
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>(data || mockData);
+  const [hoveredTotal, setHoveredTotal] = useState<number | null>(null);
   const [billingData, setBillingData] = useState<any>(null);
   const [contractedValue, setContractedValue] = useState<number>(0);
   const { data: dashboardData } = useDashboardData();
@@ -165,6 +166,15 @@ export function CostChart({
 
       if (nonZeroPayload.length === 0) return null;
 
+      // Calculate total for bar chart and set hovered total
+      if (type === 'bar' && billingData?.meters) {
+        const total = billingData.meters.reduce((sum: number, meter: string) => {
+          const meterValue = payload.find((p: any) => p.dataKey === meter)?.value || 0;
+          return sum + meterValue;
+        }, 0);
+        setHoveredTotal(total);
+      }
+
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-strong">
           <p className="font-medium text-foreground mb-2">{label}</p>
@@ -184,11 +194,14 @@ export function CostChart({
           ))}
         </div>
       );
+    } else {
+      // Reset hovered total when not hovering
+      setHoveredTotal(null);
     }
     return null;
   };
 
-  // Custom label for total value above bars
+  // Custom label for total value above bars with dot
   const renderTotalLabel = (props: any) => {
     const { payload, x, y, width } = props;
     if (!payload || !billingData?.meters) return null;
@@ -200,16 +213,26 @@ export function CostChart({
     if (total === 0) return null;
 
     return (
-      <text 
-        x={x + width / 2} 
-        y={y - 5} 
-        fill="hsl(var(--foreground))" 
-        textAnchor="middle" 
-        fontSize="12"
-        fontWeight="bold"
-      >
-        {formatCurrency(total)}
-      </text>
+      <g>
+        {/* Dot above the bar */}
+        <circle 
+          cx={x + width / 2} 
+          cy={y - 15} 
+          r="3" 
+          fill="hsl(var(--primary))" 
+        />
+        {/* Total value text */}
+        <text 
+          x={x + width / 2} 
+          y={y - 25} 
+          fill="hsl(var(--foreground))" 
+          textAnchor="middle" 
+          fontSize="12"
+          fontWeight="bold"
+        >
+          {formatCurrency(total)}
+        </text>
+      </g>
     );
   };
 
@@ -407,6 +430,12 @@ export function CostChart({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Total value display for bar chart when hovering */}
+            {type === 'bar' && hoveredTotal !== null && (
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-sm font-medium">
+                Total: {formatCurrency(hoveredTotal)}
+              </div>
+            )}
             {showFilters && (
               <>
                 <Select value={period} onValueChange={setPeriod}>
