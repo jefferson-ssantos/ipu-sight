@@ -80,6 +80,7 @@ export function OrgDetailsModal({ orgId, onClose, billingPeriod }: OrgDetailsMod
           .select('*')
           .in('configuracao_id', configIds)
           .eq('org_id', orgId)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .eq('billing_period_start_date', billingPeriod.billing_period_start_date)
           .eq('billing_period_end_date', billingPeriod.billing_period_end_date);
 

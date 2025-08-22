@@ -63,7 +63,8 @@ export default function Dashboard() {
         const { data: orgs } = await supabase
           .from('api_consumosummary')
           .select('org_id, org_name')
-          .in('configuracao_id', configIds);
+          .in('configuracao_id', configIds)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage');
 
         if (orgs) {
           const uniqueOrgs = Array.from(

@@ -62,6 +62,7 @@ export function MetricBreakdown() {
           .from('api_consumosummary')
           .select('org_id, org_name')
           .in('configuracao_id', configIds)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .not('org_name', 'is', null);
 
         const uniqueOrgs = Array.from(
@@ -75,6 +76,7 @@ export function MetricBreakdown() {
           .from('api_consumosummary')
           .select('meter_name, metric_category, consumption_ipu, org_id')
           .in('configuracao_id', configIds)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .gt('consumption_ipu', 0);
 
         if (selectedOrg !== "all") {
