@@ -296,34 +296,27 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         }
       }
 
-      // Para o detalhamento hierárquico de custos, usar dados da função de distribuição
-      const consumptionForOrgs = consumption;
+      // Use distribution data function for hierarchical structure
+      const { data: distributionData, error: distError } = await supabase
+        .rpc('get_cost_distribution_data', {
+          start_date: currentCycle?.billing_period_start_date,
+          end_date: currentCycle?.billing_period_end_date
+        });
+
+      if (distError) {
+        console.error('Error fetching distribution data:', distError);
+      }
+
+      const distributionConsumption = distributionData || [];
       
-      const orgMap = new Map();
-      consumptionForOrgs.forEach(item => {
-        const orgId = item.org_id || 'unknown';
-        const orgName = item.org_name || orgId;
-        const ipu = item.consumption_ipu || 0;
-        
-        if (orgMap.has(orgId)) {
-          orgMap.get(orgId).consumption_ipu += ipu;
-        } else {
-          orgMap.set(orgId, {
-            org_id: orgId,
-            org_name: orgName,
-            consumption_ipu: ipu,
-            cost: 0,
-            percentage: 0
-          });
-        }
-      });
+      // Calculate total IPU for organizations distribution data
+      const totalIPUForOrgs = distributionConsumption.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
 
-      // Calculate total IPU for organizations (including all meters)
-      const totalIPUForOrgs = consumption.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
-
-      // Calculate costs and percentages for organizations
-      let organizations = Array.from(orgMap.values()).map(org => ({
-        ...org,
+      // Calculate costs and percentages for organizations using distribution data
+      let organizations = distributionConsumption.map(org => ({
+        org_id: org.org_id,
+        org_name: org.org_name,
+        consumption_ipu: org.consumption_ipu,
         cost: org.consumption_ipu * client.preco_por_ipu,
         percentage: totalIPUForOrgs > 0 ? Math.round((org.consumption_ipu / totalIPUForOrgs) * 100) : 0
       })).sort((a, b) => b.consumption_ipu - a.consumption_ipu);
