@@ -296,9 +296,13 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         }
       }
 
-      // Para o detalhamento hierárquico de custos, usar TODOS os dados (incluindo "Sandbox Organizations IPU Usage")
+      // Para o detalhamento hierárquico de custos, não incluir "Sandbox Organizations IPU Usage"
+      const consumptionForOrgs = consumption.filter(
+        item => item.meter_name !== 'Sandbox Organizations IPU Usage'
+      );
+      
       const orgMap = new Map();
-      consumption.forEach(item => {
+      consumptionForOrgs.forEach(item => {
         const orgId = item.org_id || 'unknown';
         const orgName = item.org_name || orgId;
         const ipu = item.consumption_ipu || 0;
