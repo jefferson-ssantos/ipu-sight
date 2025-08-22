@@ -266,6 +266,84 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Distribution and Hierarchical View */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CostChart
+            title="Distribuição por Organização"
+            type="pie"
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+            selectedCycleFilter={selectedCycleFilter}
+            getChartData={getChartData}
+            showFilters={false}
+          />
+
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-heading font-bold">
+                    Detalhamento Hierárquico de Custos
+                  </CardTitle>
+                  <CardDescription>
+                    Navegue pelos níveis de detalhamento dos dados de consumo
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAssetTable(true)}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Ver por Asset
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="space-y-4">
+                <h3 className="font-medium text-foreground mb-3">
+                  Resumo por Organização
+                </h3>
+                
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {dashboardData?.organizations.length ? (
+                    dashboardData.organizations.map((org, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => setSelectedOrgForDetails(org.org_id)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-2 h-8 bg-primary rounded-full" />
+                          <div>
+                            <p className="font-medium text-foreground">{org.org_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatIPU(org.consumption_ipu)} IPUs
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-foreground">
+                            {formatCurrency(org.cost)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {org.percentage}% do total
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum dado de organização encontrado para o período selecionado.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Cycle Filter */}
         <CycleFilter 
           selectedCycleFilter={selectedCycleFilter}
@@ -285,93 +363,15 @@ export default function Dashboard() {
             showFilters={false}
           />
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CostChart
-              title="Evolução de Custos"
-              type="area"
-              selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-              selectedCycleFilter={selectedCycleFilter}
-              getChartData={getChartData}
-              showFilters={false}
-            />
-
-            <CostChart
-              title="Distribuição por Organização"
-              type="pie"
-              selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-              selectedCycleFilter={selectedCycleFilter}
-              getChartData={getChartData}
-              showFilters={false}
-            />
-          </div>
+          <CostChart
+            title="Evolução de Custos"
+            type="area"
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+            selectedCycleFilter={selectedCycleFilter}
+            getChartData={getChartData}
+            showFilters={false}
+          />
         </div>
-
-        {/* Hierarchical Cost View */}
-        <Card className="bg-gradient-card shadow-medium">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-heading font-bold">
-                  Detalhamento Hierárquico de Custos
-                </CardTitle>
-                <CardDescription>
-                  Navegue pelos níveis de detalhamento dos dados de consumo
-                </CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowAssetTable(true)}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Ver por Asset
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            <div className="space-y-4">
-              <h3 className="font-medium text-foreground mb-3">
-                Resumo por Organização
-              </h3>
-              
-              <div className="space-y-3">
-                {dashboardData?.organizations.length ? (
-                  dashboardData.organizations.map((org, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => setSelectedOrgForDetails(org.org_id)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-2 h-8 bg-primary rounded-full" />
-                        <div>
-                          <p className="font-medium text-foreground">{org.org_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatIPU(org.consumption_ipu)} IPUs
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="font-bold text-lg text-foreground">
-                          {formatCurrency(org.cost)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {org.percentage}% do total
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nenhum dado de organização encontrado para o período selecionado.
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Asset Details Table Modal */}
