@@ -476,11 +476,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           baseQuery = baseQuery.eq('org_id', selectedOrg);
         }
 
-        // Exclude "Sandbox Organizations IPU Usage" for evolution and billing-periods charts in "Todas as Organizações" view
-        if ((type === 'evolution' || type === 'billing-periods') && (!selectedOrg || selectedOrg === 'all')) {
-          baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
-        }
-
         const { data: allConsumption, error: consumptionError } = await baseQuery
           .order('configuracao_id')
           .order('meter_name')
@@ -514,12 +509,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           const periodMap = new Map();
           let cycleCounter = 1;
 
+          // Use consumption which already has the filters applied from baseQuery
           consumption.forEach(item => {
-            // Apply the filter here to exclude 'Sandbox Organizations IPU Usage' at the source
-            if (item.meter_name === 'Sandbox Organizations IPU Usage') {
-              return; // Skip this item
-            }
-
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
 
             if (periodMap.has(periodKey)) {
@@ -561,6 +552,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           const periodMap = new Map();
           let cycleCounter = 1;
           
+          // Use consumption which already has the filters applied from baseQuery
           consumption.forEach(item => {
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             const meterName = item.meter_name || 'Outros';
@@ -628,43 +620,37 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return result;
 
         } else if (type === 'distribution') {
-          // For distribution, include ALL data including "Sandbox Organizations IPU Usage"
-          // Use allConsumption data but don't apply the meter_name filter
-          let distributionQuery = supabase
-            .from('api_consumosummary')
-            .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
-            .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
-            .gt('consumption_ipu', 0);
-
-          // Filter by organization if selected and not 'all'
-          if (selectedOrg && selectedOrg !== 'all') {
-            distributionQuery = distributionQuery.eq('org_id', selectedOrg);
+          // For distribution, use the current cycle data from the filtered consumption
+          // First, get the most recent cycle from consumption data
+          const cycleDates = new Set(consumption.map(item => 
+            `${item.billing_period_start_date}_${item.billing_period_end_date}`
+          ));
+          
+          let currentCycle: { billing_period_start_date: string; billing_period_end_date: string } | null = null;
+          
+          if (cycleDates.size > 0) {
+            // Get the most recent cycle
+            const sortedCycles = Array.from(cycleDates)
+              .map(cycle => {
+                const [start, end] = cycle.split('_');
+                return { billing_period_start_date: start, billing_period_end_date: end };
+              })
+              .sort((a, b) => new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime());
+            
+            currentCycle = sortedCycles[0];
           }
 
-          // Get current cycle for distribution
-          const { data: currentCycle } = await supabase
-            .from('api_consumosummary')
-            .select('billing_period_start_date, billing_period_end_date')
-            .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
-            .order('billing_period_end_date', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          if (!currentCycle) return [];
 
-          if (currentCycle) {
-            distributionQuery = distributionQuery
-              .eq('billing_period_start_date', currentCycle.billing_period_start_date)
-              .eq('billing_period_end_date', currentCycle.billing_period_end_date);
-          }
+          // Filter consumption data to current cycle only
+          const currentCycleData = consumption.filter(item =>
+            item.billing_period_start_date === currentCycle.billing_period_start_date &&
+            item.billing_period_end_date === currentCycle.billing_period_end_date
+          );
 
-          const { data: distributionData, error: distError } = await distributionQuery;
-
-          if (distError || !distributionData) return [];
-
-          // Group by organization - include all meters including Sandbox Organizations IPU Usage
+          // Group by organization
           const orgMap = new Map();
-          distributionData.forEach(item => {
+          currentCycleData.forEach(item => {
             const orgId = item.org_id || 'unknown';
             const orgName = item.org_name || orgId;
             const ipu = item.consumption_ipu || 0;
@@ -683,12 +669,15 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           const orgs = Array.from(orgMap.values());
           const totalIPU = orgs.reduce((sum, org) => sum + org.consumption_ipu, 0);
 
-          const result = orgs.map(org => ({
-            name: org.org_name,
-            value: totalIPU > 0 ? Math.round((org.consumption_ipu / totalIPU) * 100) : 0,
-            cost: org.consumption_ipu * client.preco_por_ipu,
-            color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
-          })).sort((a, b) => b.value - a.value);
+          const result = orgs
+            .filter(org => org.consumption_ipu > 0)
+            .map(org => ({
+              name: org.org_name,
+              value: totalIPU > 0 ? Math.round((org.consumption_ipu / totalIPU) * 100) : 0,
+              cost: org.consumption_ipu * client.preco_por_ipu,
+              color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
+            }))
+            .sort((a, b) => b.value - a.value);
 
           console.log('Distribution chart data:', result);
           cacheRef.current.set(cacheKey, { data: result, timestamp: now });
