@@ -255,6 +255,7 @@ export default function Dashboard() {
             subtitle="Baseado no período atual"
             icon={Activity}
             variant="default"
+            historicalComparison={dashboardData?.historicalComparison}
           />
 
           <KPICard

@@ -17,6 +17,7 @@ interface KPICardProps {
   className?: string;
   contractedValue?: string | number;
   consumptionPercentage?: number;
+  historicalComparison?: number;
 }
 
 export function KPICard({
@@ -28,7 +29,8 @@ export function KPICard({
   variant = "default",
   className,
   contractedValue,
-  consumptionPercentage
+  consumptionPercentage,
+  historicalComparison
 }: KPICardProps) {
   const variants = {
     default: {
@@ -90,6 +92,31 @@ export function KPICard({
     }
   };
 
+  const getHistoricalComparisonColor = (comparison?: number) => {
+    if (comparison === undefined || comparison === 0) return "text-muted-foreground";
+    
+    if (comparison < 0) {
+      return "text-secondary"; // Verde - abaixo do histórico
+    } else if (comparison > 0) {
+      return "text-destructive"; // Vermelho - acima do histórico
+    } else {
+      return "text-warning"; // Amarelo - igual ao histórico
+    }
+  };
+
+  const getHistoricalComparisonText = (comparison?: number) => {
+    if (comparison === undefined) return "";
+    
+    const absComparison = Math.abs(comparison);
+    if (comparison < 0) {
+      return `${absComparison.toFixed(1)}% abaixo do histórico`;
+    } else if (comparison > 0) {
+      return `${absComparison.toFixed(1)}% acima do histórico`;
+    } else {
+      return "Igual ao histórico";
+    }
+  };
+
   return (
     <Card className={cn(
       "transition-all duration-300 hover:shadow-medium",
@@ -147,6 +174,13 @@ export function KPICard({
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Historical comparison for daily cost */}
+          {historicalComparison !== undefined && title === "Custo Médio Diário" && (
+            <div className={`text-sm font-medium mt-2 ${getHistoricalComparisonColor(historicalComparison)}`}>
+              {getHistoricalComparisonText(historicalComparison)}
             </div>
           )}
           

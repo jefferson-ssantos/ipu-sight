@@ -15,6 +15,7 @@ interface DashboardData {
   totalCost: number;
   totalIPU: number;
   avgDailyCost: number;
+  historicalComparison: number;
   activeOrgs: number;
   contractedIPUs: number;
   pricePerIPU: number;
@@ -219,6 +220,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           totalCost: 0,
           totalIPU: 0,
           avgDailyCost: 0,
+          historicalComparison: 0,
           activeOrgs: 0,
           contractedIPUs: client.qtd_ipus_contratadas || 0,
           pricePerIPU: client.preco_por_ipu,
@@ -257,6 +259,50 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         Math.max(1, Math.ceil((new Date(currentCycle.billing_period_end_date).getTime() - new Date(currentCycle.billing_period_start_date).getTime()) / (1000 * 60 * 60 * 24))) :
         30;
       const avgDailyCost = totalCost / days;
+
+      // Calculate historical average daily cost for comparison
+      let historicalAvgDailyCost = 0;
+      let historicalComparison = 0;
+      
+      if (uniqueCycles.length > 1) {
+        // Get historical data (all cycles except current)
+        const historicalCycles = uniqueCycles.slice(1); // Skip current cycle (index 0)
+        let totalHistoricalCost = 0;
+        let totalHistoricalDays = 0;
+
+        for (const cycle of historicalCycles) {
+          const { data: historicalData } = await supabase
+            .from('api_consumosummary')
+            .select('consumption_ipu')
+            .in('configuracao_id', configIds)
+            .eq('billing_period_start_date', cycle.billing_period_start_date)
+            .eq('billing_period_end_date', cycle.billing_period_end_date);
+
+          if (historicalData && historicalData.length > 0) {
+            // Filter out Sandbox Organizations for historical comparison (if viewing all orgs)
+            const filteredHistoricalData = (!selectedOrg || selectedOrg === 'all') 
+              ? historicalData 
+              : historicalData;
+
+            const cycleTotalIPU = filteredHistoricalData.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
+            const cycleCost = cycleTotalIPU * client.preco_por_ipu;
+            
+            const cycleDays = Math.max(1, Math.ceil(
+              (new Date(cycle.billing_period_end_date).getTime() - new Date(cycle.billing_period_start_date).getTime()) / (1000 * 60 * 60 * 24)
+            ));
+            
+            totalHistoricalCost += cycleCost;
+            totalHistoricalDays += cycleDays;
+          }
+        }
+
+        if (totalHistoricalDays > 0) {
+          historicalAvgDailyCost = totalHistoricalCost / totalHistoricalDays;
+          if (historicalAvgDailyCost > 0) {
+            historicalComparison = ((avgDailyCost - historicalAvgDailyCost) / historicalAvgDailyCost) * 100;
+          }
+        }
+      }
 
       // Para o detalhamento hierárquico de custos, usar TODOS os dados (incluindo "Sandbox Organizations IPU Usage")
       const orgMap = new Map();
@@ -297,6 +343,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         totalCost,
         totalIPU,
         avgDailyCost,
+        historicalComparison,
         activeOrgs: organizations.length,
         contractedIPUs: client.qtd_ipus_contratadas || 0,
         pricePerIPU: client.preco_por_ipu,
