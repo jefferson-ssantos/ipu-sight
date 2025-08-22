@@ -156,7 +156,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         .from('api_consumosummary')
         .select('billing_period_start_date, billing_period_end_date, configuracao_id')
         .in('configuracao_id', configIds)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage')
         .order('billing_period_end_date', { ascending: false });
 
       if (cyclesError) throw cyclesError;
@@ -197,8 +196,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       let kpiConsumptionQuery = supabase
         .from('api_consumosummary')
         .select('*')
-        .in('configuracao_id', configIds)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage');
+        .in('configuracao_id', configIds);
 
       if (currentCycle) {
         kpiConsumptionQuery = kpiConsumptionQuery
@@ -277,7 +275,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             .from('api_consumosummary')
             .select('consumption_ipu')
             .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
             .eq('billing_period_start_date', cycle.billing_period_start_date)
             .eq('billing_period_end_date', cycle.billing_period_end_date);
 
@@ -427,7 +424,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           .from('api_consumosummary')
           .select('billing_period_start_date, billing_period_end_date')
           .in('configuracao_id', configIds)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .order('billing_period_end_date', { ascending: false });
 
         if (cyclesError) throw cyclesError;
@@ -468,7 +464,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           .from('api_consumosummary')
           .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .gt('consumption_ipu', 0);
 
         // Filter by organization if selected and not 'all'
@@ -539,6 +534,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
           const result = Array.from(periodMap.values())
             .filter(item => item.totalIPU > 0)
+            .filter(item => item.meter_name !== 'Sandbox Organizations IPU Usage') 
             .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
             .map(item => ({
               period: item.period,
@@ -629,7 +625,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             .from('api_consumosummary')
             .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
             .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
             .gt('consumption_ipu', 0);
 
           // Filter by organization if selected and not 'all'
@@ -642,7 +637,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             .from('api_consumosummary')
             .select('billing_period_start_date, billing_period_end_date')
             .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
             .order('billing_period_end_date', { ascending: false })
             .limit(1)
             .maybeSingle();
