@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { Download, Filter } from "lucide-react";
+import { Download, Filter, Calendar } from "lucide-react";
 
 interface MetricData {
   meter_name: string;
@@ -19,7 +19,9 @@ export function MetricBreakdown() {
   const [data, setData] = useState<MetricData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
   const [organizations, setOrganizations] = useState<Array<{id: string, name: string}>>([]);
+  const [availableCycles, setAvailableCycles] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +59,12 @@ export function MetricBreakdown() {
 
         const configIds = configs.map(c => c.id);
 
+        // Get available cycles using the same function as dashboard
+        const { data: cyclesData } = await supabase
+          .rpc('get_available_cycles');
+
+        setAvailableCycles(cyclesData || []);
+
         // Get organizations for filter
         const { data: orgData } = await supabase
           .from('api_consumosummary')
@@ -71,29 +79,58 @@ export function MetricBreakdown() {
 
         setOrganizations(uniqueOrgs);
 
-        // Build query for consumption data
-        let query = supabase
+        // Use consumption summary data with cycle filtering
+        const cycleLimit = selectedCycleFilter && selectedCycleFilter !== 'all' 
+          ? parseInt(selectedCycleFilter) 
+          : null;
+
+        // Get unique cycles for filtering
+        const { data: availableCyclesData } = await supabase
+          .rpc('get_available_cycles');
+
+        // Apply cycle filtering manually
+        let billingQuery = supabase
           .from('api_consumosummary')
-          .select('meter_name, metric_category, consumption_ipu, org_id')
+          .select('meter_name, metric_category, consumption_ipu, billing_period_start_date, billing_period_end_date')
           .in('configuracao_id', configIds)
           .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .gt('consumption_ipu', 0);
 
         if (selectedOrg !== "all") {
-          query = query.eq('org_id', selectedOrg);
+          billingQuery = billingQuery.eq('org_id', selectedOrg);
         }
 
-        const { data: consumptionData } = await query;
+        // Apply cycle filtering
+        if (cycleLimit && availableCyclesData?.length) {
+          const cyclesToInclude = availableCyclesData.slice(0, cycleLimit);
+          const periodFilters = cyclesToInclude.map(cycle => 
+            `(billing_period_start_date.eq.${cycle.billing_period_start_date},billing_period_end_date.eq.${cycle.billing_period_end_date})`
+          ).join(',');
+          
+          if (cyclesToInclude.length === 1) {
+            billingQuery = billingQuery
+              .eq('billing_period_start_date', cyclesToInclude[0].billing_period_start_date)
+              .eq('billing_period_end_date', cyclesToInclude[0].billing_period_end_date);
+          } else if (cyclesToInclude.length > 1) {
+            // For multiple cycles, we need to use the or filter
+            const orConditions = cyclesToInclude.map(cycle => 
+              `and(billing_period_start_date.eq.${cycle.billing_period_start_date},billing_period_end_date.eq.${cycle.billing_period_end_date})`
+            ).join(',');
+            billingQuery = billingQuery.or(orConditions);
+          }
+        }
 
-        if (!consumptionData) return;
+        const { data: billingData } = await billingQuery;
+
+        if (!billingData) return;
 
         // Group by meter_name and metric_category
-        const groupedData = consumptionData.reduce((acc, item) => {
-          const key = `${item.meter_name}-${item.metric_category}`;
+        const groupedData = billingData.reduce((acc, item) => {
+          const key = `${item.meter_name}-${item.metric_category || 'General'}`;
           if (!acc[key]) {
             acc[key] = {
               meter_name: item.meter_name,
-              metric_category: item.metric_category,
+              metric_category: item.metric_category || 'General',
               total_consumption: 0,
               total_cost: 0,
               percentage: 0
@@ -124,7 +161,7 @@ export function MetricBreakdown() {
     };
 
     fetchData();
-  }, [selectedOrg]);
+  }, [selectedOrg, selectedCycleFilter]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -183,8 +220,56 @@ export function MetricBreakdown() {
     return null;
   };
 
+  const filterOptions = [
+    { value: '1', label: 'Ciclo Atual' },
+    { value: '2', label: 'Últimos 2 Ciclos' },
+    { value: '3', label: 'Últimos 3 Ciclos' },
+    { value: '6', label: 'Últimos 6 Ciclos' },
+    { value: '12', label: 'Últimos 12 Ciclos' },
+    { value: 'all', label: 'Todos os Ciclos' }
+  ];
+
   return (
     <div className="space-y-4">
+      {/* Cycle Filter */}
+      <Card className="p-4 bg-gradient-card shadow-medium border-border">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Calendar className="h-4 w-4 text-primary" />
+            <span>Período de Análise:</span>
+          </div>
+          
+          <Select value={selectedCycleFilter} onValueChange={setSelectedCycleFilter}>
+            <SelectTrigger className="w-[200px] bg-background border-input">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border">
+              {filterOptions.map((option) => {
+                const isDisabled = option.value !== 'all' && 
+                                  !isNaN(parseInt(option.value)) && 
+                                  parseInt(option.value) > availableCycles.length;
+                
+                return (
+                  <SelectItem 
+                    key={option.value} 
+                    value={option.value}
+                    disabled={isDisabled}
+                    className="focus:bg-accent focus:text-accent-foreground"
+                  >
+                    {option.label}
+                    {isDisabled && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        (Indisponível)
+                      </span>
+                    )}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Detalhamento por Métrica</CardTitle>
