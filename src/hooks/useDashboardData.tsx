@@ -589,9 +589,15 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return result;
 
         } else if (type === 'distribution') {
-          // Use optimized function for cost distribution
+          // Use current cycle for distribution chart to match period filter
+          const currentCycle = availableCycles.length > 0 ? availableCycles[0] : null;
+          
+          // Use optimized function for cost distribution with period filter
           const { data: distributionData, error: distError } = await supabase
-            .rpc('get_cost_distribution_data');
+            .rpc('get_cost_distribution_data', {
+              start_date: currentCycle?.billing_period_start_date,
+              end_date: currentCycle?.billing_period_end_date
+            });
 
           if (distError || !distributionData) return [];
 
