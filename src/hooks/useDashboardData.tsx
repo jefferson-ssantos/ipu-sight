@@ -382,7 +382,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       return [];
     }
 
-    const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedCycleFilter || '1'}_v2`;
+    const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedCycleFilter || '1'}`;
     const now = Date.now();
 
     try {
@@ -464,7 +464,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           .from('api_consumosummary')
           .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds)
-          .gte('consumption_ipu', 0);  // Changed from gt to gte to include zero values
+          .gt('consumption_ipu', 0);
 
         // Filter by organization if selected and not 'all'
         if (selectedOrg && selectedOrg !== 'all') {
@@ -475,14 +475,9 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         // All charts now include all meter names
 
         const { data: allConsumption, error: consumptionError } = await baseQuery
-          .order('billing_period_start_date', { ascending: false });
-
-        console.log('getChartData: Raw query result length:', allConsumption?.length || 0);
-        console.log('getChartData: Sample raw records:', allConsumption?.slice(0, 3));
-        
-        // Check for Sandbox Organizations IPU Usage in raw data
-        const sandboxInRaw = allConsumption?.filter(item => item.meter_name === 'Sandbox Organizations IPU Usage') || [];
-        console.log('getChartData: Sandbox records in raw data:', sandboxInRaw.length);
+          .order('configuracao_id')
+          .order('meter_name')
+          .order('billing_period_start_date');
 
         if (consumptionError) {
           console.error('Error fetching consumption data:', consumptionError);
@@ -511,13 +506,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           console.log('Evolution chart - consumption data:', consumption.length, 'records');
           console.log('Evolution chart - sample records:', consumption.slice(0, 3));
           console.log('Evolution chart - all meter names:', [...new Set(consumption.map(c => c.meter_name))]);
-          
-          // Debug: Check for Sandbox Organizations IPU Usage specifically
-          const sandboxRecords = consumption.filter(c => c.meter_name === 'Sandbox Organizations IPU Usage');
-          console.log('Sandbox Organizations IPU Usage records found:', sandboxRecords.length);
-          if (sandboxRecords.length > 0) {
-            console.log('Sample Sandbox records:', sandboxRecords.slice(0, 2));
-          }
           // Group by billing period and sum consumption_ipu - similar to your SQL
           const periodMap = new Map();
           let cycleCounter = 1;
