@@ -10,7 +10,7 @@ import { TrendingUp, TrendingDown, Download } from "lucide-react";
 export function CostTrendAnalysis() {
   const { data, loading, getChartData } = useDashboardData();
   const [period, setPeriod] = useState("6months");
-  const [metric, setMetric] = useState("ipu");
+  const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
