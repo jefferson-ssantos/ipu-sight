@@ -29,7 +29,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState("current");
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("1");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
   const [showAssetTable, setShowAssetTable] = useState(false);
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{value: string, label: string}>>([]);
