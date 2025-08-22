@@ -296,10 +296,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         }
       }
 
-      // Para o detalhamento hierárquico de custos, não incluir "Sandbox Organizations IPU Usage"
-      const consumptionForOrgs = consumption.filter(
-        item => item.meter_name !== 'Sandbox Organizations IPU Usage'
-      );
+      // Para o detalhamento hierárquico de custos, usar dados da função de distribuição
+      const consumptionForOrgs = consumption;
       
       const orgMap = new Map();
       consumptionForOrgs.forEach(item => {
