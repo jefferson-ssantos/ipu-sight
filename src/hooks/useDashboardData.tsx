@@ -556,6 +556,12 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           // Group by billing period and meter_name - similar to your SQL structure
           const periodMap = new Map();
           let cycleCounter = 1;
+
+          consumption.forEach(item => {
+            // Add the filter here to skip unwanted items
+            if (item.meter_name === 'Sandbox Organizations IPU Usage') {
+            return; // Skip this item and continue to the next one
+              }
           
           consumption.forEach(item => {
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
