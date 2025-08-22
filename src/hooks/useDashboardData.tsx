@@ -205,6 +205,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         billing_period_end_date: currentCycleData[0].billing_period_end_date
       } : null;
 
+      console.log('Current cycle data from query:', currentCycle);
+
       // For KPIs, always use current cycle data
       let kpiConsumptionQuery = supabase
         .from('api_consumosummary')
