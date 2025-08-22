@@ -464,7 +464,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           .from('api_consumosummary')
           .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds)
-          .gt('consumption_ipu', 0);
+          .gte('consumption_ipu', 0);  // Changed from gt to gte to include zero values
 
         // Filter by organization if selected and not 'all'
         if (selectedOrg && selectedOrg !== 'all') {
@@ -475,9 +475,14 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         // All charts now include all meter names
 
         const { data: allConsumption, error: consumptionError } = await baseQuery
-          .order('configuracao_id')
-          .order('meter_name')
-          .order('billing_period_start_date');
+          .order('billing_period_start_date', { ascending: false });
+
+        console.log('getChartData: Raw query result length:', allConsumption?.length || 0);
+        console.log('getChartData: Sample raw records:', allConsumption?.slice(0, 3));
+        
+        // Check for Sandbox Organizations IPU Usage in raw data
+        const sandboxInRaw = allConsumption?.filter(item => item.meter_name === 'Sandbox Organizations IPU Usage') || [];
+        console.log('getChartData: Sandbox records in raw data:', sandboxInRaw.length);
 
         if (consumptionError) {
           console.error('Error fetching consumption data:', consumptionError);
