@@ -468,12 +468,16 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           .from('api_consumosummary')
           .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
           .in('configuracao_id', configIds)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .gt('consumption_ipu', 0);
 
         // Filter by organization if selected and not 'all'
         if (selectedOrg && selectedOrg !== 'all') {
           baseQuery = baseQuery.eq('org_id', selectedOrg);
+        }
+
+        // Exclude "Sandbox Organizations IPU Usage" only for evolution and billing-periods charts
+        if (type === 'evolution' || type === 'billing-periods') {
+          baseQuery = baseQuery.neq('meter_name', 'Sandbox Organizations IPU Usage');
         }
 
         const { data: allConsumption, error: consumptionError } = await baseQuery
@@ -620,37 +624,42 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return result;
 
         } else if (type === 'distribution') {
-          // For distribution, use the current cycle data from the filtered consumption
-          // First, get the most recent cycle from consumption data
-          const cycleDates = new Set(consumption.map(item => 
-            `${item.billing_period_start_date}_${item.billing_period_end_date}`
-          ));
-          
-          let currentCycle: { billing_period_start_date: string; billing_period_end_date: string } | null = null;
-          
-          if (cycleDates.size > 0) {
-            // Get the most recent cycle
-            const sortedCycles = Array.from(cycleDates)
-              .map(cycle => {
-                const [start, end] = cycle.split('_');
-                return { billing_period_start_date: start, billing_period_end_date: end };
-              })
-              .sort((a, b) => new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime());
-            
-            currentCycle = sortedCycles[0];
+          // For distribution, use separate query to get current cycle data including all meters
+          let distributionQuery = supabase
+            .from('api_consumosummary')
+            .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
+            .in('configuracao_id', configIds)
+            .neq('meter_name', 'Sandbox Organizations IPU Usage')
+            .gt('consumption_ipu', 0);
+
+          // Filter by organization if selected and not 'all'
+          if (selectedOrg && selectedOrg !== 'all') {
+            distributionQuery = distributionQuery.eq('org_id', selectedOrg);
           }
 
-          if (!currentCycle) return [];
+          // Get current cycle for distribution
+          const { data: currentCycle } = await supabase
+            .from('api_consumosummary')
+            .select('billing_period_start_date, billing_period_end_date')
+            .in('configuracao_id', configIds)
+            .neq('meter_name', 'Sandbox Organizations IPU Usage')
+            .order('billing_period_end_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-          // Filter consumption data to current cycle only
-          const currentCycleData = consumption.filter(item =>
-            item.billing_period_start_date === currentCycle.billing_period_start_date &&
-            item.billing_period_end_date === currentCycle.billing_period_end_date
-          );
+          if (currentCycle) {
+            distributionQuery = distributionQuery
+              .eq('billing_period_start_date', currentCycle.billing_period_start_date)
+              .eq('billing_period_end_date', currentCycle.billing_period_end_date);
+          }
+
+          const { data: distributionData, error: distError } = await distributionQuery;
+
+          if (distError || !distributionData) return [];
 
           // Group by organization
           const orgMap = new Map();
-          currentCycleData.forEach(item => {
+          distributionData.forEach(item => {
             const orgId = item.org_id || 'unknown';
             const orgName = item.org_name || orgId;
             const ipu = item.consumption_ipu || 0;
