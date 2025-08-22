@@ -513,10 +513,15 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           // Group by billing period and sum consumption_ipu - similar to your SQL
           const periodMap = new Map();
           let cycleCounter = 1;
-          
+
           consumption.forEach(item => {
+            // Apply the filter here to exclude 'Sandbox Organizations IPU Usage' at the source
+            if (item.meter_name === 'Sandbox Organizations IPU Usage') {
+              return; // Skip this item
+            }
+
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
-            
+
             if (periodMap.has(periodKey)) {
               periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
             } else {
@@ -524,7 +529,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
               const monthName = endDate.toLocaleDateString('pt-BR', { month: 'short' });
               const year = endDate.getFullYear().toString().slice(-2);
               const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
-              
+
               periodMap.set(periodKey, {
                 period: displayName,
                 totalIPU: item.consumption_ipu || 0,
@@ -539,7 +544,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
           const result = Array.from(periodMap.values())
             .filter(item => item.totalIPU > 0)
-            .filter(item => item.meter_name !== 'Sandbox Organizations IPU Usage')
             .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
             .map(item => ({
               period: item.period,
@@ -552,18 +556,12 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return result;
         }
 
-
         if (type === 'billing-periods') {
           // Group by billing period and meter_name - similar to your SQL structure
           const periodMap = new Map();
           let cycleCounter = 1;
           
           consumption.forEach(item => {
-            // Apply the filter here
-            if (item.meter_name === 'Sandbox Organizations IPU Usage') {
-              return; // Skip this item
-            }
-
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             const meterName = item.meter_name || 'Outros';
             
@@ -628,8 +626,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           console.log('Billing periods chart data:', result);
           cacheRef.current.set(cacheKey, { data: result, timestamp: now });
           return result;
-        }
-       else if (type === 'distribution') {
+
+        } else if (type === 'distribution') {
           // For distribution, include ALL data including "Sandbox Organizations IPU Usage"
           // Use allConsumption data but don't apply the meter_name filter
           let distributionQuery = supabase
