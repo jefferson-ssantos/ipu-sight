@@ -870,6 +870,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_available_cycles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          billing_period_end_date: string
+          billing_period_start_date: string
+        }[]
+      }
       get_billing_cycles_with_data: {
         Args: { config_ids: number[] }
         Returns: {
@@ -878,6 +885,53 @@ export type Database = {
           ciclo_id: number
           configuracao_id: number
           has_consumption: boolean
+        }[]
+      }
+      get_billing_periods_data: {
+        Args: { cycle_limit?: number; org_filter?: string }
+        Returns: {
+          billing_period_end_date: string
+          billing_period_start_date: string
+          consumption_ipu: number
+          meter_name: string
+          org_id: string
+          org_name: string
+        }[]
+      }
+      get_cost_distribution_data: {
+        Args: { end_date?: string; start_date?: string }
+        Returns: {
+          consumption_ipu: number
+          org_id: string
+          org_name: string
+        }[]
+      }
+      get_cost_evolution_data: {
+        Args: { cycle_limit?: number; org_filter?: string }
+        Returns: {
+          billing_period_end_date: string
+          billing_period_start_date: string
+          consumption_ipu: number
+          org_id: string
+          org_name: string
+        }[]
+      }
+      get_dashboard_kpis: {
+        Args: { end_date?: string; org_filter?: string; start_date?: string }
+        Returns: {
+          active_orgs: number
+          billing_period_end_date: string
+          billing_period_start_date: string
+          configuracao_id: number
+          total_ipu: number
+        }[]
+      }
+      get_organization_details_data: {
+        Args: { end_date?: string; start_date?: string }
+        Returns: {
+          consumption_ipu: number
+          org_id: string
+          org_name: string
         }[]
       }
     }
