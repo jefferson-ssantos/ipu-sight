@@ -151,13 +151,9 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
       const configIds = configs.map(config => config.id);
 
-      // Get available billing cycles from api_consumosummary
+      // Get available billing cycles using optimized function
       const { data: cyclesData, error: cyclesError } = await supabase
-        .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date, configuracao_id')
-        .in('configuracao_id', configIds)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage')
-        .order('billing_period_end_date', { ascending: false });
+        .rpc('get_available_cycles');
 
       if (cyclesError) throw cyclesError;
       
@@ -182,7 +178,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             ciclo_id: cycleCounter,
             billing_period_start_date: item.billing_period_start_date,
             billing_period_end_date: item.billing_period_end_date,
-            configuracao_id: item.configuracao_id
+            configuracao_id: configIds[0] || 0 // Use first config ID as reference
           });
           cycleCounter++;
         }
@@ -193,29 +189,27 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       // KPIs always use current cycle (most recent)
       const currentCycle = uniqueCycles.length > 0 ? uniqueCycles[0] : null;
 
-      // For KPIs, always use current cycle data
-      let kpiConsumptionQuery = supabase
-        .from('api_consumosummary')
-        .select('*')
-        .in('configuracao_id', configIds)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage');
+      // Use optimized function for KPIs
+      const { data: kpiData, error: kpiError } = await supabase
+        .rpc('get_dashboard_kpis', {
+          start_date: currentCycle?.billing_period_start_date,
+          end_date: currentCycle?.billing_period_end_date,
+          org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+        });
 
-      if (currentCycle) {
-        kpiConsumptionQuery = kpiConsumptionQuery
-          .eq('billing_period_start_date', currentCycle.billing_period_start_date)
-          .eq('billing_period_end_date', currentCycle.billing_period_end_date);
-      }
+      if (kpiError) throw kpiError;
 
-      // Filter by organization if selected
-      if (selectedOrg && selectedOrg !== 'all') {
-        kpiConsumptionQuery = kpiConsumptionQuery.eq('org_id', selectedOrg);
-      }
+      // Get organization details for hierarchical structure
+      const { data: orgData, error: orgError } = await supabase
+        .rpc('get_organization_details_data', {
+          start_date: currentCycle?.billing_period_start_date,
+          end_date: currentCycle?.billing_period_end_date
+        });
 
-      const { data: kpiConsumption, error: consumptionError } = await kpiConsumptionQuery;
+      if (orgError) throw orgError;
 
-      if (consumptionError) throw consumptionError;
-
-      let consumption = kpiConsumption || [];
+      const consumption = orgData || [];
+      const kpiConsumption = kpiData || [];
 
       if (!consumption || consumption.length === 0) {
         const emptyData = {
@@ -245,13 +239,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         return;
       }
 
-      // Para o cálculo dos KPIs principais, excluir "Sandbox Organizations IPU Usage" na visão "Todas as Organizações"
-      const consumptionForKPIs = (!selectedOrg || selectedOrg === 'all') 
-        ? consumption.filter(item => item.meter_name !== 'Sandbox Organizations IPU Usage')
-        : consumption;
-
-      // Calculate total IPU consumption for KPIs
-      const totalIPU = consumptionForKPIs.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
+      // Calculate total IPU consumption for KPIs (already filtered by optimized functions)
+      const totalIPU = kpiConsumption.reduce((sum, item) => sum + (item.total_ipu || 0), 0);
       
       // Calculate total cost for KPIs
       const totalCost = totalIPU * client.preco_por_ipu;
@@ -422,46 +411,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
         const configIds = configs.map(config => config.id);
 
-        // Get available cycles to apply filter
-        const { data: cyclesData, error: cyclesError } = await supabase
-          .from('api_consumosummary')
-          .select('billing_period_start_date, billing_period_end_date')
-          .in('configuracao_id', configIds)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage')
-          .order('billing_period_end_date', { ascending: false });
-
-        if (cyclesError) throw cyclesError;
-
-        // Create unique cycles
-        const cyclesMap = new Map();
-        const sortedCycles = cyclesData?.sort((a, b) => 
-          new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime()
-        ) || [];
-        
-        const uniqueCycles: Array<{
-          billing_period_start_date: string;
-          billing_period_end_date: string;
-        }> = [];
-
-        sortedCycles.forEach(item => {
-          const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-          if (!cyclesMap.has(key)) {
-            cyclesMap.set(key, true);
-            uniqueCycles.push({
-              billing_period_start_date: item.billing_period_start_date,
-              billing_period_end_date: item.billing_period_end_date
-            });
-          }
-        });
-
-        // Apply cycle filter
-        let cyclesToUse = uniqueCycles;
-        if (selectedCycleFilter && selectedCycleFilter !== 'all') {
-          const cycleCount = parseInt(selectedCycleFilter);
-          if (!isNaN(cycleCount)) {
-            cyclesToUse = uniqueCycles.slice(0, cycleCount);
-          }
-        }
+        // Get cycle limit for the optimized functions
+        const cycleLimit = selectedCycleFilter && selectedCycleFilter !== 'all' 
+          ? parseInt(selectedCycleFilter) 
+          : null;
 
         // Use similar query structure to your SQL - fetch all consumption data first
         let baseQuery = supabase
@@ -495,27 +448,29 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return [];
         }
 
-        // Apply cycle filter to consumption data
-        let consumption = allConsumption;
-        if (selectedCycleFilter && selectedCycleFilter !== 'all' && cyclesToUse.length > 0) {
-          consumption = allConsumption.filter(item => 
-            cyclesToUse.some(cycle => 
-              cycle.billing_period_start_date === item.billing_period_start_date &&
-              cycle.billing_period_end_date === item.billing_period_end_date
-            )
-          );
-        }
-
-        console.log('Filtered consumption records:', consumption.length);
+        console.log('Total consumption records:', allConsumption.length);
 
         if (type === 'evolution') {
-          // Group by billing period and sum consumption_ipu - similar to your SQL
+          // Use optimized function for cost evolution
+          const { data: evolutionData, error: evolutionError } = await supabase
+            .rpc('get_cost_evolution_data', { 
+              cycle_limit: cycleLimit,
+              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+            });
+
+          if (evolutionError) {
+            console.error('Error fetching evolution data:', evolutionError);
+            return [];
+          }
+
+          if (!evolutionData || evolutionData.length === 0) return [];
+
+          // Group by billing period
           const periodMap = new Map();
           let cycleCounter = 1;
 
-          // Use consumption which already has the filters applied from baseQuery
-          consumption.forEach(item => {
-            const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          evolutionData.forEach(item => {
+            const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
 
             if (periodMap.has(periodKey)) {
               periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
@@ -530,7 +485,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
                 totalIPU: item.consumption_ipu || 0,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
-                configuracao_id: item.configuracao_id,
                 cycleCounter: cycleCounter
               });
               cycleCounter++;
@@ -549,16 +503,28 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           console.log('Evolution chart data:', result);
           cacheRef.current.set(cacheKey, { data: result, timestamp: now });
           return result;
-        }
 
-        if (type === 'billing-periods') {
-          // Group by billing period and meter_name - similar to your SQL structure
+        } else if (type === 'billing-periods') {
+          // Use optimized function for billing periods
+          const { data: billingData, error: billingError } = await supabase
+            .rpc('get_billing_periods_data', { 
+              cycle_limit: cycleLimit,
+              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+            });
+
+          if (billingError) {
+            console.error('Error fetching billing periods data:', billingError);
+            return [];
+          }
+
+          if (!billingData || billingData.length === 0) return [];
+
+          // Group by billing period and meter_name
           const periodMap = new Map();
           let cycleCounter = 1;
           
-          // Use consumption which already has the filters applied from baseQuery
-          consumption.forEach(item => {
-            const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
+          billingData.forEach(item => {
+            const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
             const meterName = item.meter_name || 'Outros';
             
             if (!periodMap.has(periodKey)) {
@@ -571,7 +537,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
                 period: displayName,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
-                configuracao_id: item.configuracao_id,
                 cycleCounter: cycleCounter,
                 meters: new Map()
               });
@@ -624,61 +589,15 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           return result;
 
         } else if (type === 'distribution') {
-          // For distribution, use separate query to get current cycle data including all meters
-          let distributionQuery = supabase
-            .from('api_consumosummary')
-            .select('configuracao_id, org_id, org_name, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu')
-            .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
-            .gt('consumption_ipu', 0);
-
-          // Filter by organization if selected and not 'all'
-          if (selectedOrg && selectedOrg !== 'all') {
-            distributionQuery = distributionQuery.eq('org_id', selectedOrg);
-          }
-
-          // Get current cycle for distribution
-          const { data: currentCycle } = await supabase
-            .from('api_consumosummary')
-            .select('billing_period_start_date, billing_period_end_date')
-            .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
-            .order('billing_period_end_date', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (currentCycle) {
-            distributionQuery = distributionQuery
-              .eq('billing_period_start_date', currentCycle.billing_period_start_date)
-              .eq('billing_period_end_date', currentCycle.billing_period_end_date);
-          }
-
-          const { data: distributionData, error: distError } = await distributionQuery;
+          // Use optimized function for cost distribution
+          const { data: distributionData, error: distError } = await supabase
+            .rpc('get_cost_distribution_data');
 
           if (distError || !distributionData) return [];
 
-          // Group by organization
-          const orgMap = new Map();
-          distributionData.forEach(item => {
-            const orgId = item.org_id || 'unknown';
-            const orgName = item.org_name || orgId;
-            const ipu = item.consumption_ipu || 0;
-            
-            if (orgMap.has(orgId)) {
-              orgMap.get(orgId).consumption_ipu += ipu;
-            } else {
-              orgMap.set(orgId, {
-                org_id: orgId,
-                org_name: orgName,
-                consumption_ipu: ipu
-              });
-            }
-          });
+          const totalIPU = distributionData.reduce((sum, org) => sum + (org.consumption_ipu || 0), 0);
 
-          const orgs = Array.from(orgMap.values());
-          const totalIPU = orgs.reduce((sum, org) => sum + org.consumption_ipu, 0);
-
-          const result = orgs
+          const result = distributionData
             .filter(org => org.consumption_ipu > 0)
             .map(org => ({
               name: org.org_name,
