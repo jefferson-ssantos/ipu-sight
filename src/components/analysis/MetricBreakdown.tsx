@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Download, Filter, Calendar } from "lucide-react";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface MetricData {
   meter_name: string;
@@ -22,6 +24,7 @@ export function MetricBreakdown() {
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
   const [organizations, setOrganizations] = useState<Array<{id: string, name: string}>>([]);
   const [availableCycles, setAvailableCycles] = useState<any[]>([]);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -205,6 +208,28 @@ export function MetricBreakdown() {
     fill: colors[index % colors.length]
   }));
 
+  const handleDownload = async () => {
+    if (!chartRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `detalhamento-metricas-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      
+      toast("Gráfico exportado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao exportar gráfico:', error);
+      toast("Erro ao exportar gráfico");
+    }
+  };
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -284,7 +309,7 @@ export function MetricBreakdown() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
@@ -292,7 +317,7 @@ export function MetricBreakdown() {
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Pie Chart */}
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">

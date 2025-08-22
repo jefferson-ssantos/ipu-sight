@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, Download } from "lucide-react";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 export function OrganizationComparison() {
   const { data, loading } = useDashboardData();
   const [metric, setMetric] = useState("ipu");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -35,6 +38,28 @@ export function OrganizationComparison() {
       const bValue = metric === 'cost' ? b.cost : b.ipu;
       return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
     }) || [];
+
+  const handleDownload = async () => {
+    if (!chartRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `comparacao-organizacoes-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      
+      toast("Gráfico exportado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao exportar gráfico:', error);
+      toast("Erro ao exportar gráfico");
+    }
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -83,7 +108,7 @@ export function OrganizationComparison() {
               {sortOrder === 'desc' ? 'Maior > Menor' : 'Menor > Maior'}
             </Button>
 
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
@@ -91,7 +116,7 @@ export function OrganizationComparison() {
         </CardHeader>
 
         <CardContent>
-          <div className="h-96 w-full">
+          <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />

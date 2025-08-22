@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
 import { TrendingUp, AlertTriangle, Download, Calendar, DollarSign, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface HistoricalData {
   period: string;
@@ -32,6 +34,7 @@ export function CostForecast() {
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
   const [loading, setLoading] = useState(true);
   const [pricePerIPU, setPricePerIPU] = useState(0);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -334,6 +337,28 @@ export function CostForecast() {
 
   const summary = calculateForecastSummary();
 
+  const handleDownload = async () => {
+    if (!chartRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `previsao-custos-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      
+      toast("Gráfico exportado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao exportar gráfico:', error);
+      toast("Erro ao exportar gráfico");
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -462,7 +487,7 @@ export function CostForecast() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
@@ -470,7 +495,7 @@ export function CostForecast() {
         </CardHeader>
 
         <CardContent>
-          <div className="h-96 w-full">
+          <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={combinedData} margin={{ left: 60, right: 20, top: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />

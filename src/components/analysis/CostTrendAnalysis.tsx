@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, TrendingDown, Download } from "lucide-react";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 export function CostTrendAnalysis() {
   const { data, loading, getChartData } = useDashboardData();
   const [period, setPeriod] = useState("6months");
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>([]);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +60,28 @@ export function CostTrendAnalysis() {
   };
 
   const trend = calculateTrend();
+
+  const handleDownload = async () => {
+    if (!chartRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `analise-tendencias-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      
+      toast("Gráfico exportado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao exportar gráfico:', error);
+      toast("Erro ao exportar gráfico");
+    }
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -155,7 +180,7 @@ export function CostTrendAnalysis() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
@@ -163,7 +188,7 @@ export function CostTrendAnalysis() {
         </CardHeader>
 
         <CardContent>
-          <div className="h-96 w-full">
+          <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
