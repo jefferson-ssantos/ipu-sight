@@ -560,10 +560,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           consumption.forEach(item => {
             // Add the filter here to skip unwanted items
             if (item.meter_name === 'Sandbox Organizations IPU Usage') {
-            return; // Skip this item and continue to the next one
-              }
-          
-          consumption.forEach(item => {
+              return; // Skip this item and continue to the next one
+            }
             const periodKey = `${item.configuracao_id}_${item.billing_period_start_date}_${item.billing_period_end_date}`;
             const meterName = item.meter_name || 'Outros';
             
@@ -698,10 +696,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         }
 
         return [];
-    } catch (error) {
-      console.error('Error fetching chart data:', error);
-      return [];
-    }
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+        return [];
+      }
   }, [user]);
 
   const refetch = useCallback(() => {
