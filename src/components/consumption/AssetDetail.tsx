@@ -26,9 +26,10 @@ interface AssetData {
 
 interface AssetDetailProps {
   selectedOrg?: string;
+  selectedCycleFilter?: string;
 }
 
-export function AssetDetail({ selectedOrg }: AssetDetailProps) {
+export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailProps) {
   const { user } = useAuth();
   const [assets, setAssets] = useState<AssetData[]>([]);
   const [filteredAssets, setFilteredAssets] = useState<AssetData[]>([]);
@@ -39,7 +40,7 @@ export function AssetDetail({ selectedOrg }: AssetDetailProps) {
     if (user) {
       fetchAssetData();
     }
-  }, [user, selectedOrg]);
+  }, [user, selectedOrg, selectedCycleFilter]);
 
   useEffect(() => {
     if (search.trim() === '') {
