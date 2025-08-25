@@ -123,7 +123,7 @@ export function CostForecast() {
   const generateAdvancedForecast = (historical: HistoricalData[], period: string, pricePerIPU: number): ForecastData[] => {
     if (historical.length < 2) return [];
 
-    const periodsToForecast = period === "3months" ? 3 : period === "6months" ? 6 : 12;
+    const periodsToForecast = period === "1month" ? 1 : period === "3months" ? 3 : period === "6months" ? 6 : 12;
     
     // Apply multiple forecasting methods
     const linearForecast = linearRegressionForecast(historical, periodsToForecast, pricePerIPU);
@@ -138,8 +138,8 @@ export function CostForecast() {
       const seasonal = seasonalForecast[i] || { ipu: 0, cost: 0 };
       const movingAvg = movingAvgForecast[i] || { ipu: 0, cost: 0 };
       
-      // Weighted average (40% linear, 30% seasonal, 30% moving average)
-      const weightedIPU = (linear.ipu * 0.4) + (seasonal.ipu * 0.3) + (movingAvg.ipu * 0.3);
+      // More conservative weighted average (20% linear, 30% seasonal, 50% moving average)
+      const weightedIPU = (linear.ipu * 0.2) + (seasonal.ipu * 0.3) + (movingAvg.ipu * 0.5);
       const weightedCost = weightedIPU * pricePerIPU;
       
       // Calculate confidence based on data variance
@@ -207,15 +207,19 @@ export function CostForecast() {
     const recentData = data.slice(-windowSize);
     const avgIPU = recentData.reduce((sum, item) => sum + item.ipu, 0) / recentData.length;
     
-    // Apply growth trend
-    const growthTrend = calculateGrowthTrend(data);
+    // Apply conservative growth trend (reduce volatility)
+    const growthTrend = calculateGrowthTrend(data) * 0.5; // Reduce by 50% for more conservative forecast
     
     const forecast = [];
     for (let i = 0; i < periods; i++) {
-      const predictedIPU = avgIPU * Math.pow(1 + growthTrend, i + 1);
+      // Use more conservative projection
+      const baseIPU = avgIPU;
+      const trendAdjustment = baseIPU * growthTrend * (i + 1) * 0.3; // Reduce trend impact
+      const predictedIPU = Math.max(0, baseIPU + trendAdjustment);
+      
       forecast.push({
-        ipu: Math.max(0, predictedIPU),
-        cost: Math.max(0, predictedIPU * pricePerIPU)
+        ipu: predictedIPU,
+        cost: predictedIPU * pricePerIPU
       });
     }
     
@@ -398,7 +402,8 @@ export function CostForecast() {
               {metric === 'cost' ? formatCurrency(summary.totalForecast) : `${formatIPU(summary.totalForecast)} IPUs`}
             </div>
             <div className="text-sm text-muted-foreground">
-              Para os próximos {forecastPeriod.replace('months', ' meses').replace('12months', '12 meses')}
+              Para {forecastPeriod === '1month' ? 'o próximo mês' : 
+                   forecastPeriod.replace('months', ' meses').replace('12months', '12 meses')}
             </div>
           </CardContent>
         </Card>
@@ -471,6 +476,7 @@ export function CostForecast() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="1month">Próximo mês</SelectItem>
                 <SelectItem value="3months">Próximos 3 meses</SelectItem>
                 <SelectItem value="6months">Próximos 6 meses</SelectItem>
                 <SelectItem value="12months">Próximo ano</SelectItem>
