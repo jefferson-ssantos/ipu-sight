@@ -22,6 +22,7 @@ interface AssetData {
   tier: string | null;
   runtime_environment: string | null;
   org_id: string | null;
+  org_name: string | null;
 }
 
 interface AssetDetailProps {
@@ -82,6 +83,22 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
 
       if (!configs?.length) return;
 
+      // First get organization names from summary table
+      const { data: orgNames } = await supabase
+        .from('api_consumosummary')
+        .select('org_id, org_name')
+        .in('configuracao_id', configs.map(c => c.id))
+        .not('org_id', 'is', null)
+        .not('org_name', 'is', null);
+
+      // Create a map of org_id to org_name
+      const orgNameMap = new Map();
+      orgNames?.forEach(org => {
+        if (org.org_id && org.org_name) {
+          orgNameMap.set(org.org_id, org.org_name);
+        }
+      });
+
       let query = supabase
         .from('api_consumoasset')
         .select('*')
@@ -103,7 +120,8 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
 
       const processedData = data?.map(asset => ({
         ...asset,
-        cost: (asset.consumption_ipu || 0) * Number(clientPricing.preco_por_ipu)
+        cost: (asset.consumption_ipu || 0) * Number(clientPricing.preco_por_ipu),
+        org_name: orgNameMap.get(asset.org_id) || null
       })) || [];
 
       setAssets(processedData);
@@ -142,7 +160,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
         asset.consumption_date || '',
         asset.project_name || '',
         asset.runtime_environment || '',
-        asset.org_id || ''
+        asset.org_name || asset.org_id || ''
       ].join(','))
     ].join('\n');
 
@@ -212,7 +230,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
                           <Badge variant="outline">{asset.asset_type || 'N/A'}</Badge>
                         </TableCell>
                         <TableCell>{asset.project_name || 'N/A'}</TableCell>
-                        <TableCell className="font-medium">{asset.org_id || 'N/A'}</TableCell>
+                        <TableCell className="font-medium">{asset.org_name || asset.org_id || 'N/A'}</TableCell>
                         <TableCell>
                           {asset.consumption_date ? new Date(asset.consumption_date).toLocaleDateString('pt-BR') : 'N/A'}
                         </TableCell>
