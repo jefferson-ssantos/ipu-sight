@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KPICardProps {
@@ -261,15 +261,28 @@ export function KPICard({
             </div>
           )}
 
-          {/* Comparação histórica no Custo Médio Diário (com seta) */}
+          {/* Comparação histórica no Custo Médio Diário (com ícone de seta) */}
           {historicalComparison !== undefined &&
             title === "Custo Médio Diário" && (
-              <div
-                className={`text-sm font-medium mt-2 ${getHistoricalComparisonColor(
-                  historicalComparison
-                )}`}
-              >
-                {getHistoricalComparisonText(historicalComparison)}
+              <div className="flex items-center gap-2 mt-2">
+                {historicalComparison > 0 ? (
+                  <TrendingUp className={`h-4 w-4 ${getHistoricalComparisonColor(historicalComparison)}`} />
+                ) : historicalComparison < 0 ? (
+                  <TrendingDown className={`h-4 w-4 ${getHistoricalComparisonColor(historicalComparison)}`} />
+                ) : null}
+                <span
+                  className={`text-sm font-medium ${getHistoricalComparisonColor(
+                    historicalComparison
+                  )}`}
+                >
+                  {historicalComparison !== 0 ? (
+                    `${Math.abs(historicalComparison).toFixed(1)}% ${
+                      historicalComparison > 0 ? "acima" : "abaixo"
+                    } do histórico`
+                  ) : (
+                    "Igual ao histórico"
+                  )}
+                </span>
               </div>
             )}
         </div>
