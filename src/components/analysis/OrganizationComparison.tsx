@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export function OrganizationComparison() {
   const { data, loading } = useDashboardData();
-  const [metric, setMetric] = useState("ipu");
+  const [metric, setMetric] = useState("cost");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const chartRef = useRef<HTMLDivElement>(null);
 
