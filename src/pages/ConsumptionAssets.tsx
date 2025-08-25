@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CycleFilter } from '@/components/dashboard/CycleFilter';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { AssetDetail } from '@/components/consumption/AssetDetail';
-import { Database, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function ConsumptionAssets() {
   const [selectedOrg, setSelectedOrg] = useState<string>('');
@@ -14,20 +14,12 @@ export default function ConsumptionAssets() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Database className="h-8 w-8 text-primary" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Detalhamento por Asset</h1>
             <p className="text-muted-foreground">
               Visão detalhada do consumo individual por asset
             </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Calendar className="h-4 w-4 text-primary" />
-            <span>Filtros:</span>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
