@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { CostChart } from "@/components/dashboard/CostChart";
-import { ProjectCostChart } from "@/components/dashboard/ProjectCostChart";
 import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { CycleFilter } from "@/components/dashboard/CycleFilter";
@@ -324,12 +323,6 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Project Cost Chart */}
-          <ProjectCostChart 
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-            selectedCycleFilter={selectedCycleFilter}
-          />
         </div>
 
         {/* Cycle Filter */}
