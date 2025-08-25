@@ -10,6 +10,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import ConsumptionAssets from "./pages/ConsumptionAssets";
+import ConsumptionProjects from "./pages/ConsumptionProjects";
+import ConsumptionOrganizations from "./pages/ConsumptionOrganizations";
+import ConsumptionJobs from "./pages/ConsumptionJobs";
 import ConsumptionOverview from "./pages/ConsumptionOverview";
 import ConsumptionDetails from "./pages/ConsumptionDetails";
 import Configuration from "./pages/Configuration";
@@ -17,9 +20,6 @@ import ConfigTags from "./pages/ConfigTags";
 import ConfigConnections from "./pages/ConfigConnections";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
-import { ProjectDetail } from "./components/consumption/ProjectDetail";
-import { OrganizationDetail } from "./components/consumption/OrganizationDetail";
-import { JobExecutionDetail } from "./components/consumption/JobExecutionDetail";
 
 const queryClient = new QueryClient();
 
@@ -93,47 +93,17 @@ const App = () => (
           } />
           <Route path="/consumption/projects" element={
             <ProtectedRoute>
-              <AppLayout>
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <h1 className="text-3xl font-bold">Por Projeto</h1>
-                      <p className="text-muted-foreground">Agrupamento por projetos</p>
-                    </div>
-                  </div>
-                  <ProjectDetail selectedOrg="" />
-                </div>
-              </AppLayout>
+              <ConsumptionProjects />
             </ProtectedRoute>
           } />
           <Route path="/consumption/organizations" element={
             <ProtectedRoute>
-              <AppLayout>
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <h1 className="text-3xl font-bold">Por Organização</h1>
-                      <p className="text-muted-foreground">Visão organizacional</p>
-                    </div>
-                  </div>
-                  <OrganizationDetail selectedOrg="" />
-                </div>
-              </AppLayout>
+              <ConsumptionOrganizations />
             </ProtectedRoute>
           } />
           <Route path="/consumption/jobs" element={
             <ProtectedRoute>
-              <AppLayout>
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <h1 className="text-3xl font-bold">Execução de Jobs</h1>
-                      <p className="text-muted-foreground">Detalhes de execução</p>
-                    </div>
-                  </div>
-                  <JobExecutionDetail selectedOrg="" />
-                </div>
-              </AppLayout>
+              <ConsumptionJobs />
             </ProtectedRoute>
           } />
           <Route path="/config/tags" element={

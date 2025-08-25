@@ -20,9 +20,10 @@ interface ProjectData {
 
 interface ProjectDetailProps {
   selectedOrg?: string;
+  selectedCycleFilter?: string;
 }
 
-export function ProjectDetail({ selectedOrg }: ProjectDetailProps) {
+export function ProjectDetail({ selectedOrg, selectedCycleFilter }: ProjectDetailProps) {
   const { user } = useAuth();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<ProjectData[]>([]);

@@ -25,9 +25,10 @@ interface JobExecutionData {
 
 interface JobExecutionDetailProps {
   selectedOrg?: string;
+  selectedCycleFilter?: string;
 }
 
-export function JobExecutionDetail({ selectedOrg }: JobExecutionDetailProps) {
+export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExecutionDetailProps) {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<JobExecutionData[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<JobExecutionData[]>([]);

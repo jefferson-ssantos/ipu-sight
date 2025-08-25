@@ -21,9 +21,10 @@ interface OrganizationData {
 
 interface OrganizationDetailProps {
   selectedOrg?: string;
+  selectedCycleFilter?: string;
 }
 
-export function OrganizationDetail({ selectedOrg }: OrganizationDetailProps) {
+export function OrganizationDetail({ selectedOrg, selectedCycleFilter }: OrganizationDetailProps) {
   const { user } = useAuth();
   const [organizations, setOrganizations] = useState<OrganizationData[]>([]);
   const [filteredOrganizations, setFilteredOrganizations] = useState<OrganizationData[]>([]);
