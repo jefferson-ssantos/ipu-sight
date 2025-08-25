@@ -307,18 +307,39 @@ export function CostChart({
                   }}
                 />
               )}
-              {billingData?.meters?.map((meter: string, index: number) => (
-                <Bar 
-                  key={meter}
-                  dataKey={meter} 
-                  stackId="metrics"
-                  fill={billingData.colors[index]}
-                  radius={index === billingData.meters.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                  name={meter}
-                >
-                  {index === 0 && <LabelList content={renderTotalLabel} />}
-                </Bar>
-              )) || (
+               {billingData?.meters?.map((meter: string, index: number) => {
+                 // Custom colors for Métricas por Ciclo de Consumo
+                 const colors = [
+                   'hsl(24 70% 60%)', // Orange
+                   'hsl(283 70% 60%)', // Purple
+                   'hsl(142 70% 45%)', // Green
+                   'hsl(346 70% 60%)', // Pink
+                   'hsl(197 70% 55%)', // Blue
+                   'hsl(43 70% 55%)', // Yellow
+                   'hsl(15 70% 55%)', // Red-orange
+                   'hsl(260 70% 65%)', // Violet
+                   'hsl(120 35% 50%)', // Teal
+                   'hsl(39 70% 50%)', // Amber
+                   'hsl(210 40% 60%)', // Slate
+                   'hsl(340 60% 65%)', // Rose
+                 ];
+                 const fillColor = title === "Métricas por Ciclo de Consumo" 
+                   ? colors[index % colors.length] 
+                   : billingData.colors[index];
+                 
+                 return (
+                   <Bar 
+                     key={meter}
+                     dataKey={meter} 
+                     stackId="metrics"
+                     fill={fillColor}
+                     radius={index === billingData.meters.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                     name={meter}
+                   >
+                     {index === 0 && <LabelList content={renderTotalLabel} />}
+                   </Bar>
+                 );
+               }) || (
                 <Bar 
                   dataKey={metric} 
                   fill="hsl(var(--primary))"
