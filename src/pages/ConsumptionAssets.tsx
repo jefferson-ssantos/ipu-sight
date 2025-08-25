@@ -14,21 +14,23 @@ export default function ConsumptionAssets() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-            <Database className= "h-8 w-8 text-primary"/>
-          <div>
-            <h1 className="text-3xl font-bold">Detalhamento por Asset</h1>
-            <p className="text-muted-foreground">
-              Visão detalhada do consumo individual por asset
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Database className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Detalhamento por Asset</h1>
+              <p className="text-muted-foreground">
+                Visão detalhada do consumo individual por asset
+              </p>
+            </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-3">
             <Select value={selectedCycleFilter} onValueChange={setSelectedCycleFilter}>
-              <SelectTrigger className="w-[180px] bg-background border-input">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
-              <SelectContent className="bg-background border-border">
+              <SelectContent>
                 <SelectItem value="1">Ciclo Atual</SelectItem>
                 <SelectItem value="2">Últimos 2 Ciclos</SelectItem>
                 <SelectItem value="3">Últimos 3 Ciclos</SelectItem>
