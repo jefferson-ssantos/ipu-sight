@@ -336,17 +336,16 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Stacked Bar Chart by Billing Cycle */}
           <CostChart
-            title="Métricas por Ciclo de Consumo"
-            type="bar"
+            title="Evolução de Custos"
+            type="area"
             selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
             selectedCycleFilter={selectedCycleFilter}
             getChartData={getChartData}
             showFilters={false}
           />
-
           <CostChart
-            title="Evolução de Custos"
-            type="area"
+            title="Métricas por Ciclo de Consumo"
+            type="bar"
             selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
             selectedCycleFilter={selectedCycleFilter}
             getChartData={getChartData}
