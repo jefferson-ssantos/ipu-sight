@@ -216,9 +216,9 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
     return (
       <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pl-4">
         {payload?.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 text-sm">
+          <div key={index} className="flex items-center gap-2 text-xs">
             <div 
-              className="w-4 h-4 rounded-full flex-shrink-0"
+              className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: entry.color }}
             />
             <span className="truncate font-medium" title={entry.value}>
@@ -299,7 +299,7 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
                   data={projectData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
+                  innerRadius={50}
                   outerRadius={90}
                   paddingAngle={2}
                   dataKey="cost"
@@ -316,7 +316,7 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="w-48 flex-shrink-0">
+          <div className="w-64 flex-shrink-0">
             <CustomLegend payload={projectData.map((item, index) => ({
               value: item.project_name,
               color: COLORS[index % COLORS.length],
