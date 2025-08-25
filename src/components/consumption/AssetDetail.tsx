@@ -212,7 +212,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
                           <Badge variant="outline">{asset.asset_type || 'N/A'}</Badge>
                         </TableCell>
                         <TableCell>{asset.project_name || 'N/A'}</TableCell>
-                        <TableCell className="font-medium">{asset.runtime_environment}</TableCell>
+                        <TableCell className="font-medium">{asset.org_id || 'N/A'}</TableCell>
                         <TableCell>
                           {asset.consumption_date ? new Date(asset.consumption_date).toLocaleDateString('pt-BR') : 'N/A'}
                         </TableCell>
