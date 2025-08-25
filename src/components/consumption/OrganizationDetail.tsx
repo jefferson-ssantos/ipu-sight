@@ -187,10 +187,6 @@ export function OrganizationDetail({ selectedOrg, selectedCycleFilter }: Organiz
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            Detalhamento por Organização
-          </CardTitle>
           <Button onClick={exportData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar CSV

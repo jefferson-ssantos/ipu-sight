@@ -179,10 +179,6 @@ export function ProjectDetail({ selectedOrg, selectedCycleFilter }: ProjectDetai
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            Detalhamento por Projeto
-          </CardTitle>
           <Button onClick={exportData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar CSV

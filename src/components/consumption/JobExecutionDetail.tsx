@@ -204,10 +204,6 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Play className="h-5 w-5" />
-            Execução de Jobs
-          </CardTitle>
           <Button onClick={exportData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar CSV

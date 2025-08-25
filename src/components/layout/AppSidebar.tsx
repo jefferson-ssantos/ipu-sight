@@ -3,13 +3,14 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   BarChart3,
-  Building2,
+  Folder,
+  FileText,
   Database,
-  Layers3,
+  Play,
   PieChart,
   Settings,
   TrendingUp,
-  Users,
+  Building,
   Tags,
   LogOut,
   ChevronDown
@@ -54,25 +55,25 @@ const consumptionItems = [
   {
     title: "Por Asset",
     url: "/consumption/assets",
-    icon: Database,
+    icon: FileText,
     description: "Consumo detalhado por asset"
   },
   {
     title: "Por Projeto",
     url: "/consumption/projects",
-    icon: Building2,
+    icon: Folder,
     description: "Agrupamento por projetos"
   },
   {
     title: "Por Organização",
     url: "/consumption/organizations",
-    icon: Users,
+    icon: Building,
     description: "Visão organizacional"
   },
   {
     title: "Execução de Jobs",
     url: "/consumption/jobs",
-    icon: Layers3,
+    icon: Play,
     description: "Detalhes de execução"
   }
 ];

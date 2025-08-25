@@ -157,11 +157,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Detalhamento por Asset
-          </CardTitle>
+        <div className="flex items-center justify-between">
           <Button onClick={exportData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar CSV
