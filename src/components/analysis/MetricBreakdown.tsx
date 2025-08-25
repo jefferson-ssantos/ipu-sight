@@ -21,7 +21,7 @@ export function MetricBreakdown() {
   const [data, setData] = useState<MetricData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("1");
   const [organizations, setOrganizations] = useState<Array<{id: string, name: string}>>([]);
   const [availableCycles, setAvailableCycles] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
