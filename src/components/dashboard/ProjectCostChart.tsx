@@ -214,7 +214,7 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
   const CustomLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className="grid grid-cols-1 gap-1 mt-4 max-h-32 overflow-y-auto">
+      <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto pl-4">
         {payload?.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2 text-xs">
             <div 
@@ -291,30 +291,38 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={projectData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
-                dataKey="cost"
-                nameKey="project_name"
-              >
-                {projectData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={COLORS[index % COLORS.length]} 
-                  />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend content={<CustomLegend />} />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="h-64 flex">
+          <div className="flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={projectData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="cost"
+                  nameKey="project_name"
+                >
+                  {projectData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]} 
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="w-48 flex-shrink-0">
+            <CustomLegend payload={projectData.map((item, index) => ({
+              value: item.project_name,
+              color: COLORS[index % COLORS.length],
+              payload: item
+            }))} />
+          </div>
         </div>
       </CardContent>
     </Card>
