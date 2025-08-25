@@ -202,15 +202,8 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <Button onClick={exportData} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-        </div>
-        
-        <div className="flex gap-4 items-center">
+      <CardHeader>      
+        <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -220,7 +213,11 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
               className="pl-10"
             />
           </div>
-        </div>
+          <Button onClick={exportData} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>          
       </CardHeader>
       
       <CardContent>

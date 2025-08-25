@@ -77,7 +77,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
 
       const { data: configs } = await supabase
         .from('api_configuracaoidmc')
-        .select('id')
+        .select('id,apelido_configuracao')
         .eq('cliente_id', profile.cliente_id);
 
       if (!configs?.length) return;
@@ -87,7 +87,8 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
         .select('*')
         .in('configuracao_id', configs.map(c => c.id))
         .not('consumption_ipu', 'is', null)
-        .order('consumption_date', { ascending: false });
+        .order('consumption_date',{ ascending: false })
+        .order('consumption_ipu',{ ascending: false });
 
       if (selectedOrg) {
         query = query.eq('org_id', selectedOrg);
@@ -156,15 +157,8 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <Button onClick={exportData} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-        </div>
-        
-        <div className="flex gap-4 items-center">
+      <CardHeader>     
+        <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -174,6 +168,10 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
               className="pl-10"
             />
           </div>
+          <Button onClick={exportData} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
         </div>
       </CardHeader>
       
@@ -190,12 +188,11 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
                   <TableRow>
                     <TableHead>Asset</TableHead>
                     <TableHead>Tipo</TableHead>
+                    <TableHead>Projeto</TableHead>
+                    <TableHead>Organização</TableHead>
+                    <TableHead>Data</TableHead>
                     <TableHead>IPU</TableHead>
                     <TableHead>Custo</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Projeto</TableHead>
-                    <TableHead>Ambiente</TableHead>
-                    <TableHead>Tier</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -214,20 +211,15 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
                         <TableCell>
                           <Badge variant="outline">{asset.asset_type || 'N/A'}</Badge>
                         </TableCell>
-                        <TableCell>{formatIPU(asset.consumption_ipu || 0)}</TableCell>
-                        <TableCell>{formatCurrency(asset.cost)}</TableCell>
+                        <TableCell>{asset.project_name || 'N/A'}</TableCell>
+                        <TableCell className="font-medium">{asset.runtime_environment}</TableCell>
                         <TableCell>
                           {asset.consumption_date ? new Date(asset.consumption_date).toLocaleDateString('pt-BR') : 'N/A'}
                         </TableCell>
-                        <TableCell>{asset.project_name || 'N/A'}</TableCell>
+                        <TableCell>{formatIPU(asset.consumption_ipu || 0)}</TableCell>
                         <TableCell>
-                          {asset.runtime_environment && (
-                            <Badge variant="secondary">{asset.runtime_environment}</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {asset.tier && (
-                            <Badge variant="outline">{asset.tier}</Badge>
+                          {formatCurrency(asset.cost) && (
+                            <Badge variant="secondary">{formatCurrency(asset.cost)}</Badge>
                           )}
                         </TableCell>
                       </TableRow>

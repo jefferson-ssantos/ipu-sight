@@ -12,7 +12,7 @@ export default function ConsumptionJobs() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Play className="h-8 w-8 text-primary" />
