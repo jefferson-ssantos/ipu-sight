@@ -14,7 +14,7 @@ import ConsumptionProjects from "./pages/ConsumptionProjects";
 import ConsumptionOrganizations from "./pages/ConsumptionOrganizations";
 import ConsumptionJobs from "./pages/ConsumptionJobs";
 import ConsumptionOverview from "./pages/ConsumptionOverview";
-import ConsumptionDetails from "./pages/ConsumptionDetails";
+
 import Configuration from "./pages/Configuration";
 import ConfigTags from "./pages/ConfigTags";
 import ConfigConnections from "./pages/ConfigConnections";
