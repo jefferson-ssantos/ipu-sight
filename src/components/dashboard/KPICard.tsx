@@ -57,6 +57,18 @@ export function KPICard({
 
   const variantStyles = variants[variant];
   
+  // Calcular valores para determinar as cores
+  const contractedValueNum = typeof contractedValue === "string" ? 
+    parseFloat(contractedValue.replace(/[^\d,.-]/g, '').replace(',', '.')) : 
+    (contractedValue || 0);
+  const currentValueNum = typeof value === "string" ? 
+    parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.')) : 
+    (value as number || 0);
+  
+  // Para custo médio diário, precisamos do valor histórico
+  const historicalValueNum = historicalComparison !== undefined ? 
+    currentValueNum / (1 + (historicalComparison / 100)) : 0;
+  
   const getTrendVariant = (direction: string) => {
     switch (direction) {
       case "up":
@@ -90,6 +102,33 @@ export function KPICard({
     } else {
       return { color: "text-destructive", status: "danger" }; // Vermelho
     }
+  };
+
+  // Nova função para determinar a cor do valor do KPI baseado na comparação
+  const getValueColorByCost = (currentValue: number, contractedValue: number, title: string) => {
+    if (title === "Custo Total") {
+      if (currentValue < contractedValue * 0.9) {
+        return "text-secondary"; // Verde
+      } else if (currentValue <= contractedValue) {
+        return "text-warning"; // Amarelo
+      } else {
+        return "text-destructive"; // Vermelho
+      }
+    }
+    return "text-foreground"; // Cor padrão para outros casos
+  };
+
+  const getValueColorByHistorical = (currentValue: number, historicalValue: number, title: string) => {
+    if (title === "Custo Médio Diário" && historicalValue > 0) {
+      if (currentValue < historicalValue * 0.9) {
+        return "text-secondary"; // Verde
+      } else if (currentValue <= historicalValue) {
+        return "text-warning"; // Amarelo
+      } else {
+        return "text-destructive"; // Vermelho
+      }
+    }
+    return "text-foreground"; // Cor padrão para outros casos
   };
 
   const getHistoricalComparisonColor = (comparison?: number) => {
@@ -141,6 +180,9 @@ export function KPICard({
         <div className="space-y-2">
           <div className={cn(
             "text-3xl font-bold font-heading tracking-tight",
+            // Aplicar cores específicas para KPIs solicitados
+            title === "Custo Total" ? getValueColorByCost(currentValueNum, contractedValueNum, title) :
+            title === "Custo Médio Diário" ? getValueColorByHistorical(currentValueNum, historicalValueNum, title) :
             variantStyles.value
           )}>
             {formatValue(value)}
@@ -164,11 +206,14 @@ export function KPICard({
                 <div className="flex-1 bg-muted rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      getConsumptionStatus(consumptionPercentage).status === 'good' 
+                      title === "Custo Total" ?
+                        (currentValueNum < contractedValueNum * 0.9 ? 'bg-secondary' :
+                         currentValueNum <= contractedValueNum ? 'bg-warning' : 'bg-destructive') :
+                      (getConsumptionStatus(consumptionPercentage).status === 'good' 
                         ? 'bg-secondary' 
                         : getConsumptionStatus(consumptionPercentage).status === 'warning'
                         ? 'bg-warning'
-                        : 'bg-destructive'
+                        : 'bg-destructive')
                     }`}
                     style={{ width: `${Math.min(consumptionPercentage, 100)}%` }}
                   />
@@ -179,7 +224,7 @@ export function KPICard({
 
           {/* Historical comparison for daily cost */}
           {historicalComparison !== undefined && title === "Custo Médio Diário" && (
-            <div className={`text-sm font-medium mt-2 ${getHistoricalComparisonColor(historicalComparison)}`}>
+            <div className={`text-sm font-medium mt-2 ${getValueColorByHistorical(currentValueNum, historicalValueNum, title)}`}>
               {getHistoricalComparisonText(historicalComparison)}
             </div>
           )}
