@@ -213,13 +213,6 @@ export default function Dashboard() {
               KPI's
             </Badge>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
         </div>
 
         {/* KPI Cards */}
