@@ -84,7 +84,7 @@ export function KPICard({
     if (!percentage) return { color: "text-foreground", status: "unknown" };
     
     if (percentage <= 80) {
-      return { color: "text-secondary", status: "good" }; // Verde
+      return { color: "text-sucess", status: "good" }; // Verde
     } else if (percentage <= 100) {
       return { color: "text-warning", status: "warning" }; // Amarelo
     } else {

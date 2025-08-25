@@ -221,13 +221,13 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           contractedIPUs: client.qtd_ipus_contratadas || 0,
           pricePerIPU: client.preco_por_ipu,
           currentPeriod: currentCycle ? 
-            new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
+            new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' , timeZone: 'UTC' }) :
             'Sem dados',
           periodStart: currentCycle ? 
-            new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR') : 
+            new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 
             '',
           periodEnd: currentCycle ? 
-            new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR') : 
+            new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 
             '',
           organizations: [],
           currentCycle
@@ -335,13 +335,13 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         contractedIPUs: client.qtd_ipus_contratadas || 0,
         pricePerIPU: client.preco_por_ipu,
         currentPeriod: currentCycle ? 
-          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) :
+          new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }) :
           'Período atual',
         periodStart: currentCycle ? 
-          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR') : 
+          new Date(currentCycle.billing_period_start_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 
           '',
         periodEnd: currentCycle ? 
-          new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR') : 
+          new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 
           '',
         organizations,
         currentCycle

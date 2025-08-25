@@ -178,14 +178,6 @@ export function MetricBreakdown() {
   };
 
   const colors = [
-    'hsl(var(--chart-1))',
-    'hsl(var(--chart-2))',
-    'hsl(var(--chart-3))',
-    'hsl(var(--chart-4))',
-    'hsl(var(--chart-5))',
-    'hsl(var(--primary))',
-    'hsl(var(--secondary))',
-    'hsl(var(--accent))',
     'hsl(24 70% 60%)', // Orange
     'hsl(283 70% 60%)', // Purple
     'hsl(142 70% 45%)', // Green
@@ -236,8 +228,8 @@ export function MetricBreakdown() {
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{data.name}</p>
-          <p className="text-primary">{formatIPU(data.value)} IPUs</p>
-          <p className="text-secondary-foreground">{formatCurrency(data.cost)}</p>
+          <p className="text-primary">{formatCurrency(data.cost)}</p>
+          <p className="text-muted-foreground">{formatIPU(data.value)} IPUs</p>
           <p className="text-muted-foreground">{data.percentage.toFixed(1)}%</p>
         </div>
       );
@@ -262,8 +254,6 @@ export function MetricBreakdown() {
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Calendar className="h-4 w-4 text-primary" />
-              <span>Período:</span>
             </div>
             
             <Select value={selectedCycleFilter} onValueChange={setSelectedCycleFilter}>
@@ -358,14 +348,14 @@ export function MetricBreakdown() {
                   </div>
                   
                   <div className="text-right">
-                    <div className="font-semibold">{formatIPU(metric.total_consumption)} IPUs</div>
-                    <div className="text-sm text-muted-foreground">
+                    <Badge variant="secondary" className="text-sm mt-1"> {/* Aumentado para text-sm */}
                       {formatCurrency(metric.total_cost)}
-                    </div>
+                    </Badge>
+                    <div className="text-xs text-muted-foreground">{formatIPU(metric.total_consumption)} IPUs</div> {/* Alterado para text-xs */}
                     <Badge variant="outline" className="text-xs mt-1">
                       {metric.percentage.toFixed(1)}%
                     </Badge>
-                  </div>
+                  </div>                  
                 </div>
               ))}
             </div>

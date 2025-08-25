@@ -17,7 +17,7 @@ export default function Analysis() {
         <div>
           <h1 className="text-3xl font-bold">Análise de Custos</h1>
           <p className="text-muted-foreground">
-            Análises detalhadas e insights sobre seus custos de IPU
+            Análises detalhadas e insights sobre seus custos do IDMC
           </p>
         </div>
       </div>

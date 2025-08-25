@@ -149,7 +149,7 @@ export function CostForecast() {
       lastPeriodEnd.setMonth(lastPeriodEnd.getMonth() + i + 1);
       
       combinedForecast.push({
-        period: `Previsão ${lastPeriodEnd.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}`,
+        period: `Previsão ${lastPeriodEnd.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' })}`,
         ipu: Math.max(0, weightedIPU),
         cost: Math.max(0, weightedCost),
         isForecast: true,
