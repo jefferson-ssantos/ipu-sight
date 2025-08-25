@@ -233,10 +233,10 @@ export default function Dashboard() {
           <KPICard
             title="Custo Médio Diário"
             value={formatCurrency(dashboardData?.avgDailyCost || 0)}
-            subtitle="Baseado no período atual"
             icon={Activity}
             variant="default"
             historicalComparison={dashboardData?.historicalComparison}
+            baselineValue={formatCurrency(dashboardData?.historicalAvgDailyCost || 0)}
           />
 
           <KPICard

@@ -19,6 +19,7 @@ interface DashboardData {
   activeOrgs: number;
   contractedIPUs: number;
   pricePerIPU: number;
+  historicalAvgDailyCost: number;
   currentPeriod: string;
   periodStart: string;
   periodEnd: string;
@@ -220,6 +221,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           activeOrgs: 0,
           contractedIPUs: client.qtd_ipus_contratadas || 0,
           pricePerIPU: client.preco_por_ipu,
+          historicalAvgDailyCost: 0,
           currentPeriod: currentCycle ? 
             new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' , timeZone: 'UTC' }) :
             'Sem dados',
@@ -334,6 +336,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         activeOrgs: organizations.length,
         contractedIPUs: client.qtd_ipus_contratadas || 0,
         pricePerIPU: client.preco_por_ipu,
+        historicalAvgDailyCost,
         currentPeriod: currentCycle ? 
           new Date(currentCycle.billing_period_end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }) :
           'Período atual',

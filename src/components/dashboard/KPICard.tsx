@@ -18,6 +18,12 @@ interface KPICardProps {
   contractedValue?: string | number;
   consumptionPercentage?: number;
   historicalComparison?: number;
+  /**
+   * Valor de referência para comparação (por exemplo, custo médio histórico).
+   * Quando fornecido e o cartão for "Custo Médio Diário", ele será exibido
+   * abaixo do subtítulo para esclarecer o valor do histórico usado.
+   */
+  baselineValue?: string | number;
 }
 
 export function KPICard({
@@ -30,8 +36,10 @@ export function KPICard({
   className,
   contractedValue,
   consumptionPercentage,
-  historicalComparison
+  historicalComparison,
+  baselineValue
 }: KPICardProps) {
+  // Definição de temas para as variações do cartão
   const variants = {
     default: {
       card: "bg-gradient-card border-border",
@@ -54,21 +62,8 @@ export function KPICard({
       value: "text-warning"
     }
   };
-
   const variantStyles = variants[variant];
-  
-  // Calcular valores para determinar as cores
-  const contractedValueNum = typeof contractedValue === "string" ? 
-    parseFloat(contractedValue.replace(/[^\d,.-]/g, '').replace(',', '.')) : 
-    (contractedValue || 0);
-  const currentValueNum = typeof value === "string" ? 
-    parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.')) : 
-    (value as number || 0);
-  
-  // Para custo médio diário, precisamos do valor histórico
-  const historicalValueNum = historicalComparison !== undefined ? 
-    currentValueNum / (1 + (historicalComparison / 100)) : 0;
-  
+
   const getTrendVariant = (direction: string) => {
     switch (direction) {
       case "up":
@@ -80,169 +75,203 @@ export function KPICard({
     }
   };
 
+  // Formatação numérica (K, M, etc.)
   const formatValue = (val: string | number) => {
     if (typeof val === "number") {
-      if (val >= 1000000) {
-        return (val / 1000000).toFixed(1) + "M";
-      } else if (val >= 1000) {
-        return (val / 1000).toFixed(1) + "K";
+      if (val >= 1_000_000) {
+        return (val / 1_000_000).toFixed(1) + "M";
+      } else if (val >= 1_000) {
+        return (val / 1_000).toFixed(1) + "K";
       }
       return val.toLocaleString();
     }
     return val;
   };
 
+  // Cor e status da barra/progressão no “Custo Total”
   const getConsumptionStatus = (percentage?: number) => {
-    if (!percentage) return { color: "text-foreground", status: "unknown" };
-    
-    if (percentage <= 80) {
-      return { color: "text-sucess", status: "good" }; // Verde
-    } else if (percentage <= 100) {
-      return { color: "text-warning", status: "warning" }; // Amarelo
-    } else {
-      return { color: "text-destructive", status: "danger" }; // Vermelho
+    if (percentage === undefined || percentage === null) {
+      return { color: "text-foreground", status: "unknown" };
     }
+    // >100% → vermelho; entre 90% e 100% → amarelo; <90% → verde
+    if (percentage > 100) {
+      return { color: "text-destructive", status: "danger" };
+    }
+    if (percentage >= 90) {
+      return { color: "text-warning", status: "warning" };
+    }
+    return { color: "text-sucess", status: "good" };
   };
 
-  // Nova função para determinar a cor do valor do KPI baseado na comparação
-  const getValueColorByCost = (currentValue: number, contractedValue: number, title: string) => {
-    if (title === "Custo Total") {
-      if (currentValue < contractedValue * 0.9) {
-        return "text-secondary"; // Verde
-      } else if (currentValue <= contractedValue) {
-        return "text-warning"; // Amarelo
-      } else {
-        return "text-destructive"; // Vermelho
-      }
-    }
-    return "text-foreground"; // Cor padrão para outros casos
-  };
-
-  const getValueColorByHistorical = (currentValue: number, historicalValue: number, title: string) => {
-    if (title === "Custo Médio Diário" && historicalValue > 0) {
-      if (currentValue < historicalValue * 0.9) {
-        return "text-secondary"; // Verde
-      } else if (currentValue <= historicalValue) {
-        return "text-warning"; // Amarelo
-      } else {
-        return "text-destructive"; // Vermelho
-      }
-    }
-    return "text-foreground"; // Cor padrão para outros casos
-  };
-
+  // Cor do texto de comparação histórica (Custo Médio Diário)
   const getHistoricalComparisonColor = (comparison?: number) => {
-    if (comparison === undefined || comparison === 0) return "text-muted-foreground";
-    
-    if (comparison < 0) {
-      return "text-secondary"; // Verde - abaixo do histórico
-    } else if (comparison > 0) {
-      return "text-destructive"; // Vermelho - acima do histórico
-    } else {
-      return "text-warning"; // Amarelo - igual ao histórico
+    if (comparison === undefined || comparison === 0) {
+      return "text-muted-foreground";
     }
+    if (comparison > 0) {
+      return "text-cost-high";     // acima do histórico
+    }
+    if (comparison >= -10) {
+      return "text-cost-medium";   // até 10% abaixo do histórico
+    }
+    return "text-cost-low";        // mais de 10% abaixo do histórico
   };
 
+  // Texto de comparação histórica com seta embutida
   const getHistoricalComparisonText = (comparison?: number) => {
     if (comparison === undefined) return "";
-    
     const absComparison = Math.abs(comparison);
+    const arrow = comparison > 0 ? "↗" : comparison < 0 ? "↘" : "→";
     if (comparison < 0) {
-      return `${absComparison.toFixed(1)}% abaixo do histórico`;
+      return `${arrow} ${absComparison.toFixed(1)}% abaixo do histórico`;
     } else if (comparison > 0) {
-      return `${absComparison.toFixed(1)}% acima do histórico`;
+      return `${arrow} ${absComparison.toFixed(1)}% acima do histórico`;
     } else {
-      return "Igual ao histórico";
+      return `${arrow} Igual ao histórico`;
     }
   };
 
+  /**
+   * Determina a cor do valor principal do cartão:
+   * - Custo Total: usa o % consumido (green/yellow/red conforme a regra 90/100/>100)
+   * - Custo Médio Diário: usa a comparação histórica (acima, até 10% abaixo, ou mais de 10% abaixo)
+   * - Outros cartões: mantém a cor do tema (variant)
+   */
+  const getMainValueColor = () => {
+    // Custo Total
+    if (title === "Custo Total" && consumptionPercentage !== undefined) {
+      const { status } = getConsumptionStatus(consumptionPercentage);
+      if (status === "good") return "text-cost-low";
+      if (status === "warning") return "text-cost-medium";
+      if (status === "danger") return "text-cost-high";
+    }
+    // Custo Médio Diário
+    if (title === "Custo Médio Diário" && historicalComparison !== undefined) {
+      const compClass = getHistoricalComparisonColor(historicalComparison);
+      if (
+        compClass === "text-cost-high" ||
+        compClass === "text-cost-medium" ||
+        compClass === "text-cost-low"
+      ) {
+        return compClass;
+      }
+    }
+    // Demais
+    return variantStyles.value;
+  };
+
+  // Tendência automática (usada em outros KPIs). Para “Custo Médio Diário” não usamos linha de tendência separada.
+  const trendToShow = trend ?? (
+    title === "Custo Médio Diário" && historicalComparison !== undefined
+      ? {
+          value: Math.abs(historicalComparison).toFixed(1),
+          label: "",
+          direction:
+            historicalComparison > 0
+              ? "up"
+              : historicalComparison < 0
+              ? "down"
+              : "neutral"
+        }
+      : undefined
+  );
+
   return (
-    <Card className={cn(
-      "transition-all duration-300 hover:shadow-medium",
-      variantStyles.card,
-      className
-    )}>
+    <Card
+      className={cn(
+        "transition-all duration-300 hover:shadow-medium",
+        variantStyles.card,
+        className
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-muted-foreground font-body">
             {title}
           </CardTitle>
-          <div className={cn(
-            "p-2 rounded-lg transition-all duration-200",
-            variantStyles.icon
-          )}>
+          <div
+            className={cn(
+              "p-2 rounded-lg transition-all duration-200",
+              variantStyles.icon
+            )}
+          >
             <Icon className="h-4 w-4" />
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
         <div className="space-y-2">
-          <div className={cn(
-            "text-3xl font-bold font-heading tracking-tight",
-            // Aplicar cores específicas para KPIs solicitados
-            title === "Custo Total" ? getValueColorByCost(currentValueNum, contractedValueNum, title) :
-            title === "Custo Médio Diário" ? getValueColorByHistorical(currentValueNum, historicalValueNum, title) :
-            variantStyles.value
-          )}>
+          {/* Valor principal colorido conforme a regra do KPI */}
+          <div
+            className={cn(
+              "text-3xl font-bold font-heading tracking-tight",
+              getMainValueColor()
+            )}
+          >
             {formatValue(value)}
           </div>
-          
+
+          {/* Subtítulo (quando existe) */}
           {subtitle && (
-            <p className="text-sm text-muted-foreground">
-              {subtitle}
-            </p>
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
           )}
 
+          {/* Exibe o histórico como “Custo Médio Histórico” no KPI de Custo Médio Diário */}
+          {baselineValue !== undefined && title === "Custo Médio Diário" && (
+            <div className="text-sm text-muted-foreground">
+              Custo Médio Histórico:{" "}
+              {typeof baselineValue === "string"
+                ? baselineValue
+                : formatValue(baselineValue)}
+            </div>
+          )}
+
+          {/* Se houver valor contratado e porcentagem consumida, mostra a barra e o % consumido */}
           {contractedValue && consumptionPercentage !== undefined && (
             <div className="space-y-2 mt-3">
               <div className="text-sm text-muted-foreground">
-                {title === "Total IPUs" ? `${formatValue(contractedValue)} IPUs contratadas` : `Valor contratado: ${formatValue(contractedValue)}`}
+                {title === "Total IPUs"
+                  ? `${formatValue(contractedValue)} IPUs contratadas`
+                  : `Valor contratado: ${formatValue(contractedValue)}`}
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium ${getConsumptionStatus(consumptionPercentage).color}`}>
+                {/* Texto neutro para % consumido */}
+                <span className="text-sm font-medium text-muted-foreground">
                   {consumptionPercentage.toFixed(1)}% consumido
                 </span>
+                {/* Barra colorida conforme a regra (verde, amarelo, vermelho) */}
                 <div className="flex-1 bg-muted rounded-full h-2">
-                  <div 
+                  <div
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      title === "Custo Total" ?
-                        (currentValueNum < contractedValueNum * 0.9 ? 'bg-secondary' :
-                         currentValueNum <= contractedValueNum ? 'bg-warning' : 'bg-destructive') :
-                      (getConsumptionStatus(consumptionPercentage).status === 'good' 
-                        ? 'bg-secondary' 
-                        : getConsumptionStatus(consumptionPercentage).status === 'warning'
-                        ? 'bg-warning'
-                        : 'bg-destructive')
+                      getConsumptionStatus(consumptionPercentage).status ===
+                      "good"
+                        ? "bg-cost-low"
+                        : getConsumptionStatus(consumptionPercentage).status ===
+                          "warning"
+                        ? "bg-cost-medium"
+                        : "bg-cost-high"
                     }`}
-                    style={{ width: `${Math.min(consumptionPercentage, 100)}%` }}
+                    style={{
+                      width: `${Math.min(consumptionPercentage, 100)}%`
+                    }}
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* Historical comparison for daily cost */}
-          {historicalComparison !== undefined && title === "Custo Médio Diário" && (
-            <div className={`text-sm font-medium mt-2 ${getValueColorByHistorical(currentValueNum, historicalValueNum, title)}`}>
-              {getHistoricalComparisonText(historicalComparison)}
-            </div>
-          )}
-          
-          {trend && (
-            <div className="flex items-center gap-2 mt-3">
-              <Badge 
-                variant={getTrendVariant(trend.direction)}
-                className="text-xs px-2 py-1"
+          {/* Comparação histórica no Custo Médio Diário (com seta) */}
+          {historicalComparison !== undefined &&
+            title === "Custo Médio Diário" && (
+              <div
+                className={`text-sm font-medium mt-2 ${getHistoricalComparisonColor(
+                  historicalComparison
+                )}`}
               >
-                {trend.direction === "up" ? "↗" : trend.direction === "down" ? "↘" : "→"} 
-                {Math.abs(trend.value)}%
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {trend.label}
-              </span>
-            </div>
-          )}
+                {getHistoricalComparisonText(historicalComparison)}
+              </div>
+            )}
         </div>
       </CardContent>
     </Card>
