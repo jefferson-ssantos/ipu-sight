@@ -47,8 +47,8 @@ export function KPICard({
       value: "text-foreground"
     },
     cost: {
-      card: "bg-gradient-card border-cost-high/20 shadow-glow",
-      icon: "bg-cost-high/10 text-cost-high",
+      card: "bg-gradient-card border-border",
+      icon: "bg-primary/10 text-primary",
       value: "text-cost-high"
     },
     success: {
