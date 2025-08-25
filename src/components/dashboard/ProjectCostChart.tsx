@@ -214,17 +214,17 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
   const CustomLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto pl-4">
+      <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pl-4">
         {payload?.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 text-xs">
+          <div key={index} className="flex items-center gap-2 text-sm">
             <div 
-              className="w-3 h-3 rounded-full flex-shrink-0"
+              className="w-4 h-4 rounded-full flex-shrink-0"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="truncate" title={entry.value}>
+            <span className="truncate font-medium" title={entry.value}>
               {entry.value}
             </span>
-            <span className="text-muted-foreground ml-auto">
+            <span className="text-muted-foreground ml-auto font-medium">
               {entry.payload.percentage.toFixed(1)}%
             </span>
           </div>
@@ -299,8 +299,8 @@ export function ProjectCostChart({ selectedOrg, selectedCycleFilter }: ProjectCo
                   data={projectData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={40}
+                  outerRadius={90}
                   paddingAngle={2}
                   dataKey="cost"
                   nameKey="project_name"
