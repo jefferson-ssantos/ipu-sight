@@ -11,11 +11,11 @@ import { CycleFilter } from "@/components/dashboard/CycleFilter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Activity, 
-  Building2, 
+import {
+  DollarSign,
+  TrendingUp,
+  Activity,
+  Building2,
   Users,
   Calendar,
   Download,
@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [showAssetTable, setShowAssetTable] = useState(false);
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{value: string, label: string}>>([]);
-  
+
   const { data: dashboardData, loading, error, refetch, getChartData, availableCycles } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
 
   // Fetch available organizations
@@ -80,8 +80,8 @@ export default function Dashboard() {
           ]);
 
           // Set default to production org if available
-          const prodOrg = uniqueOrgs.find(org => 
-            org.org_name?.toLowerCase().includes('produção') || 
+          const prodOrg = uniqueOrgs.find(org =>
+            org.org_name?.toLowerCase().includes('produção') ||
             org.org_name?.toLowerCase().includes('production')
           );
           if (prodOrg) {
@@ -140,13 +140,13 @@ export default function Dashboard() {
     <div className="flex flex-col min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative h-48 bg-gradient-primary overflow-hidden">
-        <img 
+        <img
           src={heroImage}
           alt="FinOps Dashboard"
           className="absolute inset-0 w-full h-full object-cover opacity-20"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary-dark/80" />
-        
+
         <div className="relative z-10 p-8 text-primary-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
@@ -231,21 +231,8 @@ export default function Dashboard() {
             variant="cost"
             contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))}
             consumptionPercentage={
-              dashboardData?.contractedIPUs && dashboardData?.pricePerIPU 
+              dashboardData?.contractedIPUs && dashboardData?.pricePerIPU
                 ? ((dashboardData?.totalCost || 0) / ((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))) * 100
-                : 0
-            }
-          />
-
-          <KPICard
-            title="Total IPUs Consumidas no Período"
-            value={formatIPU(dashboardData?.totalIPU || 0)}
-            icon={Activity}
-            variant="warning"
-            contractedValue={formatIPU(dashboardData?.contractedIPUs || 0)}
-            consumptionPercentage={
-              dashboardData?.contractedIPUs 
-                ? ((dashboardData?.totalIPU || 0) / (dashboardData?.contractedIPUs || 0)) * 100
                 : 0
             }
           />
@@ -270,15 +257,6 @@ export default function Dashboard() {
 
         {/* Distribution and Hierarchical View */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CostChart
-            title="Distribuição por Organização"
-            type="pie"
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-            selectedCycleFilter={selectedCycleFilter}
-            getChartData={getChartData}
-            showFilters={false}
-          />
-
           <Card className="bg-gradient-card shadow-medium">
             <CardHeader>
               <div>
@@ -296,11 +274,11 @@ export default function Dashboard() {
                 <h3 className="font-medium text-foreground mb-3">
                   Resumo por Organização
                 </h3>
-                
+
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {dashboardData?.organizations.length ? (
                     dashboardData.organizations.map((org, index) => (
-                      <div 
+                      <div
                         key={index}
                         className={`flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer ${
                           org.level === 1 ? 'ml-6' : ''
@@ -355,7 +333,7 @@ export default function Dashboard() {
         </div>
 
         {/* Cycle Filter */}
-        <CycleFilter 
+        <CycleFilter
           selectedCycleFilter={selectedCycleFilter}
           onCycleFilterChange={setSelectedCycleFilter}
           availableCycles={availableCycles}
@@ -372,7 +350,7 @@ export default function Dashboard() {
             getChartData={getChartData}
             showFilters={false}
           />
-          
+
           <CostChart
             title="Evolução de Custos"
             type="area"
@@ -386,7 +364,7 @@ export default function Dashboard() {
 
       {/* Asset Details Table Modal */}
       {showAssetTable && (
-        <AssetDetailsTable 
+        <AssetDetailsTable
           onClose={() => setShowAssetTable(false)}
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
         />
@@ -394,7 +372,7 @@ export default function Dashboard() {
 
       {/* Organization Details Modal */}
       {selectedOrgForDetails && (
-        <OrgDetailsModal 
+        <OrgDetailsModal
           orgId={selectedOrgForDetails}
           onClose={() => setSelectedOrgForDetails(null)}
           billingPeriod={dashboardData?.currentCycle}
