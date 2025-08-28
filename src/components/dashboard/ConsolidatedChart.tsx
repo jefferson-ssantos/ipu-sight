@@ -333,7 +333,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           </div>
           
           <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-auto min-w-44 max-w-64">
               <SelectValue placeholder="Organização" />
             </SelectTrigger>
             <SelectContent>
