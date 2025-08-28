@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
-import { CostChart } from "@/components/dashboard/CostChart";
+import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
 import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { CycleFilter } from "@/components/dashboard/CycleFilter";
@@ -332,26 +332,11 @@ export default function Dashboard() {
           availableCycles={availableCycles}
         />
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Stacked Bar Chart by Billing Cycle */}
-          <CostChart
-            title="Evolução de Custos"
-            type="area"
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-            selectedCycleFilter={selectedCycleFilter}
-            getChartData={getChartData}
-            showFilters={false}
-          />
-          <CostChart
-            title="Métricas por Ciclo de Consumo"
-            type="bar"
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-            selectedCycleFilter={selectedCycleFilter}
-            getChartData={getChartData}
-            showFilters={false}
-          />
-        </div>
+        {/* Consolidated Chart Section */}
+        <ConsolidatedChart
+          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+          getChartData={getChartData}
+        />
       </div>
 
       {/* Asset Details Table Modal */}
