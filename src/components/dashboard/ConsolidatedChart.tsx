@@ -137,15 +137,10 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         .gt('consumption_ipu', 0)
         .neq('meter_name', 'Sandbox Organizations IPU Usage');
 
-      // Filter for the selected cycles
-      const cycleFilters = uniqueCycles.map(cycle => 
-        `billing_period_start_date.eq.${cycle.start},billing_period_end_date.eq.${cycle.end}`
-      );
-      
       // Apply cycle filter using OR conditions
       if (uniqueCycles.length > 0) {
         const cycleConditions = uniqueCycles.map(cycle => 
-          `(billing_period_start_date.eq.${cycle.start},billing_period_end_date.eq.${cycle.end})`
+          `billing_period_start_date.eq.${cycle.start}.and.billing_period_end_date.eq.${cycle.end}`
         ).join(',');
         query = query.or(cycleConditions);
       }
