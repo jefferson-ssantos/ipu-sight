@@ -96,14 +96,59 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
 
       const configIds = configs.map(config => config.id);
 
-      // Use api_consumosummary instead of api_consumoasset for better cycle integration
+      // Get the most recent cycles with consumption data
+      const { data: availableCycles } = await supabase
+        .from('api_consumosummary')
+        .select('billing_period_start_date, billing_period_end_date')
+        .in('configuracao_id', configIds)
+        .gt('consumption_ipu', 0)
+        .neq('meter_name', 'Sandbox Organizations IPU Usage')
+        .order('billing_period_end_date', { ascending: false });
+
+      if (!availableCycles || availableCycles.length === 0) {
+        setChartData([]);
+        setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
+        setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+        return;
+      }
+
+      // Get unique cycles and limit to last 3
+      const uniqueCycles = Array.from(
+        new Map(availableCycles.map(cycle => [
+          `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`,
+          {
+            start: cycle.billing_period_start_date,
+            end: cycle.billing_period_end_date,
+            label: `${new Date(cycle.billing_period_start_date).toLocaleDateString('pt-BR')} - ${new Date(cycle.billing_period_end_date).toLocaleDateString('pt-BR')}`
+          }
+        ])).values()
+      )
+      .sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime())
+      .slice(0, 3) // Take the 3 most recent cycles
+      .reverse(); // Reverse to show chronologically (oldest to newest of the 3)
+
+      console.log('Available cycles for chart:', uniqueCycles);
+
+      // Now query consumption data for these specific cycles
       let query = supabase
         .from('api_consumosummary')
         .select('configuracao_id, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu, org_id, org_name')
         .in('configuracao_id', configIds)
         .gt('consumption_ipu', 0)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage')
-        .order('billing_period_end_date', { ascending: true });
+        .neq('meter_name', 'Sandbox Organizations IPU Usage');
+
+      // Filter for the selected cycles
+      const cycleFilters = uniqueCycles.map(cycle => 
+        `billing_period_start_date.eq.${cycle.start},billing_period_end_date.eq.${cycle.end}`
+      );
+      
+      // Apply cycle filter using OR conditions
+      if (uniqueCycles.length > 0) {
+        const cycleConditions = uniqueCycles.map(cycle => 
+          `(billing_period_start_date.eq.${cycle.start},billing_period_end_date.eq.${cycle.end})`
+        ).join(',');
+        query = query.or(cycleConditions);
+      }
 
       // Apply organization filter
       if (selectedOrgLocal !== "all") {
@@ -113,7 +158,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching consumption data:', error);
         return;
       }
 
@@ -124,23 +169,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         return;
       }
 
-      // Get unique cycles for ordering
-      const cycleMap = new Map();
-      data.forEach((item: any) => {
-        const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-        if (!cycleMap.has(cycleKey)) {
-          cycleMap.set(cycleKey, {
-            start: item.billing_period_start_date,
-            end: item.billing_period_end_date,
-            label: `${new Date(item.billing_period_start_date).toLocaleDateString('pt-BR')} - ${new Date(item.billing_period_end_date).toLocaleDateString('pt-BR')}`
-          });
-        }
-      });
-
-      // Sort cycles by end date and get the last 3
-      const sortedCycles = Array.from(cycleMap.values())
-        .sort((a, b) => new Date(a.end).getTime() - new Date(b.end).getTime())
-        .slice(-3);
+      console.log('Consumption data fetched:', data.length, 'records');
 
       // Process and aggregate data by cycle, organization, and metric
       const periodMap = new Map<string, any>();
@@ -149,12 +178,11 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
 
       data.forEach((item: any) => {
         const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-        const cycleInfo = cycleMap.get(cycleKey);
+        const cycleInfo = uniqueCycles.find(c => 
+          c.start === item.billing_period_start_date && c.end === item.billing_period_end_date
+        );
         
-        // Only include last 3 cycles
-        if (!sortedCycles.find(c => c.start === cycleInfo.start && c.end === cycleInfo.end)) {
-          return;
-        }
+        if (!cycleInfo) return;
         
         const projectName = item.org_name || "Organização não informada";
         const metricName = item.meter_name || "Métrica não informada";
@@ -179,8 +207,8 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       // Convert to array and sort by cycle chronological order
       const processedData = Array.from(periodMap.values())
         .sort((a, b) => {
-          const cycleA = sortedCycles.find(c => c.label === a.period);
-          const cycleB = sortedCycles.find(c => c.label === b.period);
+          const cycleA = uniqueCycles.find(c => c.label === a.period);
+          const cycleB = uniqueCycles.find(c => c.label === b.period);
           if (!cycleA || !cycleB) return 0;
           return new Date(cycleA.end).getTime() - new Date(cycleB.end).getTime();
         });
