@@ -7,7 +7,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
 import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
-import { CycleFilter } from "@/components/dashboard/CycleFilter";
+
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -325,12 +325,6 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Cycle Filter */}
-        <CycleFilter
-          selectedCycleFilter={selectedCycleFilter}
-          onCycleFilterChange={setSelectedCycleFilter}
-          availableCycles={availableCycles}
-        />
 
         {/* Consolidated Chart Section */}
         <ConsolidatedChart

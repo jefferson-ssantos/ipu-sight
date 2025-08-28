@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CycleFilter } from '@/components/dashboard/CycleFilter';
+
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { AssetDetail } from '@/components/consumption/AssetDetail';
 import { FileText } from 'lucide-react';
