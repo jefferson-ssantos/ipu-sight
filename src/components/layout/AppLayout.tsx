@@ -7,16 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { SearchModal } from "./SearchModal";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { UserDropdown } from "./UserDropdown";
-
 interface AppLayoutProps {
   children: React.ReactNode;
 }
-
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({
+  children
+}: AppLayoutProps) {
   const [searchOpen, setSearchOpen] = useState(false);
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
@@ -36,12 +34,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <div className="flex items-center gap-3">
                 {/* Search */}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-9 w-9 p-0"
-                  onClick={() => setSearchOpen(true)}
-                >
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => setSearchOpen(true)}>
                   <Search className="h-4 w-4" />
                 </Button>
 
@@ -62,6 +55,5 @@ export function AppLayout({ children }: AppLayoutProps) {
         
         <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 }
