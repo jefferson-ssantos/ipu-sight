@@ -335,7 +335,7 @@ export default function Dashboard() {
         {/* Consolidated Chart Section */}
         <ConsolidatedChart
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-          getChartData={getChartData}
+          availableOrgs={availableOrgs}
         />
       </div>
 

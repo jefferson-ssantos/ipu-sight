@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 interface ConsolidatedChartProps {
   selectedOrg?: string;
-  getChartData: (type: string, period: string, orgFilter?: string) => Promise<any>;
+  availableOrgs: Array<{value: string, label: string}>;
 }
 
 interface ChartDataItem {
@@ -28,11 +28,7 @@ interface MetricOption {
   label: string;
 }
 
-const periodOptions = [
-  { value: "3", label: "Últimos 3 Ciclos" },
-  { value: "6", label: "Últimos 6 Ciclos" },
-  { value: "12", label: "Últimos 12 Ciclos" },
-];
+// Removed period options as requested
 
 const colors = [
   'hsl(24 70% 60%)', // Orange
@@ -49,8 +45,8 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
-export function ConsolidatedChart({ selectedOrg, getChartData }: ConsolidatedChartProps) {
-  const [period, setPeriod] = useState("3");
+export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedChartProps) {
+  const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>("all");
   const [selectedProjects, setSelectedProjects] = useState<string[]>(["all"]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(["all"]);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
@@ -77,8 +73,49 @@ export function ConsolidatedChart({ selectedOrg, getChartData }: ConsolidatedCha
   const fetchChartData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getChartData('billing-periods', period, selectedOrg);
+      const { supabase } = await import('@/integrations/supabase/client');
       
+      // Get user's client configurations
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('cliente_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.cliente_id) return;
+
+      const { data: configs } = await supabase
+        .from('api_configuracaoidmc')
+        .select('id')
+        .eq('cliente_id', profile.cliente_id);
+
+      if (!configs || configs.length === 0) return;
+
+      const configIds = configs.map(config => config.id);
+
+      // Build query for api_consumoasset
+      let query = supabase
+        .from('api_consumoasset')
+        .select('configuracao_id, meter_name, consumption_date, project_name, consumption_ipu, org_id')
+        .in('configuracao_id', configIds)
+        .gt('consumption_ipu', 0)
+        .order('consumption_date', { ascending: true });
+
+      // Apply organization filter
+      if (selectedOrgLocal !== "all") {
+        query = query.eq('org_id', selectedOrgLocal);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching data:', error);
+        return;
+      }
+
       if (!data || data.length === 0) {
         setChartData([]);
         setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
@@ -86,13 +123,13 @@ export function ConsolidatedChart({ selectedOrg, getChartData }: ConsolidatedCha
         return;
       }
 
-      // Process and aggregate data by period, project, and metric
+      // Process and aggregate data by consumption_date, project, and metric
       const periodMap = new Map<string, any>();
       const projectsSet = new Set<string>();
       const metricsSet = new Set<string>();
 
       data.forEach((item: any) => {
-        const periodKey = `${item.billing_period_start_date} - ${item.billing_period_end_date}`;
+        const periodKey = item.consumption_date;
         const projectName = item.project_name || "Projeto não informado";
         const metricName = item.meter_name || "Métrica não informada";
         const cost = (item.consumption_ipu || 0) * 3.25; // assuming price per IPU
@@ -112,12 +149,10 @@ export function ConsolidatedChart({ selectedOrg, getChartData }: ConsolidatedCha
         periodMap.get(periodKey)[key] = existing + cost;
       });
 
-      // Convert to array and sort by period
-      const processedData = Array.from(periodMap.values()).sort((a, b) => {
-        const dateA = new Date(a.period.split(' - ')[0]);
-        const dateB = new Date(b.period.split(' - ')[0]);
-        return dateA.getTime() - dateB.getTime();
-      });
+      // Convert to array and sort by date, limit to last 3 cycles
+      const processedData = Array.from(periodMap.values())
+        .sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime())
+        .slice(-3); // Last 3 cycles as default
 
       setChartData(processedData);
 
@@ -150,7 +185,7 @@ export function ConsolidatedChart({ selectedOrg, getChartData }: ConsolidatedCha
     } finally {
       setLoading(false);
     }
-  }, [getChartData, period, selectedOrg]);
+  }, [selectedOrgLocal]);
 
   useEffect(() => {
     fetchChartData();
@@ -297,12 +332,12 @@ export function ConsolidatedChart({ selectedOrg, getChartData }: ConsolidatedCha
             <span className="text-sm font-medium">Filtros:</span>
           </div>
           
-          <Select value={period} onValueChange={setPeriod}>
+          <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Período" />
+              <SelectValue placeholder="Organização" />
             </SelectTrigger>
             <SelectContent>
-              {periodOptions.map(option => (
+              {availableOrgs.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
