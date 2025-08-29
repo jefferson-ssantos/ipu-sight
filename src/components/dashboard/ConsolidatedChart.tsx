@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, Filter } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from "recharts";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
@@ -18,17 +18,10 @@ interface ChartDataItem {
   [key: string]: any;
 }
 
-interface ProjectOption {
-  value: string;
-  label: string;
-}
-
 interface MetricOption {
   value: string;
   label: string;
 }
-
-// Removed period options as requested
 
 const colors = [
   'hsl(24 70% 60%)', // Orange
@@ -47,26 +40,21 @@ const colors = [
 
 export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedChartProps) {
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>("all");
-  const [selectedProjects, setSelectedProjects] = useState<string[]>(["all"]);
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(["all"]);
+  const [period, setPeriod] = useState("3"); // Default to 3 cycles
+  const [selectedMetric, setSelectedMetric] = useState<string>("all");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
+  const [contractedValue, setContractedValue] = useState(0);
+  const [totalAvailableCycles, setTotalAvailableCycles] = useState(0);
 
   const formatCurrency = (value: number) => {
-    if (value === 0) return "R$ 0";
-    if (value >= 1000000) {
-      return `R$ ${(value / 1000000).toFixed(1).replace('.', ',')}M`;
-    } else if (value >= 1000) {
-      return `R$ ${(value / 1000).toFixed(0)}K`;
-    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(value);
   };
 
@@ -75,163 +63,119 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       
-      // Get user's client configurations
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('cliente_id')
-        .eq('id', user.id)
-        .single();
+      const { data: profile } = await supabase.from('profiles').select('cliente_id').eq('id', user.id).single();
+      if (!profile?.cliente_id) { setLoading(false); return; }
+      
+      const { data: client } = await supabase.from('api_clientes').select('preco_por_ipu, qtd_ipus_contratadas').eq('id', profile.cliente_id).single();
+      const pricePerIPU = client?.preco_por_ipu || 0;
+      const contractedIPUs = client?.qtd_ipus_contratadas || 0;
+      setContractedValue(contractedIPUs * pricePerIPU);
 
-      if (!profile?.cliente_id) return;
-
-      const { data: configs } = await supabase
-        .from('api_configuracaoidmc')
-        .select('id')
-        .eq('cliente_id', profile.cliente_id);
-
-      if (!configs || configs.length === 0) return;
-
+      const { data: configs } = await supabase.from('api_configuracaoidmc').select('id').eq('cliente_id', profile.cliente_id);
+      if (!configs || configs.length === 0) { setLoading(false); return; }
       const configIds = configs.map(config => config.id);
 
-      // Get the most recent cycles with consumption data
-      const { data: availableCycles } = await supabase
+      const cycleLimit = parseInt(period);
+
+      const { data: availableCyclesData, error: cyclesError } = await supabase
         .from('api_consumosummary')
         .select('billing_period_start_date, billing_period_end_date')
         .in('configuracao_id', configIds)
         .gt('consumption_ipu', 0)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage')
         .order('billing_period_end_date', { ascending: false });
 
-      if (!availableCycles || availableCycles.length === 0) {
-        setChartData([]);
-        setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
-        setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+      if (cyclesError) {
+        console.error('Error fetching cycles from consumosummary:', cyclesError);
+        setLoading(false);
         return;
       }
 
-      // Get unique cycles and limit to last 3
-      const uniqueCycles = Array.from(
-        new Map(availableCycles.map(cycle => [
+      const allUniqueCycles = Array.from(
+        new Map(availableCyclesData.map(cycle => [
           `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`,
           {
             start: cycle.billing_period_start_date,
             end: cycle.billing_period_end_date,
-            label: `${new Date(cycle.billing_period_start_date).toLocaleDateString('pt-BR')} - ${new Date(cycle.billing_period_end_date).toLocaleDateString('pt-BR')}`
           }
         ])).values()
-      )
-      .sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime())
-      .slice(0, 3) // Take the 3 most recent cycles
-      .reverse(); // Reverse to show chronologically (oldest to newest of the 3)
+      ).sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime());
 
-      console.log('Available cycles for chart:', uniqueCycles);
+      setTotalAvailableCycles(allUniqueCycles.length);
 
-      // Now query consumption data for these specific cycles
+      const cyclesToFetch = allUniqueCycles.slice(0, cycleLimit).reverse();
+
+      if (cyclesToFetch.length === 0) {
+        setChartData([]);
+        setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+        setLoading(false);
+        return;
+      }
+
       let query = supabase
         .from('api_consumosummary')
-        .select('configuracao_id, meter_name, billing_period_start_date, billing_period_end_date, consumption_ipu, org_id, org_name')
+        .select('billing_period_start_date, billing_period_end_date, meter_name, consumption_ipu, org_id')
         .in('configuracao_id', configIds)
+        .gte('billing_period_start_date', cyclesToFetch[0].start)
+        .lte('billing_period_end_date', cyclesToFetch[cyclesToFetch.length - 1].end)
         .gt('consumption_ipu', 0)
         .neq('meter_name', 'Sandbox Organizations IPU Usage');
 
-      // Apply cycle filter using OR conditions
-      if (uniqueCycles.length > 0) {
-        const cycleConditions = uniqueCycles.map(cycle => 
-          `billing_period_start_date.eq.${cycle.start}.and.billing_period_end_date.eq.${cycle.end}`
-        ).join(',');
-        query = query.or(cycleConditions);
-      }
-
-      // Apply organization filter
       if (selectedOrgLocal !== "all") {
         query = query.eq('org_id', selectedOrgLocal);
       }
 
       const { data, error } = await query;
+      if (error) throw error;
 
-      if (error) {
-        console.error('Error fetching consumption data:', error);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setChartData([]);
-        setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
-        setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
-        return;
-      }
-
-      console.log('Consumption data fetched:', data.length, 'records');
-
-      // Process and aggregate data by cycle, organization, and metric
       const periodMap = new Map<string, any>();
-      const projectsSet = new Set<string>();
-      const metricsSet = new Set<string>();
-
-      data.forEach((item: any) => {
-        const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-        const cycleInfo = uniqueCycles.find(c => 
-          c.start === item.billing_period_start_date && c.end === item.billing_period_end_date
-        );
-        
-        if (!cycleInfo) return;
-        
-        const projectName = item.org_name || "Organização não informada";
-        const metricName = item.meter_name || "Métrica não informada";
-        const cost = (item.consumption_ipu || 0) * 3.25; // assuming price per IPU
-
-        // Only include if cost > 0
-        if (cost <= 0) return;
-
-        projectsSet.add(projectName);
-        metricsSet.add(metricName);
-
-        const periodKey = cycleInfo.label;
-        if (!periodMap.has(periodKey)) {
-          periodMap.set(periodKey, { period: periodKey });
-        }
-
-        const key = `${projectName}_${metricName}`;
-        const existing = periodMap.get(periodKey)[key] || 0;
-        periodMap.get(periodKey)[key] = existing + cost;
+      cyclesToFetch.forEach(cycle => {
+        const periodLabel = `${new Date(cycle.start + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.end + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
+        periodMap.set(periodLabel, { period: periodLabel, start: cycle.start });
       });
 
-      // Convert to array and sort by cycle chronological order
-      const processedData = Array.from(periodMap.values())
-        .sort((a, b) => {
-          const cycleA = uniqueCycles.find(c => c.label === a.period);
-          const cycleB = uniqueCycles.find(c => c.label === b.period);
-          if (!cycleA || !cycleB) return 0;
-          return new Date(cycleA.end).getTime() - new Date(cycleB.end).getTime();
+      const metricsMap = new Map<string, string>();
+
+      if (data) {
+        data.forEach((item: any) => {
+          const cleanedMetricName = (item.meter_name || "Métrica não informada")
+            .replace(/\s\s+/g, ' ')
+            .trim();
+
+          if (!cleanedMetricName) return;
+
+          const lowerCaseMetricName = cleanedMetricName.toLowerCase();
+          const cost = (item.consumption_ipu || 0) * pricePerIPU;
+
+          if (cost <= 0) return;
+
+          if (!metricsMap.has(lowerCaseMetricName)) {
+            metricsMap.set(lowerCaseMetricName, cleanedMetricName);
+          }
+          
+          const metricNameToUse = metricsMap.get(lowerCaseMetricName)!;
+
+          const periodLabel = `${new Date(item.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(item.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
+          const periodData = periodMap.get(periodLabel);
+          if (periodData) {
+            periodData[metricNameToUse] = (periodData[metricNameToUse] || 0) + cost;
+          }
         });
+      }
+
+      const processedData = Array.from(periodMap.values())
+        .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
       setChartData(processedData);
 
-      // Set up project and metric options
-      const projectsList = Array.from(projectsSet).sort();
-      const metricsList = Array.from(metricsSet).sort();
-      
-      setProjectOptions([
-        { value: "all", label: "Todos os Projetos" },
-        ...projectsList.map(project => ({ value: project, label: project }))
-      ]);
-
+      const metricsList = Array.from(metricsMap.values()).sort();
       setMetricOptions([
         { value: "all", label: "Todas as Métricas" },
         ...metricsList.map(metric => ({ value: metric, label: metric }))
       ]);
-
-      // Generate all possible data keys for filtering
-      const allKeys: string[] = [];
-      projectsList.forEach(project => {
-        metricsList.forEach(metric => {
-          allKeys.push(`${project}_${metric}`);
-        });
-      });
-      setAllDataKeys(allKeys);
+      setAllDataKeys(metricsList);
 
     } catch (error) {
       console.error('Error fetching chart data:', error);
@@ -239,32 +183,56 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     } finally {
       setLoading(false);
     }
-  }, [selectedOrgLocal]);
+  }, [selectedOrgLocal, period]);
 
   useEffect(() => {
     fetchChartData();
   }, [fetchChartData]);
 
   const getFilteredDataKeys = () => {
-    if (selectedProjects.includes("all") && selectedMetrics.includes("all")) {
-      return allDataKeys;
+    if (selectedMetric === "all") {
+        return allDataKeys;
+    }
+    
+    const filtered = allDataKeys.filter(key => key === selectedMetric);
+    
+    if (filtered.length === 0 && selectedMetric !== "all") {
+        return [];
     }
 
-    const keys: string[] = [];
-    const projects = selectedProjects.includes("all") ? 
-      projectOptions.filter(p => p.value !== "all").map(p => p.value) : 
-      selectedProjects;
-    const metrics = selectedMetrics.includes("all") ? 
-      metricOptions.filter(m => m.value !== "all").map(m => m.value) : 
-      selectedMetrics;
+    return filtered;
+  };
 
-    projects.forEach(project => {
-      metrics.forEach(metric => {
-        keys.push(`${project}_${metric}`);
-      });
+  const filteredDataKeys = getFilteredDataKeys();
+
+  const chartDataWithDisplayTotal = chartData.map(d => {
+    const displayTotal = filteredDataKeys.reduce((acc, key) => acc + (d[key] || 0), 0);
+    return { ...d, displayTotal };
+  });
+
+  const yAxisDomain = () => {
+    if (chartDataWithDisplayTotal.length === 0) return [0, contractedValue > 0 ? contractedValue * 1.1 : 1000];
+
+    let maxVal = selectedMetric === 'all' ? contractedValue : 0;
+    chartDataWithDisplayTotal.forEach(d => {
+      const total = d.displayTotal || 0;
+      if (total > maxVal) {
+        maxVal = total;
+      }
     });
+    return [0, maxVal * 1.1]; // Add 10% padding
+  };
 
-    return keys;
+  const renderCustomizedLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    if (value > 0) {
+        return (
+            <text x={x + width / 2} y={y} fill="#3a3a3a" textAnchor="middle" dy={-6} fontSize={12} fontWeight="bold">
+                {formatCurrency(value)}
+            </text>
+        );
+    }
+    return null;
   };
 
   const handleDownload = async () => {
@@ -290,34 +258,6 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     }
   };
 
-  const handleProjectChange = (value: string) => {
-    if (value === "all") {
-      setSelectedProjects(["all"]);
-    } else {
-      const newSelection = selectedProjects.includes("all") 
-        ? [value]
-        : selectedProjects.includes(value)
-          ? selectedProjects.filter(p => p !== value)
-          : [...selectedProjects, value];
-      
-      setSelectedProjects(newSelection.length === 0 ? ["all"] : newSelection);
-    }
-  };
-
-  const handleMetricChange = (value: string) => {
-    if (value === "all") {
-      setSelectedMetrics(["all"]);
-    } else {
-      const newSelection = selectedMetrics.includes("all") 
-        ? [value]
-        : selectedMetrics.includes(value)
-          ? selectedMetrics.filter(m => m !== value)
-          : [...selectedMetrics, value];
-      
-      setSelectedMetrics(newSelection.length === 0 ? ["all"] : newSelection);
-    }
-  };
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
@@ -326,7 +266,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         <div className="bg-background border border-border rounded-lg shadow-lg p-3">
           <p className="font-medium text-foreground mb-2">{label}</p>
           {payload.map((item: any, index: number) => {
-            const [project, metric] = item.dataKey.split('_');
+            const metric = item.dataKey;
             return (
               <div key={index} className="flex items-center gap-2 text-sm">
                 <div
@@ -334,7 +274,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="text-muted-foreground">
-                  {project} - {metric}:
+                  {metric}:
                 </span>
                 <span className="font-medium text-foreground">
                   {formatCurrency(item.value)}
@@ -354,8 +294,6 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     return null;
   };
 
-  const filteredDataKeys = getFilteredDataKeys();
-
   return (
     <Card className="bg-gradient-card shadow-medium">
       <CardHeader>
@@ -365,7 +303,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
               Análise Consolidada de Custos
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
-              Custos por projeto e métrica ao longo dos ciclos
+              Custos por métrica ao longo dos ciclos
             </div>
           </div>
           <Button
@@ -399,29 +337,22 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             </SelectContent>
           </Select>
 
-          <Select value={selectedProjects.includes("all") ? "all" : "custom"} onValueChange={(value) => {
-            if (value === "all") setSelectedProjects(["all"]);
-          }}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Projetos" />
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {projectOptions.map(option => (
-                <SelectItem 
-                  key={option.value} 
-                  value={option.value}
-                  onClick={() => handleProjectChange(option.value)}
-                >
-                  {option.label}
-                </SelectItem>
-              ))}
+              <SelectItem value="1" disabled={totalAvailableCycles < 1}>Ciclo Atual</SelectItem>
+              <SelectItem value="2" disabled={totalAvailableCycles < 2}>Últimos 2 Ciclos</SelectItem>
+              <SelectItem value="3" disabled={totalAvailableCycles < 3}>Últimos 3 Ciclos</SelectItem>
+              <SelectItem value="6" disabled={totalAvailableCycles < 6}>Últimos 6 Ciclos</SelectItem>
+              <SelectItem value="9" disabled={totalAvailableCycles < 9}>Últimos 9 Ciclos</SelectItem>
+              <SelectItem value="12" disabled={totalAvailableCycles < 12}>Últimos 12 Ciclos</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={selectedMetrics.includes("all") ? "all" : "custom"} onValueChange={(value) => {
-            if (value === "all") setSelectedMetrics(["all"]);
-          }}>
-            <SelectTrigger className="w-44">
+          <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+            <SelectTrigger className="w-56">
               <SelectValue placeholder="Métricas" />
             </SelectTrigger>
             <SelectContent>
@@ -429,7 +360,6 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                 <SelectItem 
                   key={option.value} 
                   value={option.value}
-                  onClick={() => handleMetricChange(option.value)}
                 >
                   {option.label}
                 </SelectItem>
@@ -439,18 +369,11 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         </div>
 
         {/* Active Filters */}
-        {(!selectedProjects.includes("all") || !selectedMetrics.includes("all")) && (
+        { selectedMetric !== 'all' && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {!selectedProjects.includes("all") && selectedProjects.map(project => (
-              <Badge key={project} variant="secondary" className="text-xs">
-                Projeto: {project}
-              </Badge>
-            ))}
-            {!selectedMetrics.includes("all") && selectedMetrics.map(metric => (
-              <Badge key={metric} variant="secondary" className="text-xs">
-                Métrica: {metric}
-              </Badge>
-            ))}
+            <Badge variant="secondary" className="text-xs">
+              Métrica: {metricOptions.find(m => m.value === selectedMetric)?.label || selectedMetric}
+            </Badge>
           </div>
         )}
       </CardHeader>
@@ -475,7 +398,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart data={chartDataWithDisplayTotal} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="period" 
@@ -489,17 +412,26 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   tickFormatter={formatCurrency}
+                  domain={yAxisDomain()}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 
+                {contractedValue > 0 && selectedMetric === 'all' && (
+                  <ReferenceLine y={contractedValue} label={{ value: `Contratado: ${formatCurrency(contractedValue)}`, position: 'insideTopRight' }} stroke="red" strokeDasharray="3 3" />
+                )}
+
                 {filteredDataKeys.map((key, index) => (
                   <Bar
                     key={key}
                     dataKey={key}
                     stackId="costs"
                     fill={colors[index % colors.length]}
-                    name={key.replace('_', ' - ')}
-                  />
+                    name={key}
+                  >
+                    {index === filteredDataKeys.length - 1 && (
+                        <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
+                    )}
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
