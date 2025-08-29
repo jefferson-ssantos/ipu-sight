@@ -10,8 +10,8 @@ import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 export function CostTrendAnalysis() {
-  const { data, loading, getChartData } = useDashboardData();
-  const [period, setPeriod] = useState("6months");
+  const { data, loading, getChartData, availableCycles } = useDashboardData(); // Destructure availableCycles
+  const [period, setPeriod] = useState("3"); // Changed from "6" to "3" to match default ConsolidatedChart
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -20,7 +20,8 @@ export function CostTrendAnalysis() {
     const fetchData = async () => {
       try {
         console.log('CostTrendAnalysis: Fetching data with period:', period, 'metric:', metric);
-        const evolutionData = await getChartData('evolution');
+        // Pass period to getChartData
+        const evolutionData = await getChartData('evolution', undefined, period);
         console.log('CostTrendAnalysis: Received data:', evolutionData);
         const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
         setChartData(dataArray);
@@ -101,7 +102,7 @@ export function CostTrendAnalysis() {
   return (
     <div className="space-y-4">
       {/* Insights Card */}
-      <Card>
+      <Card className="bg-gradient-card shadow-medium">
         <CardHeader>
           <CardTitle>Insights da Análise</CardTitle>
         </CardHeader>
@@ -142,7 +143,7 @@ export function CostTrendAnalysis() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gradient-card shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -160,13 +161,16 @@ export function CostTrendAnalysis() {
           
           <div className="flex items-center gap-4">
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="3months">Últimos 3 meses</SelectItem>
-                <SelectItem value="6months">Últimos 6 meses</SelectItem>
-                <SelectItem value="12months">Último ano</SelectItem>
+                <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
+                <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
+                <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
+                <SelectItem value="6" disabled={availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
+                <SelectItem value="9" disabled={availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
+                <SelectItem value="12" disabled={availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
               </SelectContent>
             </Select>
 
@@ -194,8 +198,11 @@ export function CostTrendAnalysis() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="period" 
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}

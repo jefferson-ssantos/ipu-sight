@@ -7,6 +7,7 @@ import { Download, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from "recharts";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { useDashboardData } from "@/hooks/useDashboardData"; // Import useDashboardData
 
 interface ConsolidatedChartProps {
   selectedOrg?: string;
@@ -39,15 +40,16 @@ const colors = [
 ];
 
 export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedChartProps) {
-  const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>("all");
+  const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
   const [period, setPeriod] = useState("3"); // Default to 3 cycles
   const [selectedMetric, setSelectedMetric] = useState<string>("all");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
-  const [contractedValue, setContractedValue] = useState(0);
-  const [totalAvailableCycles, setTotalAvailableCycles] = useState(0);
+
+  // Use useDashboardData hook to fetch data
+  const { getChartData: getDashboardChartData, availableCycles } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -58,136 +60,39 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     }).format(value);
   };
 
-  const fetchChartData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      const { data: profile } = await supabase.from('profiles').select('cliente_id').eq('id', user.id).single();
-      if (!profile?.cliente_id) { setLoading(false); return; }
-      
-      const { data: client } = await supabase.from('api_clientes').select('preco_por_ipu, qtd_ipus_contratadas').eq('id', profile.cliente_id).single();
-      const pricePerIPU = client?.preco_por_ipu || 0;
-      const contractedIPUs = client?.qtd_ipus_contratadas || 0;
-      setContractedValue(contractedIPUs * pricePerIPU);
-
-      const { data: configs } = await supabase.from('api_configuracaoidmc').select('id').eq('cliente_id', profile.cliente_id);
-      if (!configs || configs.length === 0) { setLoading(false); return; }
-      const configIds = configs.map(config => config.id);
-
-      const cycleLimit = parseInt(period);
-
-      const { data: availableCyclesData, error: cyclesError } = await supabase
-        .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date')
-        .in('configuracao_id', configIds)
-        .gt('consumption_ipu', 0)
-        .order('billing_period_end_date', { ascending: false });
-
-      if (cyclesError) {
-        console.error('Error fetching cycles from consumosummary:', cyclesError);
-        setLoading(false);
-        return;
-      }
-
-      const allUniqueCycles = Array.from(
-        new Map(availableCyclesData.map(cycle => [
-          `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`,
-          {
-            start: cycle.billing_period_start_date,
-            end: cycle.billing_period_end_date,
-          }
-        ])).values()
-      ).sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime());
-
-      setTotalAvailableCycles(allUniqueCycles.length);
-
-      const cyclesToFetch = allUniqueCycles.slice(0, cycleLimit).reverse();
-
-      if (cyclesToFetch.length === 0) {
-        setChartData([]);
-        setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
-        setLoading(false);
-        return;
-      }
-
-      let query = supabase
-        .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date, meter_name, consumption_ipu, org_id')
-        .in('configuracao_id', configIds)
-        .gte('billing_period_start_date', cyclesToFetch[0].start)
-        .lte('billing_period_end_date', cyclesToFetch[cyclesToFetch.length - 1].end)
-        .gt('consumption_ipu', 0)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage');
-
-      if (selectedOrgLocal !== "all") {
-        query = query.eq('org_id', selectedOrgLocal);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const periodMap = new Map<string, any>();
-      cyclesToFetch.forEach(cycle => {
-        const periodLabel = `${new Date(cycle.start + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.end + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
-        periodMap.set(periodLabel, { period: periodLabel, start: cycle.start });
-      });
-
-      const metricsMap = new Map<string, string>();
-
-      if (data) {
-        data.forEach((item: any) => {
-          const cleanedMetricName = (item.meter_name || "Métrica não informada")
-            .replace(/\s\s+/g, ' ')
-            .trim();
-
-          if (!cleanedMetricName) return;
-
-          const lowerCaseMetricName = cleanedMetricName.toLowerCase();
-          const cost = (item.consumption_ipu || 0) * pricePerIPU;
-
-          if (cost <= 0) return;
-
-          if (!metricsMap.has(lowerCaseMetricName)) {
-            metricsMap.set(lowerCaseMetricName, cleanedMetricName);
-          }
-          
-          const metricNameToUse = metricsMap.get(lowerCaseMetricName)!;
-
-          const periodLabel = `${new Date(item.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(item.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
-          const periodData = periodMap.get(periodLabel);
-          if (periodData) {
-            periodData[metricNameToUse] = (periodData[metricNameToUse] || 0) + cost;
-          }
-        });
-      }
-
-      const processedData = Array.from(periodMap.values())
-        .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-
-      setChartData(processedData);
-
-      const metricsList = Array.from(metricsMap.values()).sort();
-      setMetricOptions([
-        { value: "all", label: "Todas as Métricas" },
-        ...metricsList.map(metric => ({ value: metric, label: metric }))
-      ]);
-      setAllDataKeys(metricsList);
-
-    } catch (error) {
-      console.error('Error fetching chart data:', error);
-      toast.error('Erro ao carregar dados do gráfico');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedOrgLocal, period]);
-
   useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const result = await getDashboardChartData('billing-periods', selectedOrgLocal, period);
+        if (result && result.data) {
+          setChartData(result.data);
+          setAllDataKeys(result.meters);
+
+          // Update metric options based on fetched meters
+          const newMetricOptions = result.meters.map((meter: string) => ({ value: meter, label: meter }));
+          setMetricOptions([{ value: "all", label: "Todas as Métricas" }, ...newMetricOptions]);
+        } else {
+          setChartData([]);
+          setAllDataKeys([]);
+          setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+        }
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+        toast.error('Erro ao carregar dados do gráfico');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (getDashboardChartData) {
+      fetchData();
+    }
+  }, [selectedOrgLocal, period, getDashboardChartData]);
+
+  // Update selectedOrgLocal when selectedOrg prop changes
+  useEffect(() => {
+    setSelectedOrgLocal(selectedOrg || "all");
+  }, [selectedOrg]);
 
   const getFilteredDataKeys = () => {
     if (selectedMetric === "all") {
@@ -211,9 +116,9 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   });
 
   const yAxisDomain = () => {
-    if (chartDataWithDisplayTotal.length === 0) return [0, contractedValue > 0 ? contractedValue * 1.1 : 1000];
+    if (chartDataWithDisplayTotal.length === 0) return [0, 1000]; // Default if no data
 
-    let maxVal = selectedMetric === 'all' ? contractedValue : 0;
+    let maxVal = 0;
     chartDataWithDisplayTotal.forEach(d => {
       const total = d.displayTotal || 0;
       if (total > maxVal) {
@@ -342,12 +247,12 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1" disabled={totalAvailableCycles < 1}>Ciclo Atual</SelectItem>
-              <SelectItem value="2" disabled={totalAvailableCycles < 2}>Últimos 2 Ciclos</SelectItem>
-              <SelectItem value="3" disabled={totalAvailableCycles < 3}>Últimos 3 Ciclos</SelectItem>
-              <SelectItem value="6" disabled={totalAvailableCycles < 6}>Últimos 6 Ciclos</SelectItem>
-              <SelectItem value="9" disabled={totalAvailableCycles < 9}>Últimos 9 Ciclos</SelectItem>
-              <SelectItem value="12" disabled={totalAvailableCycles < 12}>Últimos 12 Ciclos</SelectItem>
+              <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
+              <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
+              <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
+              <SelectItem value="6" disabled={availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
+              <SelectItem value="9" disabled={availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
+              <SelectItem value="12" disabled={availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
             </SelectContent>
           </Select>
 
@@ -416,9 +321,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                 />
                 <Tooltip content={<CustomTooltip />} />
                 
-                {contractedValue > 0 && selectedMetric === 'all' && (
-                  <ReferenceLine y={contractedValue} label={{ value: `Contratado: ${formatCurrency(contractedValue)}`, position: 'insideTopRight' }} stroke="red" strokeDasharray="3 3" />
-                )}
+                {/* Removed ReferenceLine for contractedValue */}
 
                 {filteredDataKeys.map((key, index) => (
                   <Bar

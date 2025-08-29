@@ -53,6 +53,12 @@ const mainNavItems = [
 
 const consumptionItems = [
   {
+    title: "Por Métrica",
+    url: "/detalhamento",
+    icon: PieChart,
+    description: "Detalhamento por métricas de consumo"
+  },
+  {
     title: "Por Asset",
     url: "/consumption/assets",
     icon: FileText,

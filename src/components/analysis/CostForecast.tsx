@@ -28,7 +28,7 @@ interface ForecastData {
 
 export function CostForecast() {
   const { user } = useAuth();
-  const [forecastPeriod, setForecastPeriod] = useState("3months");
+  const [forecastPeriod, setForecastPeriod] = useState("3"); // Changed from "3months" to "3"
   const [metric, setMetric] = useState("cost");
   const [historicalData, setHistoricalData] = useState<HistoricalData[]>([]);
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
@@ -117,13 +117,13 @@ export function CostForecast() {
   const formatPeriodLabel = (startDate: string, endDate: string): string => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return `${start.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })} - ${end.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}`;
+    return `${start.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${end.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`;
   };
 
   const generateAdvancedForecast = (historical: HistoricalData[], period: string, pricePerIPU: number): ForecastData[] => {
     if (historical.length < 2) return [];
 
-    const periodsToForecast = period === "1month" ? 1 : period === "3months" ? 3 : period === "6months" ? 6 : 12;
+    const periodsToForecast = parseInt(period); // Changed to parseInt(period)
     
     // Apply multiple forecasting methods
     const linearForecast = linearRegressionForecast(historical, periodsToForecast, pricePerIPU);
@@ -145,11 +145,16 @@ export function CostForecast() {
       // Calculate confidence based on data variance
       const confidence = calculateConfidence(historical, i);
       
-      const lastPeriodEnd = new Date(historical[historical.length - 1].billing_period_end_date);
-      lastPeriodEnd.setMonth(lastPeriodEnd.getMonth() + i + 1);
+      const lastHistoricalEndDate = new Date(historical[historical.length - 1].billing_period_end_date);
+      
+      const forecastStartDate = new Date(lastHistoricalEndDate);
+      forecastStartDate.setDate(lastHistoricalEndDate.getDate() + 1); 
+      forecastStartDate.setMonth(forecastStartDate.getMonth() + i); 
+
+      const forecastEndDate = new Date(forecastStartDate.getFullYear(), forecastStartDate.getMonth() + 1, 0); 
       
       combinedForecast.push({
-        period: `Previsão ${lastPeriodEnd.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' })}`,
+        period: `${forecastStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${forecastEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
         ipu: Math.max(0, weightedIPU),
         cost: Math.max(0, weightedCost),
         isForecast: true,
@@ -390,7 +395,7 @@ export function CostForecast() {
     <div className="space-y-4">
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
@@ -408,7 +413,7 @@ export function CostForecast() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -426,7 +431,7 @@ export function CostForecast() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
@@ -444,7 +449,7 @@ export function CostForecast() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
@@ -463,7 +468,7 @@ export function CostForecast() {
       </div>
 
       {/* Forecast Chart */}
-      <Card>
+      <Card className="bg-gradient-card shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
@@ -476,10 +481,10 @@ export function CostForecast() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1month">Próximo mês</SelectItem>
-                <SelectItem value="3months">Próximos 3 meses</SelectItem>
-                <SelectItem value="6months">Próximos 6 meses</SelectItem>
-                <SelectItem value="12months">Próximo ano</SelectItem>
+                <SelectItem value="1">Próximo mês</SelectItem>
+                <SelectItem value="3">Próximos 3 meses</SelectItem>
+                <SelectItem value="6">Próximos 6 meses</SelectItem>
+                <SelectItem value="12">Próximo ano</SelectItem>
               </SelectContent>
             </Select>
 
@@ -507,8 +512,11 @@ export function CostForecast() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="period" 
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}

@@ -23,7 +23,7 @@ interface DashboardData {
   currentPeriod: string;
   periodStart: string;
   periodEnd: string;
-  organizations: Array<{
+  organizations: Array<{ 
     org_id: string;
     org_name: string;
     consumption_ipu: number;
@@ -75,7 +75,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [availableCycles, setAvailableCycles] = useState<Array<{
+  const [availableCycles, setAvailableCycles] = useState<Array<{ 
     ciclo_id: number;
     billing_period_start_date: string;
     billing_period_end_date: string;
@@ -164,7 +164,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       const sortedCycles = cyclesData
         ?.sort((a, b) => new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime()) || [];
       
-      const uniqueCycles: Array<{
+      const uniqueCycles: Array<{ 
         ciclo_id: number;
         billing_period_start_date: string;
         billing_period_end_date: string;
@@ -264,21 +264,20 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         let totalHistoricalDays = 0;
 
         for (const cycle of historicalCycles) {
-          const { data: historicalData } = await supabase
-            .from('api_consumosummary')
-            .select('consumption_ipu')
-            .in('configuracao_id', configIds)
-            .neq('meter_name', 'Sandbox Organizations IPU Usage')
-            .eq('billing_period_start_date', cycle.billing_period_start_date)
-            .eq('billing_period_end_date', cycle.billing_period_end_date);
+          const { data: historicalKpiData, error: historicalKpiError } = await supabase
+            .rpc('get_dashboard_kpis', {
+              start_date: cycle.billing_period_start_date,
+              end_date: cycle.billing_period_end_date,
+              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+            });
 
-          if (historicalData && historicalData.length > 0) {
-            // Filter out Sandbox Organizations for historical comparison (if viewing all orgs)
-            const filteredHistoricalData = (!selectedOrg || selectedOrg === 'all') 
-              ? historicalData 
-              : historicalData;
+          if (historicalKpiError) {
+            console.error('Error fetching historical KPI data for cycle:', cycle, historicalKpiError);
+            continue;
+          }
 
-            const cycleTotalIPU = filteredHistoricalData.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
+          if (historicalKpiData && historicalKpiData.length > 0) {
+            const cycleTotalIPU = historicalKpiData.reduce((sum, item) => sum + (item.total_ipu || 0), 0);
             const cycleCost = cycleTotalIPU * client.preco_por_ipu;
             
             const cycleDays = Math.max(1, Math.ceil(
@@ -465,27 +464,20 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
           // Group by billing period
           const periodMap = new Map();
-          let cycleCounter = 1;
 
           evolutionData.forEach(item => {
             const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+            const periodLabel = `${new Date(item.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(item.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
 
             if (periodMap.has(periodKey)) {
               periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
             } else {
-              const endDate = new Date(item.billing_period_end_date);
-              const monthName = endDate.toLocaleDateString('pt-BR', { month: 'short' });
-              const year = endDate.getFullYear().toString().slice(-2);
-              const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
-
               periodMap.set(periodKey, {
-                period: displayName,
+                period: periodLabel,
                 totalIPU: item.consumption_ipu || 0,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
-                cycleCounter: cycleCounter
               });
-              cycleCounter++;
             }
           });
 

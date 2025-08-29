@@ -84,7 +84,7 @@ export function OrganizationComparison() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="bg-gradient-card shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Comparação por Organização</CardTitle>
           
@@ -150,7 +150,7 @@ export function OrganizationComparison() {
       </Card>
 
       {/* Organization Rankings */}
-      <Card>
+      <Card className="bg-gradient-card shadow-medium">
         <CardHeader>
           <CardTitle>Ranking de Organizações</CardTitle>
         </CardHeader>

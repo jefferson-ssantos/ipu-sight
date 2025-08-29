@@ -248,7 +248,7 @@ export function MetricBreakdown() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="bg-gradient-card shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Detalhamento por Métrica</CardTitle>
           

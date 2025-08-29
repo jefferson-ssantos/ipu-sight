@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
+import Detalhamento from "./pages/Detalhamento";
 import ConsumptionAssets from "./pages/ConsumptionAssets";
 import ConsumptionProjects from "./pages/ConsumptionProjects";
 import ConsumptionOrganizations from "./pages/ConsumptionOrganizations";
@@ -78,6 +79,13 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Analysis />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/detalhamento" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Detalhamento />
               </AppLayout>
             </ProtectedRoute>
           } />

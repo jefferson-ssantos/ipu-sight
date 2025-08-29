@@ -183,17 +183,11 @@ export default function Dashboard() {
           <KPICard title="Organizações Ativas" value={dashboardData?.activeOrgs || 0} subtitle="Com consumo no período" icon={Building2} variant="default" />
         </div>
 
-        {/* Distribution and Hierarchical View */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-        </div>
-
-
         {/* Consolidated Chart Section */}
         <ConsolidatedChart selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} availableOrgs={availableOrgs} />
 
         {/* Organizations Carousel Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 rounded-lg p-6 bg-gradient-card shadow-medium border">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-heading font-bold text-foreground">
