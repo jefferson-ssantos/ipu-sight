@@ -515,7 +515,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           
           billingData.forEach(item => {
             const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-            const meterName = item.meter_name || 'Outros';
+            const meterName = (item.meter_name || 'Outros').replace(/\s\s+/g, ' ').trim();
             
             if (!periodMap.has(periodKey)) {
               const endDate = new Date(item.billing_period_end_date);
@@ -548,6 +548,9 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
           const meterNames = Array.from(allMeters);
           
+          // Calculate contracted cost once
+          const contractedReferenceValue = (client.qtd_ipus_contratadas || 0) * client.preco_por_ipu;
+
           // Convert to chart format
           const chartData = Array.from(periodMap.values())
             .filter(period => {
@@ -571,10 +574,9 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           const result = { 
             data: chartData, 
             meters: meterNames.length > 0 ? meterNames : ['Sem dados'],
-            colors: meterNames.map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length])
+            colors: meterNames.map((_, index) => STABLE_COLORS[index % STABLE_COLORS.length]),
+            contractedReferenceValue: contractedReferenceValue 
           };
-
-          console.log('Billing periods chart data:', result);
           cacheRef.current.set(cacheKey, { data: result, timestamp: now });
           return result;
 
