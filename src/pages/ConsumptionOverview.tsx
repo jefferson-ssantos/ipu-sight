@@ -34,6 +34,15 @@ export default function ConsumptionOverview() {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col gap-2"
+                onClick={() => navigate('/detalhamento')}
+              >
+                <PieChart className="h-6 w-6" />
+                <span>Por Métrica</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="h-20 flex flex-col gap-2"
                 onClick={() => navigate('/consumption/assets')}
               >
                 <FileText className="h-6 w-6" />

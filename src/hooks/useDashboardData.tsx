@@ -518,13 +518,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             const meterName = (item.meter_name || 'Outros').replace(/\s\s+/g, ' ').trim();
             
             if (!periodMap.has(periodKey)) {
-              const endDate = new Date(item.billing_period_end_date);
-              const monthName = endDate.toLocaleDateString('pt-BR', { month: 'short' });
-              const year = endDate.getFullYear().toString().slice(-2);
-              const displayName = `Ciclo ${cycleCounter}\n${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+              const periodLabel = `${new Date(item.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(item.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
               
               periodMap.set(periodKey, {
-                period: displayName,
+                period: periodLabel,
                 billing_period_start_date: item.billing_period_start_date,
                 billing_period_end_date: item.billing_period_end_date,
                 cycleCounter: cycleCounter,

@@ -129,10 +129,11 @@ export function MetricBreakdown() {
 
         // Group by meter_name and metric_category
         const groupedData = billingData.reduce((acc, item) => {
-          const key = `${item.meter_name}-${item.metric_category || 'General'}`;
+          const processedMeterName = (item.meter_name || 'Outros').replace(/\s\s+/g, ' ').trim();
+          const key = `${processedMeterName}-${item.metric_category || 'General'}`;
           if (!acc[key]) {
             acc[key] = {
-              meter_name: item.meter_name,
+              meter_name: processedMeterName,
               metric_category: item.metric_category || 'General',
               total_consumption: 0,
               total_cost: 0,
