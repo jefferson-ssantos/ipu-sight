@@ -3,10 +3,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem, 
+  CarouselNext, 
+  CarouselPrevious 
+} from "@/components/ui/carousel";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
 import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
+import { OrganizationCostCard } from "@/components/dashboard/OrganizationCostCard";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
@@ -268,58 +276,36 @@ export default function Dashboard() {
                   Resumo por Organização
                 </h3>
 
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {dashboardData?.organizations.length ? (
-                    dashboardData.organizations.map((org, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer ${
-                          org.level === 1 ? 'ml-6' : ''
-                        }`}
-                        onClick={() => setSelectedOrgForDetails(org.org_id)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-2 h-8 rounded-full ${
-                            org.isPrincipal ? 'bg-primary' : 'bg-secondary'
-                          }`} />
-                          <div className="flex items-center gap-2">
-                            {org.isPrincipal ? (
-                              <Building2 className="h-4 w-4 text-primary" />
-                            ) : (
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            <div>
-                              <p className={`font-medium ${
-                                org.isPrincipal ? 'text-foreground' : 'text-muted-foreground'
-                              }`}>
-                                {org.isPrincipal && '🏢 '}{org.org_name}
-                                {org.isPrincipal && ' (Principal)'}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatIPU(org.consumption_ipu)} IPUs
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <p className={`font-bold text-lg ${
-                            org.isPrincipal ? 'text-foreground' : 'text-muted-foreground'
-                          }`}>
-                            {formatCurrency(org.cost)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {org.percentage}% do total
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum dado de organização encontrado para o período selecionado.
+                {dashboardData?.organizations.length ? (
+                  <Carousel
+                    opts={{
+                      align: "start",
+                      loop: false,
+                    }}
+                    className="w-full"
+                  >
+                    <div className="relative">
+                      <CarouselContent className="-ml-2 md:-ml-4">
+                        {dashboardData.organizations.map((org, index) => (
+                          <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                            <OrganizationCostCard
+                              org={org}
+                              onClick={() => setSelectedOrgForDetails(org.org_id)}
+                              formatCurrency={formatCurrency}
+                              formatIPU={formatIPU}
+                            />
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious className="hidden md:flex" />
+                      <CarouselNext className="hidden md:flex" />
                     </div>
-                  )}
-                </div>
+                  </Carousel>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum dado de organização encontrado para o período selecionado.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
