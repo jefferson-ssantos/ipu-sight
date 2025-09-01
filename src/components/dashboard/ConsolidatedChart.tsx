@@ -136,6 +136,12 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         maxVal = total;
       }
     });
+
+    // Include contracted value in domain calculation when showing in default view
+    if (selectedOrgLocal === "all" && selectedMetric === "all" && contractedValue > 0) {
+      maxVal = Math.max(maxVal, contractedValue);
+    }
+
     return [0, maxVal * 1.1]; // Add 10% padding
   };
 
