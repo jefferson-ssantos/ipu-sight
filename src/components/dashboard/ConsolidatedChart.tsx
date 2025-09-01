@@ -47,6 +47,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [loading, setLoading] = useState(true);
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
+  const [contractedValue, setContractedValue] = useState<number>(0);
 
   // Use useDashboardData hook to fetch data
   const { getChartData: getDashboardChartData, availableCycles } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
@@ -65,16 +66,26 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       setLoading(true);
       try {
         const result = await getDashboardChartData('billing-periods', selectedOrgLocal, period);
-        if (result && result.data) {
+        if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
+          // Handle object result with data property
           setChartData(result.data);
-          setAllDataKeys(result.meters);
+          setAllDataKeys(result.meters || []);
+          setContractedValue(result.contractedReferenceValue || 0);
 
           // Update metric options based on fetched meters
-          const newMetricOptions = result.meters.map((meter: string) => ({ value: meter, label: meter }));
+          const newMetricOptions = (result.meters || []).map((meter: string) => ({ value: meter, label: meter }));
           setMetricOptions([{ value: "all", label: "Todas as Métricas" }, ...newMetricOptions]);
+        } else if (result && Array.isArray(result)) {
+          // Handle array result - try to convert to ChartDataItem format
+          const convertedData = result.filter(item => item && typeof item === 'object' && 'period' in item) as ChartDataItem[];
+          setChartData(convertedData);
+          setAllDataKeys([]);
+          setContractedValue(0);
+          setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
         } else {
           setChartData([]);
           setAllDataKeys([]);
+          setContractedValue(0);
           setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
         }
       } catch (error) {
@@ -321,7 +332,22 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                 />
                 <Tooltip content={<CustomTooltip />} />
                 
-                {/* Removed ReferenceLine for contractedValue */}
+                {/* Show contracted value reference line in default view */}
+                {selectedOrgLocal === "all" && selectedMetric === "all" && contractedValue > 0 && (
+                  <ReferenceLine 
+                    y={contractedValue} 
+                    stroke="hsl(var(--destructive))" 
+                    strokeDasharray="5 5" 
+                    strokeWidth={2}
+                    label={{ 
+                      value: `Valor Contratado: ${formatCurrency(contractedValue)}`, 
+                      position: "top",
+                      fill: "hsl(var(--destructive))",
+                      fontSize: 12,
+                      fontWeight: "bold"
+                    }}
+                  />
+                )}
 
                 {filteredDataKeys.map((key, index) => (
                   <Bar
