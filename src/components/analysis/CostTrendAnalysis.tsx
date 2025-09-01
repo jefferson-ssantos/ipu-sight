@@ -50,9 +50,31 @@ export function CostTrendAnalysis() {
     if (chartData.length < 2) return { percentage: 0, isPositive: false };
     
     const currentKey = metric === 'cost' ? 'cost' : 'ipu';
-    const current = chartData[chartData.length - 1]?.[currentKey] || 0;
-    const previous = chartData[chartData.length - 2]?.[currentKey] || 0;
-    const percentage = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    const currentPeriodData = chartData[chartData.length - 1];
+    const previousPeriodData = chartData[chartData.length - 2];
+    
+    if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false };
+    
+    let currentValue = currentPeriodData[currentKey] || 0;
+    const previousValue = previousPeriodData[currentKey] || 0;
+    
+    // Se o período atual está incompleto, projete o valor total baseado na média diária
+    const today = new Date();
+    const currentPeriodStart = new Date(currentPeriodData.periodStart || currentPeriodData.period?.split(' - ')[0]);
+    const currentPeriodEnd = new Date(currentPeriodData.periodEnd || currentPeriodData.period?.split(' - ')[1]);
+    
+    if (currentPeriodEnd > today) {
+      // Período atual ainda não terminou - calcular projeção
+      const totalDaysInPeriod = Math.ceil((currentPeriodEnd.getTime() - currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+      const daysElapsed = Math.ceil((today.getTime() - currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysElapsed > 0 && totalDaysInPeriod > daysElapsed) {
+        const dailyAverage = currentValue / daysElapsed;
+        currentValue = dailyAverage * totalDaysInPeriod; // Projeção para o período completo
+      }
+    }
+    
+    const percentage = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
     
     return {
       percentage: Math.abs(percentage),
