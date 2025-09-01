@@ -194,7 +194,7 @@ export function CostTrendAnalysis() {
         <CardContent>
           <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 20 }}>
+              <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="period" 
@@ -202,7 +202,7 @@ export function CostTrendAnalysis() {
                   fontSize={12}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={60}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}
@@ -212,7 +212,13 @@ export function CostTrendAnalysis() {
                   }
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend 
+                  verticalAlign="bottom"
+                  height={36}
+                  wrapperStyle={{
+                    paddingTop: "20px"
+                  }}
+                />
                 <Line 
                   type="monotone" 
                   dataKey={metric === 'cost' ? 'cost' : 'ipu'} 
