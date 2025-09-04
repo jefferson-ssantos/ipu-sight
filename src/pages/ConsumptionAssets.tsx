@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CYCLE_FILTER_OPTIONS } from '@/lib/cycleFilterOptions';
 
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { AssetDetail } from '@/components/consumption/AssetDetail';
@@ -31,12 +32,11 @@ export default function ConsumptionAssets() {
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Ciclo Atual</SelectItem>
-                <SelectItem value="2">Últimos 2 Ciclos</SelectItem>
-                <SelectItem value="3">Últimos 3 Ciclos</SelectItem>
-                <SelectItem value="6">Últimos 6 Ciclos</SelectItem>
-                <SelectItem value="12">Últimos 12 Ciclos</SelectItem>
-                <SelectItem value="all">Todos os Ciclos</SelectItem>
+                {CYCLE_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 

@@ -8,6 +8,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recha
 import { Download, Filter, Calendar } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 
 interface MetricData {
   meter_name: string;
@@ -238,14 +239,7 @@ export function MetricBreakdown() {
     return null;
   };
 
-  const filterOptions = [
-    { value: '1', label: 'Ciclo Atual' },
-    { value: '2', label: 'Últimos 2 Ciclos' },
-    { value: '3', label: 'Últimos 3 Ciclos' },
-    { value: '6', label: 'Últimos 6 Ciclos' },
-    { value: '12', label: 'Últimos 12 Ciclos' },
-    { value: 'all', label: 'Todos os Ciclos' }
-  ];
+  const filterOptions = CYCLE_FILTER_OPTIONS;
 
   return (
     <div className="space-y-4">
