@@ -122,13 +122,18 @@ export default function Dashboard() {
                   <CardTitle className="text-xl font-heading font-bold text-foreground">
                     Indicadores Principais
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Período Atual: {dashboardData?.periodStart && dashboardData?.periodEnd ? `${dashboardData.periodStart} - ${dashboardData.periodEnd}` : 'Sem dados'}
-                  </CardDescription>
+                  <div className="flex items-center gap-2 mt-2">
+                    {dashboardData?.periodStart && dashboardData?.periodEnd && (
+                      <Badge variant="secondary" className="text-muted-foreground">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {dashboardData.periodStart} - {dashboardData.periodEnd}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-muted-foreground">
+                      KPI's
+                    </Badge>
+                  </div>
                 </div>
-                <Badge variant="outline" className="text-muted-foreground">
-                  KPI's
-                </Badge>
               </div>
               
               <div className="flex items-center gap-3">
