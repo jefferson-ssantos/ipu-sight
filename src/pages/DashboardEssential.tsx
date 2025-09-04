@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
+import { ProjectChart } from "@/components/dashboard/ProjectChart";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { OrganizationCostCard } from "@/components/dashboard/OrganizationCostCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -29,6 +30,7 @@ export default function DashboardEssential() {
     loading,
     error,
     refetch,
+    availableCycles,
   } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
   
   // KPI-specific data hook
@@ -254,6 +256,13 @@ export default function DashboardEssential() {
         <ConsolidatedChart 
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
           availableOrgs={availableOrgs} 
+        />
+
+        {/* Project Chart Section */}
+        <ProjectChart 
+          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+          availableOrgs={availableOrgs}
+          availableCycles={availableCycles || []}
         />
       </div>
 
