@@ -340,10 +340,10 @@ export function ProjectChart() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg font-heading font-bold">
-              Custo por Projetos
+              Análise Consolidada de Custos por Projetos
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
-              Custo de IPUs por projeto ao longo dos ciclos
+              Custos por projetos ao longo dos ciclos
             </div>
           </div>
           <Button
