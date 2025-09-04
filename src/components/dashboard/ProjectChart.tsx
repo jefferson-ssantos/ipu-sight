@@ -138,8 +138,17 @@ export function ProjectChart() {
           return;
         }
 
-        const groupedData: { [key: string]: { [project: string]: number } } = {};
+        // Group data by cycle and project
+        const cycleProjectData: { [key: string]: { [project: string]: number } } = {};
+        const cycleInfoMap: { [key: string]: any } = {};
         const projectSet = new Set<string>();
+
+        // Initialize all cycles with empty data
+        cyclesToShow.forEach(cycle => {
+          const periodKey = `${new Date(cycle.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
+          cycleProjectData[periodKey] = {};
+          cycleInfoMap[periodKey] = cycle;
+        });
 
         projectData.forEach(item => {
           if (!item.consumption_date || !item.project_name) return;
@@ -155,33 +164,26 @@ export function ProjectChart() {
 
           const periodKey = `${new Date(cycle.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
           
-          if (!groupedData[periodKey]) {
-            groupedData[periodKey] = {};
+          if (!cycleProjectData[periodKey][item.project_name]) {
+            cycleProjectData[periodKey][item.project_name] = 0;
           }
           
-          if (!groupedData[periodKey][item.project_name]) {
-            groupedData[periodKey][item.project_name] = 0;
-          }
-          
-          groupedData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
+          cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
           projectSet.add(item.project_name);
         });
 
-        const chartDataArray: ChartDataItem[] = Object.entries(groupedData).map(([period, projects]) => {
-          const dataItem: ChartDataItem = { period };
-          Object.entries(projects).forEach(([project, cost]) => {
-            dataItem[project] = cost;
-          });
-          return dataItem;
-        });
-
-        chartDataArray.sort((a, b) => {
-          const aStart = a.period.split(' - ')[0];
-          const bStart = b.period.split(' - ')[0];
-          const aDate = new Date(aStart.split('/').reverse().join('-'));
-          const bDate = new Date(bStart.split('/').reverse().join('-'));
-          return bDate.getTime() - aDate.getTime();
-        });
+        // Convert to chart data and sort by cycle start date (most recent first)
+        const chartDataArray: ChartDataItem[] = Object.entries(cycleProjectData)
+          .map(([period, projects]) => {
+            const dataItem: ChartDataItem = { period };
+            Object.entries(projects).forEach(([project, cost]) => {
+              dataItem[project] = cost || 0;
+            });
+            const cycleInfo = cycleInfoMap[period];
+            return { ...dataItem, _sortDate: new Date(cycleInfo.billing_period_start_date) };
+          })
+          .sort((a, b) => b._sortDate.getTime() - a._sortDate.getTime())
+          .map(({ _sortDate, ...item }) => item);
 
         const allProjects = Array.from(projectSet).sort();
         
