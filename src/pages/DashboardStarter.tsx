@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
-import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
+import { ConsolidatedChartStarter } from "@/components/dashboard/ConsolidatedChartStarter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,7 +174,7 @@ export default function DashboardStarter() {
         </Card>
 
         {/* Simplified Chart Section */}
-        <ConsolidatedChart 
+        <ConsolidatedChartStarter 
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
           availableOrgs={availableOrgs} 
         />
