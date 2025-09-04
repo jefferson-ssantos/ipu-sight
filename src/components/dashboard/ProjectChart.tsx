@@ -172,17 +172,18 @@ export function ProjectChart() {
           projectSet.add(item.project_name);
         });
 
-        // Convert to chart data and sort by cycle start date (most recent first)
+        // Convert to chart data and sort by cycle start date (oldest first - chronological order)
         const chartDataArray: ChartDataItem[] = Object.entries(cycleProjectData)
           .map(([period, projects]) => {
             const dataItem: ChartDataItem = { period };
-            Object.entries(projects).forEach(([project, cost]) => {
-              dataItem[project] = cost || 0;
+            // Ensure all projects appear in all cycles (even with 0 value)
+            projectSet.forEach(project => {
+              dataItem[project] = projects[project] || 0;
             });
             const cycleInfo = cycleInfoMap[period];
             return { ...dataItem, _sortDate: new Date(cycleInfo.billing_period_start_date) };
           })
-          .sort((a, b) => b._sortDate.getTime() - a._sortDate.getTime())
+          .sort((a, b) => a._sortDate.getTime() - b._sortDate.getTime()) // Changed to ascending order
           .map(({ _sortDate, ...item }) => item);
 
         const allProjects = Array.from(projectSet).sort();
