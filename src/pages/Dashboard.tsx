@@ -124,12 +124,12 @@ export default function Dashboard() {
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-2">
                     {dashboardData?.periodStart && dashboardData?.periodEnd && (
-                      <Badge variant="secondary" className="text-muted-foreground">
+                      <Badge variant="outline" className="text-primary">
                         <Calendar className="h-3 w-3 mr-1" />
                         {dashboardData.periodStart} - {dashboardData.periodEnd}
                       </Badge>
                     )}
-                    <Badge variant="outline" className="text-muted-foreground">
+                    <Badge variant="secondary" className="text-primary-foreground">
                       KPI's
                     </Badge>
                   </div>
