@@ -193,6 +193,7 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todos os Ciclos</SelectItem>
               <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
               <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
               <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
