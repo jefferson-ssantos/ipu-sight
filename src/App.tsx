@@ -20,7 +20,6 @@ import ConsumptionJobs from "./pages/ConsumptionJobs";
 import ConsumptionOverview from "./pages/ConsumptionOverview";
 
 import Configuration from "./pages/Configuration";
-import ConfigTags from "./pages/ConfigTags";
 import ConfigConnections from "./pages/ConfigConnections";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
@@ -138,19 +137,14 @@ const App = () => (
               <ConsumptionJobs />
             </ProtectedRoute>
           } />
-          <Route path="/config/tags" element={
-            <ProtectedRoute>
-              <ConfigTags />
-            </ProtectedRoute>
-          } />
           <Route path="/config/connections" element={
             <ProtectedRoute>
               <ConfigConnections />
             </ProtectedRoute>
           } />
           {/* Legacy redirects */}
-          <Route path="/config" element={<Navigate to="/config/tags" replace />} />
-          <Route path="/configuration" element={<Navigate to="/config/tags" replace />} />
+          <Route path="/config" element={<Navigate to="/config/connections" replace />} />
+          <Route path="/configuration" element={<Navigate to="/config/connections" replace />} />
           
           {/* Fallback */}
           <Route path="*" element={<NotFound />} />
