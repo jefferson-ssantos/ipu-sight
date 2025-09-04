@@ -134,7 +134,7 @@ export function ProjectChart() {
           while (hasMore) {
             let query = supabase
               .from('api_consumoasset')
-              .select('project_name, consumption_date, consumption_ipu, org_id')
+              .select('project_name, consumption_date, consumption_ipu, runtime_environment')
               .in('configuracao_id', configIds)
               .not('project_name', 'is', null)
               .not('project_name', 'eq', '')
@@ -144,7 +144,7 @@ export function ProjectChart() {
 
             // Apply organization filter if selected
             if (selectedOrganization !== "all") {
-              query = query.eq('org_id', selectedOrganization);
+              query = query.eq('runtime_environment', selectedOrganization);
             }
 
             const { data: batchData, error } = await query
@@ -208,8 +208,8 @@ export function ProjectChart() {
           
           cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
           projectSet.add(item.project_name);
-          if (item.org_id) {
-            orgSet.add(item.org_id);
+          if (item.runtime_environment) {
+            orgSet.add(item.runtime_environment);
           }
         });
 
@@ -401,12 +401,12 @@ export function ProjectChart() {
             </SelectContent>
           </Select>
 
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="Projetos" />
+          <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+            <SelectTrigger className="w-60">
+              <SelectValue placeholder="Organizações" />
             </SelectTrigger>
             <SelectContent>
-              {projectOptions.map(option => (
+              {organizationOptions.map(option => (
                 <SelectItem 
                   key={option.value} 
                   value={option.value}
@@ -417,12 +417,12 @@ export function ProjectChart() {
             </SelectContent>
           </Select>
 
-          <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
-            <SelectTrigger className="w-60">
-              <SelectValue placeholder="Organizações" />
+          <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Projetos" />
             </SelectTrigger>
             <SelectContent>
-              {organizationOptions.map(option => (
+              {projectOptions.map(option => (
                 <SelectItem 
                   key={option.value} 
                   value={option.value}
