@@ -57,19 +57,12 @@ export function ProjectChart() {
 
   useEffect(() => {
     const fetchProjectData = async () => {
-      if (!user) {
-        console.log('ProjectChart: No user found');
-        return;
-      }
+      if (!user) return;
       
       if (!availableCycles || availableCycles.length === 0) {
-        console.log('ProjectChart: No available cycles, waiting...');
         setLoading(false);
         return;
       }
-      
-      console.log('ProjectChart: Starting fetch with cycles:', availableCycles);
-      console.log('ProjectChart: Period filter:', period);
       
       setLoading(true);
       try {
@@ -113,10 +106,7 @@ export function ProjectChart() {
           ? availableCycles
           : availableCycles.slice(0, parseInt(period));
         
-        console.log('ProjectChart: Cycles to show:', cyclesToShow);
-        
         if (cyclesToShow.length === 0) {
-          console.log('ProjectChart: No cycles to show');
           setChartData([]);
           setAllDataKeys([]);
           setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
@@ -127,27 +117,13 @@ export function ProjectChart() {
         const minDate = cyclesToShow[cyclesToShow.length - 1].billing_period_start_date;
         const maxDate = cyclesToShow[0].billing_period_end_date;
         
-        console.log('ProjectChart: Date range:', { minDate, maxDate });
-        
-        let query = supabase
-          .from('api_consumoasset')
-          .select('project_name, consumption_date, consumption_ipu')
-          .in('configuracao_id', configIds)
-          .not('project_name', 'is', null)
-          .not('project_name', 'eq', '')
-          .gt('consumption_ipu', 0)
-          .gte('consumption_date', minDate)
-          .lte('consumption_date', maxDate)
-          .order('consumption_date', { ascending: false })
-          .limit(5000); // Aumentar limite para garantir que todos os dados sejam incluídos
-
-        const { data: projectData, error } = await query;
-        
-        console.log('ProjectChart: Query executed, results:', {
-          totalRecords: projectData?.length || 0,
-          error: error,
-          sampleData: projectData?.slice(0, 5) // Primeiros 5 registros
-        });
+        // Use optimized function to get project data without 1000 record limitation
+        const { data: projectData, error } = await supabase
+          .rpc('get_project_consumption_data', {
+            p_start_date: minDate,
+            p_end_date: maxDate,
+            p_selected_project: selectedProject !== 'all' ? selectedProject : null
+          });
         
         if (error) {
           console.error('Error fetching project data:', error);
@@ -156,7 +132,6 @@ export function ProjectChart() {
         }
 
         if (!projectData || projectData.length === 0) {
-          console.log('ProjectChart: No project data found');
           setChartData([]);
           setAllDataKeys([]);
           setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
@@ -176,7 +151,7 @@ export function ProjectChart() {
           cycleInfoMap[periodKey] = cycle;
         });
 
-        projectData.forEach((item, index) => {
+        projectData.forEach(item => {
           if (!item.consumption_date || !item.project_name) return;
           
           const consumptionDate = new Date(item.consumption_date);
@@ -185,16 +160,6 @@ export function ProjectChart() {
             const endDate = new Date(c.billing_period_end_date);
             return consumptionDate >= startDate && consumptionDate <= endDate;
           });
-
-          // Log para verificar se dados de setembro estão sendo encontrados
-          if (index < 10 || item.consumption_date >= '2025-09-01') {
-            console.log('ProjectChart: Processing item:', {
-              project: item.project_name,
-              date: item.consumption_date,
-              ipu: item.consumption_ipu,
-              foundCycle: cycle ? `${cycle.billing_period_start_date} - ${cycle.billing_period_end_date}` : 'NO CYCLE FOUND'
-            });
-          }
 
           if (!cycle) return;
 
@@ -223,13 +188,6 @@ export function ProjectChart() {
           .map(({ _sortDate, ...item }) => item);
 
         const allProjects = Array.from(projectSet).sort();
-        
-        console.log('ProjectChart: Final data processing:', {
-          cycleProjectData: cycleProjectData,
-          chartDataArray: chartDataArray,
-          allProjects: allProjects,
-          projectSet: Array.from(projectSet)
-        });
         
         setChartData(chartDataArray);
         setAllDataKeys(allProjects);

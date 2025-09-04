@@ -940,6 +940,20 @@ export type Database = {
           org_name: string
         }[]
       }
+      get_project_consumption_data: {
+        Args: {
+          p_end_date: string
+          p_selected_project?: string
+          p_start_date: string
+        }
+        Returns: {
+          billing_period_end_date: string
+          billing_period_start_date: string
+          consumption_date: string
+          consumption_ipu: number
+          project_name: string
+        }[]
+      }
     }
     Enums: {
       plan_type: "starter" | "essential" | "pro" | "business"
