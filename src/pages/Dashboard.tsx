@@ -192,44 +192,55 @@ export default function Dashboard() {
            </CardContent>
          </Card>
 
+         {/* Organizations Carousel Section */}
+         <div className="space-y-4 rounded-lg p-6 bg-gradient-card shadow-medium border">
+           <div className="flex items-center justify-between">
+             <div>
+               <h2 className="text-xl font-heading font-bold text-foreground">
+                 Organizações por Custo
+               </h2>
+               <p className="text-muted-foreground text-sm mt-1">
+                 Navegue pelos dados de consumo de cada organização
+               </p>
+             </div>
+             <Badge variant="outline" className="text-muted-foreground">
+               {dashboardData?.organizations.length || 0} organizações
+             </Badge>
+           </div>
+
+           {dashboardData?.organizations.length ? (
+             <Carousel opts={{
+               align: "start",
+               loop: false
+             }} className="w-full">
+               <div className="relative">
+                 <CarouselContent className="-ml-2 md:-ml-4">
+                   {dashboardData.organizations.map((org, index) => (
+                     <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                       <OrganizationCostCard 
+                         org={org} 
+                         onClick={() => setSelectedOrgForDetails(org.org_id)} 
+                         formatCurrency={formatCurrency} 
+                         formatIPU={formatIPU} 
+                       />
+                     </CarouselItem>
+                   ))}
+                 </CarouselContent>
+                 <CarouselPrevious className="hidden md:flex" />
+                 <CarouselNext className="hidden md:flex" />
+               </div>
+             </Carousel>
+           ) : (
+             <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-lg">
+               <Building2 className="h-8 w-8 mx-auto mb-3 opacity-50" />
+               <p>Nenhum dado de organização encontrado para o período selecionado.</p>
+             </div>
+           )}
+         </div>
+
          {/* Consolidated Chart Section */}
          <ConsolidatedChart selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} availableOrgs={availableOrgs} />
-
-        {/* Organizations Carousel Section */}
-        <div className="space-y-4 rounded-lg p-6 bg-gradient-card shadow-medium border">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-heading font-bold text-foreground">
-                Organizações por Custo
-              </h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Navegue pelos dados de consumo de cada organização
-              </p>
-            </div>
-            <Badge variant="outline" className="text-muted-foreground">
-              {dashboardData?.organizations.length || 0} organizações
-            </Badge>
-          </div>
-
-          {dashboardData?.organizations.length ? <Carousel opts={{
-          align: "start",
-          loop: false
-        }} className="w-full">
-              <div className="relative">
-                <CarouselContent className="-ml-2 md:-ml-4">
-                  {dashboardData.organizations.map((org, index) => <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                      <OrganizationCostCard org={org} onClick={() => setSelectedOrgForDetails(org.org_id)} formatCurrency={formatCurrency} formatIPU={formatIPU} />
-                    </CarouselItem>)}
-                </CarouselContent>
-                <CarouselPrevious className="hidden md:flex" />
-                <CarouselNext className="hidden md:flex" />
-              </div>
-            </Carousel> : <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-lg">
-              <Building2 className="h-8 w-8 mx-auto mb-3 opacity-50" />
-              <p>Nenhum dado de organização encontrado para o período selecionado.</p>
-            </div>}
-        </div>
-      </div>
+       </div>
 
       {/* Asset Details Table Modal */}
       {showAssetTable && <AssetDetailsTable onClose={() => setShowAssetTable(false)} selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} />}
