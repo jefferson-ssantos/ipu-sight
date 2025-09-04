@@ -21,6 +21,11 @@ interface ProjectOption {
   label: string;
 }
 
+interface OrganizationOption {
+  value: string;
+  label: string;
+}
+
 const colors = [
   'hsl(24 70% 60%)', // Orange
   'hsl(283 70% 60%)', // Purple
@@ -41,9 +46,11 @@ export function ProjectChart() {
   const { availableCycles } = useDashboardData();
   const [period, setPeriod] = useState("3"); // Default to 3 cycles
   const [selectedProject, setSelectedProject] = useState<string>("all");
+  const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
+  const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
 
   const formatCurrency = (value: number) => {
@@ -125,15 +132,22 @@ export function ProjectChart() {
           let hasMore = true;
 
           while (hasMore) {
-            const { data: batchData, error } = await supabase
+            let query = supabase
               .from('api_consumoasset')
-              .select('project_name, consumption_date, consumption_ipu')
+              .select('project_name, consumption_date, consumption_ipu, org_id')
               .in('configuracao_id', configIds)
               .not('project_name', 'is', null)
               .not('project_name', 'eq', '')
               .gt('consumption_ipu', 0)
               .gte('consumption_date', minDate)
-              .lte('consumption_date', maxDate)
+              .lte('consumption_date', maxDate);
+
+            // Apply organization filter if selected
+            if (selectedOrganization !== "all") {
+              query = query.eq('org_id', selectedOrganization);
+            }
+
+            const { data: batchData, error } = await query
               .order('consumption_date', { ascending: false })
               .range(from, from + batchSize - 1);
 
@@ -165,6 +179,7 @@ export function ProjectChart() {
         const cycleProjectData: { [key: string]: { [project: string]: number } } = {};
         const cycleInfoMap: { [key: string]: any } = {};
         const projectSet = new Set<string>();
+        const orgSet = new Set<string>();
 
         // Initialize all cycles with empty data
         cyclesToShow.forEach(cycle => {
@@ -193,6 +208,9 @@ export function ProjectChart() {
           
           cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
           projectSet.add(item.project_name);
+          if (item.org_id) {
+            orgSet.add(item.org_id);
+          }
         });
 
         // Convert to chart data and sort by cycle start date (oldest first - chronological order)
@@ -217,6 +235,10 @@ export function ProjectChart() {
         const newProjectOptions = allProjects.map(project => ({ value: project, label: project }));
         setProjectOptions([{ value: "all", label: "Todos os Projetos" }, ...newProjectOptions]);
         
+        const allOrganizations = Array.from(orgSet).sort();
+        const newOrganizationOptions = allOrganizations.map(org => ({ value: org, label: org }));
+        setOrganizationOptions([{ value: "all", label: "Todas as Organizações" }, ...newOrganizationOptions]);
+        
       } catch (error) {
         console.error('Error fetching project data:', error);
         toast.error('Erro ao carregar dados de projetos');
@@ -226,7 +248,7 @@ export function ProjectChart() {
     };
 
     fetchProjectData();
-  }, [user, period, availableCycles]);
+  }, [user, period, selectedOrganization, availableCycles]);
 
   const getFilteredDataKeys = () => {
     if (selectedProject === "all") {
@@ -394,14 +416,37 @@ export function ProjectChart() {
               ))}
             </SelectContent>
           </Select>
+
+          <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+            <SelectTrigger className="w-60">
+              <SelectValue placeholder="Organizações" />
+            </SelectTrigger>
+            <SelectContent>
+              {organizationOptions.map(option => (
+                <SelectItem 
+                  key={option.value} 
+                  value={option.value}
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Active Filters */}
-        {selectedProject !== 'all' && (
+        {(selectedProject !== 'all' || selectedOrganization !== 'all') && (
           <div className="flex flex-wrap gap-2 mt-2">
-            <Badge variant="secondary" className="text-xs">
-              Projeto: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
-            </Badge>
+            {selectedProject !== 'all' && (
+              <Badge variant="secondary" className="text-xs">
+                Projeto: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
+              </Badge>
+            )}
+            {selectedOrganization !== 'all' && (
+              <Badge variant="secondary" className="text-xs">
+                Organização: {organizationOptions.find(o => o.value === selectedOrganization)?.label || selectedOrganization}
+              </Badge>
+            )}
           </div>
         )}
       </CardHeader>
