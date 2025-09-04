@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import DashboardDetailed from "./pages/DashboardDetailed";
 import Analysis from "./pages/Analysis";
 import Detalhamento from "./pages/Detalhamento";
 import ConsumptionAssets from "./pages/ConsumptionAssets";
@@ -72,6 +73,13 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <Dashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard-detailed" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <DashboardDetailed />
               </AppLayout>
             </ProtectedRoute>
           } />
