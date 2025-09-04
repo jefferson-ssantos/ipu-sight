@@ -137,7 +137,9 @@ export function ProjectChart() {
           .not('project_name', 'eq', '')
           .gt('consumption_ipu', 0)
           .gte('consumption_date', minDate)
-          .lte('consumption_date', maxDate);
+          .lte('consumption_date', maxDate)
+          .order('consumption_date', { ascending: false })
+          .limit(5000); // Aumentar limite para garantir que todos os dados sejam incluídos
 
         const { data: projectData, error } = await query;
         
