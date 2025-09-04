@@ -111,80 +111,76 @@ export default function Dashboard() {
       </div>;
   }
   return <div className="flex flex-col min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative h-48 bg-gradient-primary overflow-hidden">
-        <img src={heroImage} alt="FinOps Dashboard" className="absolute inset-0 w-full h-full object-cover opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary-dark/80" />
-
-        <div className="relative z-10 p-8 text-primary-foreground">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <img src={orysLogo} alt="Orys Logo" className="h-20 w-20" />
-              <div>
-                <h1 className="text-3xl font-heading font-bold mb-2">
-                  FinOps Dashboard
-                </h1>
-                <p className="text-primary-foreground/80 text-lg">
-                  Monitoramento de custos IDMC - {dashboardData?.currentPeriod || 'Sem dados'}
-                </p>
-                <div className="flex items-center gap-4 mt-3">
-                  {dashboardData?.periodStart && dashboardData?.periodEnd && <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {dashboardData.periodStart} - {dashboardData.periodEnd}
-                    </Badge>}
-                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                    <Building2 className="h-3 w-3 mr-1" />
-                    {selectedOrg === "all" ? "Todas as Orgs" : availableOrgs.find(o => o.value === selectedOrg)?.label || selectedOrg}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Select value={selectedOrg} onValueChange={setSelectedOrg}>
-                <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableOrgs.map(org => <SelectItem key={org.value} value={org.value}>
-                      {org.label}
-                    </SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Button variant="secondary" size="sm" onClick={refetch} disabled={loading} className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Atualizar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-heading font-bold text-foreground">
-              Indicadores Principais
-            </h2>
-            <Badge variant="outline" className="text-muted-foreground">
-              KPI's
-            </Badge>
-          </div>
-        </div>
+        {/* KPI Section with Period */}
+        <Card className="border bg-gradient-card shadow-medium">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <CardTitle className="text-xl font-heading font-bold text-foreground">
+                    Indicadores Principais
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Período Atual: {dashboardData?.periodStart && dashboardData?.periodEnd ? `${dashboardData.periodStart} - ${dashboardData.periodEnd}` : 'Sem dados'}
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-muted-foreground">
+                  KPI's
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableOrgs.map(org => 
+                      <SelectItem key={org.value} value={org.value}>
+                        {org.label}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          
+           <CardContent>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               <KPICard 
+                 title="Custo Total" 
+                 value={formatCurrency(dashboardData?.totalCost || 0)} 
+                 icon={DollarSign} 
+                 variant="cost" 
+                 contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))} 
+                 consumptionPercentage={dashboardData?.contractedIPUs && dashboardData?.pricePerIPU ? (dashboardData?.totalCost || 0) / ((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0)) * 100 : 0} 
+               />
+               
+               <KPICard 
+                 title="Custo Médio Diário" 
+                 value={formatCurrency(dashboardData?.avgDailyCost || 0)} 
+                 icon={Activity} 
+                 variant="default" 
+                 historicalComparison={dashboardData?.historicalComparison} 
+                 baselineValue={formatCurrency(dashboardData?.historicalAvgDailyCost || 0)} 
+               />
+               
+               <KPICard 
+                 title="Organizações Ativas" 
+                 value={dashboardData?.activeOrgs || 0} 
+                 subtitle="Com consumo no período" 
+                 icon={Building2} 
+                 variant="default" 
+               />
+             </div>
+           </CardContent>
+         </Card>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <KPICard title="Custo Total" value={formatCurrency(dashboardData?.totalCost || 0)} icon={DollarSign} variant="cost" contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))} consumptionPercentage={dashboardData?.contractedIPUs && dashboardData?.pricePerIPU ? (dashboardData?.totalCost || 0) / ((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0)) * 100 : 0} />
-
-          <KPICard title="Custo Médio Diário" value={formatCurrency(dashboardData?.avgDailyCost || 0)} icon={Activity} variant="default" historicalComparison={dashboardData?.historicalComparison} baselineValue={formatCurrency(dashboardData?.historicalAvgDailyCost || 0)} />
-
-          <KPICard title="Organizações Ativas" value={dashboardData?.activeOrgs || 0} subtitle="Com consumo no período" icon={Building2} variant="default" />
-        </div>
-
-        {/* Consolidated Chart Section */}
-        <ConsolidatedChart selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} availableOrgs={availableOrgs} />
+         {/* Consolidated Chart Section */}
+         <ConsolidatedChart selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} availableOrgs={availableOrgs} />
 
         {/* Organizations Carousel Section */}
         <div className="space-y-4 rounded-lg p-6 bg-gradient-card shadow-medium border">
