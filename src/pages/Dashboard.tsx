@@ -20,6 +20,7 @@ export default function Dashboard() {
     user
   } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
+  const [selectedOrgKPI, setSelectedOrgKPI] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState("current");
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
   const [showAssetTable, setShowAssetTable] = useState(false);
@@ -28,6 +29,7 @@ export default function Dashboard() {
     value: string;
     label: string;
   }>>([]);
+  
   const {
     data: dashboardData,
     loading,
@@ -36,6 +38,12 @@ export default function Dashboard() {
     getChartData,
     availableCycles
   } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+  
+  // KPI-specific data hook
+  const {
+    data: kpiData,
+    loading: kpiLoading
+  } = useDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter);
 
   // Fetch available organizations
   useEffect(() => {
@@ -137,7 +145,7 @@ export default function Dashboard() {
               </div>
               
               <div className="flex items-center gap-3">
-                <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+                <Select value={selectedOrgKPI} onValueChange={setSelectedOrgKPI}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>
@@ -157,25 +165,25 @@ export default function Dashboard() {
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                <KPICard 
                  title="Custo Total" 
-                 value={formatCurrency(dashboardData?.totalCost || 0)} 
+                 value={formatCurrency(kpiData?.totalCost || 0)} 
                  icon={DollarSign} 
                  variant="cost" 
-                 contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))} 
-                 consumptionPercentage={dashboardData?.contractedIPUs && dashboardData?.pricePerIPU ? (dashboardData?.totalCost || 0) / ((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0)) * 100 : 0} 
+                 contractedValue={formatCurrency((kpiData?.contractedIPUs || 0) * (kpiData?.pricePerIPU || 0))} 
+                 consumptionPercentage={kpiData?.contractedIPUs && kpiData?.pricePerIPU ? (kpiData?.totalCost || 0) / ((kpiData?.contractedIPUs || 0) * (kpiData?.pricePerIPU || 0)) * 100 : 0} 
                />
                
                <KPICard 
                  title="Custo Médio Diário" 
-                 value={formatCurrency(dashboardData?.avgDailyCost || 0)} 
+                 value={formatCurrency(kpiData?.avgDailyCost || 0)} 
                  icon={Activity} 
                  variant="default" 
-                 historicalComparison={dashboardData?.historicalComparison} 
-                 baselineValue={formatCurrency(dashboardData?.historicalAvgDailyCost || 0)} 
+                 historicalComparison={kpiData?.historicalComparison} 
+                 baselineValue={formatCurrency(kpiData?.historicalAvgDailyCost || 0)} 
                />
                
                <KPICard 
                  title="Organizações Ativas" 
-                 value={dashboardData?.activeOrgs || 0} 
+                 value={kpiData?.activeOrgs || 0} 
                  subtitle="Com consumo no período" 
                  icon={Building2} 
                  variant="default" 
