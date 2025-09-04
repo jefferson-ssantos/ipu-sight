@@ -57,7 +57,19 @@ export function ProjectChart() {
 
   useEffect(() => {
     const fetchProjectData = async () => {
-      if (!user || !availableCycles) return;
+      if (!user) {
+        console.log('ProjectChart: No user found');
+        return;
+      }
+      
+      if (!availableCycles || availableCycles.length === 0) {
+        console.log('ProjectChart: No available cycles, waiting...');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('ProjectChart: Starting fetch with cycles:', availableCycles);
+      console.log('ProjectChart: Period filter:', period);
       
       setLoading(true);
       try {
@@ -101,7 +113,10 @@ export function ProjectChart() {
           ? availableCycles
           : availableCycles.slice(0, parseInt(period));
         
+        console.log('ProjectChart: Cycles to show:', cyclesToShow);
+        
         if (cyclesToShow.length === 0) {
+          console.log('ProjectChart: No cycles to show');
           setChartData([]);
           setAllDataKeys([]);
           setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
@@ -111,6 +126,8 @@ export function ProjectChart() {
 
         const minDate = cyclesToShow[cyclesToShow.length - 1].billing_period_start_date;
         const maxDate = cyclesToShow[0].billing_period_end_date;
+        
+        console.log('ProjectChart: Date range:', { minDate, maxDate });
         
         let query = supabase
           .from('api_consumoasset')
