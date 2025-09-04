@@ -117,19 +117,41 @@ export function ProjectChart() {
         const minDate = cyclesToShow[cyclesToShow.length - 1].billing_period_start_date;
         const maxDate = cyclesToShow[0].billing_period_end_date;
         
-        // Use optimized function to get project data without 1000 record limitation
-        const { data: projectData, error } = await supabase
-          .rpc('get_project_consumption_data', {
-            p_start_date: minDate,
-            p_end_date: maxDate,
-            p_selected_project: selectedProject !== 'all' ? selectedProject : null
-          });
-        
-        if (error) {
-          console.error('Error fetching project data:', error);
-          toast.error('Erro ao carregar dados de projetos');
-          return;
-        }
+        // Use direct query with proper pagination to get ALL data
+        const getAllProjectData = async () => {
+          let allData: any[] = [];
+          let from = 0;
+          const batchSize = 1000;
+          let hasMore = true;
+
+          while (hasMore) {
+            const { data: batchData, error } = await supabase
+              .from('api_consumoasset')
+              .select('project_name, consumption_date, consumption_ipu')
+              .in('configuracao_id', configIds)
+              .not('project_name', 'is', null)
+              .not('project_name', 'eq', '')
+              .gt('consumption_ipu', 0)
+              .gte('consumption_date', minDate)
+              .lte('consumption_date', maxDate)
+              .order('consumption_date', { ascending: false })
+              .range(from, from + batchSize - 1);
+
+            if (error) throw error;
+            
+            if (batchData && batchData.length > 0) {
+              allData = [...allData, ...batchData];
+              from += batchSize;
+              hasMore = batchData.length === batchSize;
+            } else {
+              hasMore = false;
+            }
+          }
+
+          return allData;
+        };
+
+        const projectData = await getAllProjectData();
 
         if (!projectData || projectData.length === 0) {
           setChartData([]);
