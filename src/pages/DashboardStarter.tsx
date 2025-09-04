@@ -159,7 +159,7 @@ export default function DashboardStarter() {
                 title="Custo Total" 
                 value={formatCurrency(dashboardData?.totalCost || 0)} 
                 icon={DollarSign} 
-                variant="cost" 
+                variant="default" 
               />
               
               <KPICard 
