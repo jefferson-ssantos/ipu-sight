@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -47,6 +47,17 @@ export function AppSidebar() {
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+
+  // Move all hooks to the top - before any conditional returns
+  const [isConsumptionOpen, setIsConsumptionOpen] = useState(false);
+
+  // Update the state when consumptionItems change (after loading)
+  React.useEffect(() => {
+    if (!loading && permissions?.canAccessConsumption) {
+      const consumptionUrls = ["/consumption", "/consumption/assets", "/consumption/projects", "/consumption/organizations", "/consumption/jobs"];
+      setIsConsumptionOpen(consumptionUrls.some(url => currentPath.startsWith(url)));
+    }
+  }, [loading, permissions, currentPath]);
 
   if (loading) {
     return (
@@ -173,10 +184,6 @@ export function AppSidebar() {
   const consumptionItems = getConsumptionItems();
   const configItems = getConfigItems();
   const detailItems = getDetailItems();
-
-  const [isConsumptionOpen, setIsConsumptionOpen] = useState(
-    consumptionItems.some(item => currentPath.startsWith(item.url))
-  );
 
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path);
   
