@@ -947,8 +947,6 @@ export type Database = {
           p_start_date: string
         }
         Returns: {
-          billing_period_end_date: string
-          billing_period_start_date: string
           consumption_date: string
           consumption_ipu: number
           project_name: string
