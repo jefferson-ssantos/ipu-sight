@@ -141,6 +141,12 @@ export function ProjectChart() {
 
         const { data: projectData, error } = await query;
         
+        console.log('ProjectChart: Query executed, results:', {
+          totalRecords: projectData?.length || 0,
+          error: error,
+          sampleData: projectData?.slice(0, 5) // Primeiros 5 registros
+        });
+        
         if (error) {
           console.error('Error fetching project data:', error);
           toast.error('Erro ao carregar dados de projetos');
@@ -148,6 +154,7 @@ export function ProjectChart() {
         }
 
         if (!projectData || projectData.length === 0) {
+          console.log('ProjectChart: No project data found');
           setChartData([]);
           setAllDataKeys([]);
           setProjectOptions([{ value: "all", label: "Todos os Projetos" }]);
@@ -167,7 +174,7 @@ export function ProjectChart() {
           cycleInfoMap[periodKey] = cycle;
         });
 
-        projectData.forEach(item => {
+        projectData.forEach((item, index) => {
           if (!item.consumption_date || !item.project_name) return;
           
           const consumptionDate = new Date(item.consumption_date);
@@ -176,6 +183,16 @@ export function ProjectChart() {
             const endDate = new Date(c.billing_period_end_date);
             return consumptionDate >= startDate && consumptionDate <= endDate;
           });
+
+          // Log para verificar se dados de setembro estão sendo encontrados
+          if (index < 10 || item.consumption_date >= '2025-09-01') {
+            console.log('ProjectChart: Processing item:', {
+              project: item.project_name,
+              date: item.consumption_date,
+              ipu: item.consumption_ipu,
+              foundCycle: cycle ? `${cycle.billing_period_start_date} - ${cycle.billing_period_end_date}` : 'NO CYCLE FOUND'
+            });
+          }
 
           if (!cycle) return;
 
@@ -204,6 +221,13 @@ export function ProjectChart() {
           .map(({ _sortDate, ...item }) => item);
 
         const allProjects = Array.from(projectSet).sort();
+        
+        console.log('ProjectChart: Final data processing:', {
+          cycleProjectData: cycleProjectData,
+          chartDataArray: chartDataArray,
+          allProjects: allProjects,
+          projectSet: Array.from(projectSet)
+        });
         
         setChartData(chartDataArray);
         setAllDataKeys(allProjects);
