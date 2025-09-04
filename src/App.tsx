@@ -9,6 +9,8 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import DashboardDetailed from "./pages/DashboardDetailed";
+import DashboardStarter from "./pages/DashboardStarter";
+import DashboardEssential from "./pages/DashboardEssential";
 import Analysis from "./pages/Analysis";
 import Detalhamento from "./pages/Detalhamento";
 import ConsumptionAssets from "./pages/ConsumptionAssets";
@@ -80,6 +82,20 @@ const App = () => (
             <ProtectedRoute>
               <AppLayout>
                 <DashboardDetailed />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard-starter" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <DashboardStarter />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard-essential" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <DashboardEssential />
               </AppLayout>
             </ProtectedRoute>
           } />
