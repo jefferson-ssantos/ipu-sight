@@ -23,6 +23,7 @@ import Configuration from "./pages/Configuration";
 import ConfigConnections from "./pages/ConfigConnections";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
+import { usePermissions } from "./hooks/usePermissions";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function PermissionRoute({ 
+  children, 
+  permission 
+}: { 
+  children: React.ReactNode;
+  permission: keyof import('./hooks/usePermissions').PermissionConfig;
+}) {
+  const { permissions, loading, getDefaultDashboard } = usePermissions();
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-lg">Carregando permissões...</div>
+    </div>;
+  }
+  
+  if (!permissions || !permissions[permission]) {
+    return <Navigate to={getDefaultDashboard()} replace />;
   }
   
   return <>{children}</>;
@@ -72,74 +95,98 @@ const App = () => (
           {/* Protected Routes with Layout */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
+              <PermissionRoute permission="canAccessDashboard">
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/dashboard-detailed" element={
             <ProtectedRoute>
-              <AppLayout>
-                <DashboardDetailed />
-              </AppLayout>
+              <PermissionRoute permission="canAccessDashboard">
+                <AppLayout>
+                  <DashboardDetailed />
+                </AppLayout>
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/dashboard-starter" element={
             <ProtectedRoute>
-              <AppLayout>
-                <DashboardStarter />
-              </AppLayout>
+              <PermissionRoute permission="canAccessDashboardStarter">
+                <AppLayout>
+                  <DashboardStarter />
+                </AppLayout>
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/dashboard-essential" element={
             <ProtectedRoute>
-              <AppLayout>
-                <DashboardEssential />
-              </AppLayout>
+              <PermissionRoute permission="canAccessDashboardEssential">
+                <AppLayout>
+                  <DashboardEssential />
+                </AppLayout>
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/analysis" element={
             <ProtectedRoute>
-              <AppLayout>
-                <Analysis />
-              </AppLayout>
+              <PermissionRoute permission="canAccessAnalysis">
+                <AppLayout>
+                  <Analysis />
+                </AppLayout>
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/detalhamento" element={
             <ProtectedRoute>
-              <AppLayout>
-                <Detalhamento />
-              </AppLayout>
+              <PermissionRoute permission="canAccessDetalhamento">
+                <AppLayout>
+                  <Detalhamento />
+                </AppLayout>
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/consumption" element={
             <ProtectedRoute>
-              <ConsumptionOverview />
+              <PermissionRoute permission="canAccessConsumption">
+                <ConsumptionOverview />
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/consumption/assets" element={
             <ProtectedRoute>
-              <ConsumptionAssets />
+              <PermissionRoute permission="canAccessConsumption">
+                <ConsumptionAssets />
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/consumption/projects" element={
             <ProtectedRoute>
-              <ConsumptionProjects />
+              <PermissionRoute permission="canAccessConsumption">
+                <ConsumptionProjects />
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/consumption/organizations" element={
             <ProtectedRoute>
-              <ConsumptionOrganizations />
+              <PermissionRoute permission="canAccessConsumption">
+                <ConsumptionOrganizations />
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/consumption/jobs" element={
             <ProtectedRoute>
-              <ConsumptionJobs />
+              <PermissionRoute permission="canAccessConsumption">
+                <ConsumptionJobs />
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           <Route path="/config/connections" element={
             <ProtectedRoute>
-              <ConfigConnections />
+              <PermissionRoute permission="canAccessConfiguration">
+                <ConfigConnections />
+              </PermissionRoute>
             </ProtectedRoute>
           } />
           {/* Legacy redirects */}

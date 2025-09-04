@@ -841,19 +841,25 @@ export type Database = {
           cliente_id: number | null
           created_at: string | null
           id: string
+          plan_type: Database["public"]["Enums"]["plan_type"] | null
           updated_at: string | null
+          user_role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
           cliente_id?: number | null
           created_at?: string | null
           id: string
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           updated_at?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
           cliente_id?: number | null
           created_at?: string | null
           id?: string
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           updated_at?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
         }
         Relationships: [
           {
@@ -936,7 +942,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      plan_type: "starter" | "essential" | "pro" | "business"
+      user_role: "user" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1063,6 +1070,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      plan_type: ["starter", "essential", "pro", "business"],
+      user_role: ["user", "admin"],
+    },
   },
 } as const
