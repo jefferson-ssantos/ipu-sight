@@ -55,7 +55,7 @@ export function AppSidebar() {
   React.useEffect(() => {
     if (!loading && permissions?.canAccessConsumption) {
       const consumptionUrls = ["/consumption", "/consumption/assets", "/consumption/projects", "/consumption/organizations", "/consumption/jobs"];
-      setIsConsumptionOpen(consumptionUrls.some(url => currentPath.startsWith(url)));
+      setIsConsumptionOpen(consumptionUrls.includes(currentPath));
     }
   }, [loading, permissions, currentPath]);
 
@@ -78,21 +78,21 @@ export function AppSidebar() {
   const getMainNavItems = () => {
     const items = [];
     
-    if (permissions?.canAccessDashboardEssential) {
-      items.push({
-        title: "Dashboard",
-        url: "/dashboard",
-        icon: BarChart3,
-        description: "Visão geral dos custos e consumo"
-      });
-    }
-    
     if (permissions?.canAccessDashboardStarter) {
       items.push({
         title: "Dashboard Starter",
         url: "/dashboard-starter",
         icon: BarChart3, 
         description: "Dashboard inicial"
+      });
+    }
+    
+    if (permissions?.canAccessDashboardEssential) {
+      items.push({
+        title: "Dashboard",
+        url: "/dashboard",
+        icon: BarChart3,
+        description: "Visão geral dos custos e consumo"
       });
     }
     
@@ -176,7 +176,7 @@ export function AppSidebar() {
   const configItems = getConfigItems();
   const detailItems = getDetailItems();
 
-  const isActive = (path: string) => currentPath === path || currentPath.startsWith(path);
+  const isActive = (path: string) => currentPath === path;
   
   const getNavClasses = (path: string) => {
     const isItemActive = isActive(path);
