@@ -30,7 +30,6 @@ export default function DashboardEssential() {
     loading,
     error,
     refetch,
-    availableCycles,
   } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
   
   // KPI-specific data hook
@@ -259,11 +258,7 @@ export default function DashboardEssential() {
         />
 
         {/* Project Chart Section */}
-        <ProjectChart 
-          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
-          availableOrgs={availableOrgs}
-          availableCycles={availableCycles || []}
-        />
+        <ProjectChart />
       </div>
 
       {/* Organization Details Modal */}
