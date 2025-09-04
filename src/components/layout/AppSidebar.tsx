@@ -78,21 +78,12 @@ export function AppSidebar() {
   const getMainNavItems = () => {
     const items = [];
     
-    if (permissions?.canAccessDashboard) {
+    if (permissions?.canAccessDashboardEssential) {
       items.push({
         title: "Dashboard",
         url: "/dashboard",
         icon: BarChart3,
         description: "Visão geral dos custos e consumo"
-      });
-    }
-    
-    if (permissions?.canAccessDashboardEssential) {
-      items.push({
-        title: "Dashboard Essential",
-        url: "/dashboard-essential", 
-        icon: BarChart3,
-        description: "Dashboard essencial"
       });
     }
     
