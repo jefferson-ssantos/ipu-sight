@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
 import { ArrowUpDown, Download, Calendar } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -89,6 +89,10 @@ export function OrganizationComparison({
 
   // Get unique organizations for creating bars
   const uniqueOrgs = data?.organizations?.map(org => org.org_name) || [];
+
+  // Calculate contracted reference value based on metric
+  const contractedReferenceValue = data ? 
+    (metric === 'cost' ? (data.contractedIPUs * data.pricePerIPU) : data.contractedIPUs) : 0;
 
   // Color palette for different organizations
   const colors = [
@@ -236,6 +240,22 @@ export function OrganizationComparison({
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
+                
+                {/* Reference line for contracted value */}
+                {contractedReferenceValue > 0 && (
+                  <ReferenceLine 
+                    y={contractedReferenceValue} 
+                    stroke="hsl(var(--destructive))" 
+                    strokeDasharray="5 5" 
+                    strokeWidth={2}
+                    label={{ 
+                      value: `Contratado: ${metric === 'cost' ? formatCurrency(contractedReferenceValue) : formatIPU(contractedReferenceValue)}`,
+                      position: "top",
+                      style: { fill: "hsl(var(--destructive))", fontSize: "12px", fontWeight: "500" }
+                    }}
+                  />
+                )}
+                
                 {uniqueOrgs.map((orgName, index) => (
                   <Bar 
                     key={orgName}
