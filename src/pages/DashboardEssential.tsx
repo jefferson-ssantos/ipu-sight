@@ -257,7 +257,10 @@ export default function DashboardEssential() {
         />
 
         {/* Project Chart Section */}
-        <ProjectChart />
+        <ProjectChart 
+          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+          availableOrgs={availableOrgs} 
+        />
       </div>
 
       {/* Organization Details Modal */}

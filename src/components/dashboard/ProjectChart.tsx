@@ -21,9 +21,9 @@ interface ProjectOption {
   label: string;
 }
 
-interface OrganizationOption {
-  value: string;
-  label: string;
+interface ProjectChartProps {
+  selectedOrg?: string;
+  availableOrgs: Array<{value: string, label: string}>;
 }
 
 const colors = [
@@ -41,16 +41,15 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
-export function ProjectChart() {
+export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) {
   const { user } = useAuth();
   const { availableCycles } = useDashboardData();
+  const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
   const [period, setPeriod] = useState("3"); // Default to 3 cycles
   const [selectedProject, setSelectedProject] = useState<string>("all");
-  const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
-  const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
 
   const formatCurrency = (value: number) => {
@@ -143,8 +142,8 @@ export function ProjectChart() {
               .lte('consumption_date', maxDate);
 
             // Apply organization filter if selected
-            if (selectedOrganization !== "all") {
-              query = query.eq('runtime_environment', selectedOrganization);
+            if (selectedOrgLocal !== "all") {
+              query = query.eq('runtime_environment', selectedOrgLocal);
             }
 
             const { data: batchData, error } = await query
@@ -179,7 +178,6 @@ export function ProjectChart() {
         const cycleProjectData: { [key: string]: { [project: string]: number } } = {};
         const cycleInfoMap: { [key: string]: any } = {};
         const projectSet = new Set<string>();
-        const orgSet = new Set<string>();
 
         // Initialize all cycles with empty data
         cyclesToShow.forEach(cycle => {
@@ -208,9 +206,6 @@ export function ProjectChart() {
           
           cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
           projectSet.add(item.project_name);
-          if (item.runtime_environment) {
-            orgSet.add(item.runtime_environment);
-          }
         });
 
         // Convert to chart data and sort by cycle start date (oldest first - chronological order)
@@ -235,10 +230,6 @@ export function ProjectChart() {
         const newProjectOptions = allProjects.map(project => ({ value: project, label: project }));
         setProjectOptions([{ value: "all", label: "Todos os Projetos" }, ...newProjectOptions]);
         
-        const allOrganizations = Array.from(orgSet).sort();
-        const newOrganizationOptions = allOrganizations.map(org => ({ value: org, label: org }));
-        setOrganizationOptions([{ value: "all", label: "Todas as Organizações" }, ...newOrganizationOptions]);
-        
       } catch (error) {
         toast.error('Erro ao carregar dados de projetos');
       } finally {
@@ -247,7 +238,12 @@ export function ProjectChart() {
     };
 
     fetchProjectData();
-  }, [user, period, selectedOrganization, availableCycles]);
+  }, [user, period, selectedOrgLocal, availableCycles]);
+
+  // Update selectedOrgLocal when selectedOrg prop changes
+  useEffect(() => {
+    setSelectedOrgLocal(selectedOrg || "all");
+  }, [selectedOrg]);
 
   const getFilteredDataKeys = () => {
     if (selectedProject === "all") {
@@ -384,16 +380,13 @@ export function ProjectChart() {
             <span className="text-sm font-medium">Filtros:</span>
           </div>
 
-          <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
-            <SelectTrigger className="w-60">
-              <SelectValue placeholder="Organizações" />
+          <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
+            <SelectTrigger className="w-auto min-w-44 max-w-64">
+              <SelectValue placeholder="Organização" />
             </SelectTrigger>
             <SelectContent>
-              {organizationOptions.map(option => (
-                <SelectItem 
-                  key={option.value} 
-                  value={option.value}
-                >
+              {availableOrgs.map(option => (
+                <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -405,13 +398,13 @@ export function ProjectChart() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os Ciclos</SelectItem>
-              <SelectItem value="1" disabled={!availableCycles || availableCycles.length < 1}>Ciclo Atual</SelectItem>
-              <SelectItem value="2" disabled={!availableCycles || availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
-              <SelectItem value="3" disabled={!availableCycles || availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
-              <SelectItem value="6" disabled={!availableCycles || availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
-              <SelectItem value="9" disabled={!availableCycles || availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
-              <SelectItem value="12" disabled={!availableCycles || availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
+              <SelectItem value="all">Todos os Ciclos</SelectItem>              
+              <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
+              <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
+              <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
+              <SelectItem value="6" disabled={availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
+              <SelectItem value="9" disabled={availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
+              <SelectItem value="12" disabled={availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
             </SelectContent>
           </Select>
 
@@ -433,18 +426,11 @@ export function ProjectChart() {
         </div>
 
         {/* Active Filters */}
-        {(selectedProject !== 'all' || selectedOrganization !== 'all') && (
+        { selectedProject !== 'all' && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {selectedProject !== 'all' && (
-              <Badge variant="secondary" className="text-xs">
-                Projeto: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
-              </Badge>
-            )}
-            {selectedOrganization !== 'all' && (
-              <Badge variant="secondary" className="text-xs">
-                Organização: {organizationOptions.find(o => o.value === selectedOrganization)?.label || selectedOrganization}
-              </Badge>
-            )}
+            <Badge variant="secondary" className="text-xs">
+              Projeto: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
+            </Badge>
           </div>
         )}
       </CardHeader>
@@ -491,12 +477,12 @@ export function ProjectChart() {
                   <Bar
                     key={key}
                     dataKey={key}
-                    stackId="projects"
+                    stackId="costs"
                     fill={colors[index % colors.length]}
                     name={key}
                   >
                     {index === filteredDataKeys.length - 1 && (
-                      <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
+                        <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
                     )}
                   </Bar>
                 ))}
