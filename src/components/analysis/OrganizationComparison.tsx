@@ -151,19 +151,11 @@ export function OrganizationComparison({
           <div className="flex items-center gap-4">
             <div>
               <CardTitle className="text-xl font-heading font-bold text-foreground">
-                Comparação por Organização
+                Análise Custos por Organização
               </CardTitle>
-              <div className="flex items-center gap-2 mt-2">
-                {data?.periodStart && data?.periodEnd && (
-                  <Badge variant="outline" className="text-primary">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {data.periodStart} - {data.periodEnd}
-                  </Badge>
-                )}
-                <Badge variant="secondary" className="text-primary-foreground">
-                  Análise por Ciclos
-                </Badge>
-              </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                Custos por organização ao longo dos ciclos
+              </p>
             </div>
           </div>
 
