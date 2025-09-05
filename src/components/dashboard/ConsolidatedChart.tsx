@@ -89,7 +89,6 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
         }
       } catch (error) {
-        console.error('Error fetching chart data:', error);
         toast.error('Erro ao carregar dados do gráfico');
       } finally {
         setLoading(false);
@@ -175,7 +174,6 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
 
       toast.success('Gráfico baixado com sucesso!');
     } catch (error) {
-      console.error('Error downloading chart:', error);
       toast.error('Erro ao baixar o gráfico');
     }
   };

@@ -240,7 +240,6 @@ export function ProjectChart() {
         setOrganizationOptions([{ value: "all", label: "Todas as Organizações" }, ...newOrganizationOptions]);
         
       } catch (error) {
-        console.error('Error fetching project data:', error);
         toast.error('Erro ao carregar dados de projetos');
       } finally {
         setLoading(false);
@@ -315,7 +314,6 @@ export function ProjectChart() {
 
       toast.success('Gráfico baixado com sucesso!');
     } catch (error) {
-      console.error('Error downloading chart:', error);
       toast.error('Erro ao baixar o gráfico');
     }
   };

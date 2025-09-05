@@ -89,7 +89,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
   const fetchDashboardData = useCallback(async (force = false) => {
     if (!user) {
-      console.log('useDashboardData: No user found, skipping data fetch');
       return;
     }
 
@@ -100,7 +99,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
     if (!force && cacheRef.current.has(cacheKey)) {
       const cached = cacheRef.current.get(cacheKey);
       if (now - cached.timestamp < CACHE_DURATION) {
-        console.log('useDashboardData: Using cached data');
         setData(cached.data);
         setLoading(false);
         return;
@@ -109,14 +107,12 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
     // Evitar requisições muito frequentes
     if (!force && now - lastFetchRef.current < 1000) {
-      console.log('useDashboardData: Throttling request');
       return;
     }
 
     lastFetchRef.current = now;
 
     try {
-      console.log('useDashboardData: Starting data fetch for user:', user.id);
       setLoading(true);
       setError(null);
 
@@ -137,7 +133,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         .eq('id', profile.cliente_id)
         .maybeSingle();
 
-      console.log('Dashboard: Client data fetched:', client);
       if (clientError) throw clientError;
       if (!client?.preco_por_ipu) throw new Error('Informações de preço não encontradas para o cliente');
 
@@ -272,7 +267,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             });
 
           if (historicalKpiError) {
-            console.error('Error fetching historical KPI data for cycle:', cycle, historicalKpiError);
             continue;
           }
 
@@ -305,7 +299,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         });
 
       if (distError) {
-        console.error('Error fetching distribution data:', distError);
       }
 
       const distributionConsumption = distributionData || [];
@@ -354,7 +347,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       setData(newData);
 
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
     } finally {
       setLoading(false);
@@ -367,7 +359,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
   const getChartData = useCallback(async (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedCycleFilter?: string) => {
     if (!user) {
-      console.log('getChartData: No user found');
       return [];
     }
 
@@ -375,7 +366,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
     const now = Date.now();
 
     try {
-      console.log('getChartData: Starting fetch for type:', type, 'selectedOrg:', selectedOrg, 'selectedCycleFilter:', selectedCycleFilter);
       // Get user's client information
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -392,7 +382,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         .eq('id', profile.cliente_id)
         .maybeSingle();
 
-      console.log('getChartData: Client data fetched:', client);
       if (clientError || !client?.preco_por_ipu) return [];
 
       // Get configuration IDs - similar to your SQL query
@@ -401,9 +390,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         .select('id, cliente_id')
         .eq('cliente_id', profile.cliente_id);
 
-        console.log('User profile cliente_id:', profile.cliente_id);
-        console.log('Available configs for client:', configs);
-        
         if (configError || !configs || configs.length === 0) return [];
 
         const configIds = configs.map(config => config.id);
@@ -436,16 +422,12 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           .order('billing_period_start_date');
 
         if (consumptionError) {
-          console.error('Error fetching consumption data:', consumptionError);
           return [];
         }
 
         if (!allConsumption || allConsumption.length === 0) {
-          console.log('No consumption data found');
           return [];
         }
-
-        console.log('Total consumption records:', allConsumption.length);
 
         if (type === 'evolution') {
           // Use optimized function for cost evolution
@@ -456,7 +438,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             });
 
           if (evolutionError) {
-            console.error('Error fetching evolution data:', evolutionError);
             return [];
           }
 
@@ -490,7 +471,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
               cost: item.totalIPU * client.preco_por_ipu
             }));
 
-          console.log('Evolution chart data:', result);
           cacheRef.current.set(cacheKey, { data: result, timestamp: now });
           return result;
 
@@ -503,7 +483,6 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             });
 
           if (billingError) {
-            console.error('Error fetching billing periods data:', billingError);
             return [];
           }
 
@@ -642,21 +621,18 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             }))
             .sort((a, b) => b.value - a.value);
 
-          console.log('Distribution chart data:', result);
           cacheRef.current.set(cacheKey, { data: result, timestamp: now });
           return result;
         }
 
         return [];
     } catch (error) {
-      console.error('Error fetching chart data:', error);
       return [];
     }
   }, [user]);
 
   const refetch = useCallback(() => {
     // Limpar cache e forçar nova busca
-    console.log('useDashboardData: Clearing cache and forcing refetch');
     cacheRef.current.clear();
     fetchDashboardData(true);
   }, [fetchDashboardData]);

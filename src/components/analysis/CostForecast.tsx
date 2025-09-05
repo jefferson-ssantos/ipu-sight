@@ -79,7 +79,6 @@ export function CostForecast() {
         setForecastData(forecast);
 
       } catch (error) {
-        console.error('Error fetching forecast data:', error);
       } finally {
         setLoading(false);
       }
@@ -363,7 +362,6 @@ export function CostForecast() {
       
       toast("Gráfico exportado com sucesso!");
     } catch (error) {
-      console.error('Erro ao exportar gráfico:', error);
       toast("Erro ao exportar gráfico");
     }
   };

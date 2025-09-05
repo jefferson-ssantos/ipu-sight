@@ -85,7 +85,6 @@ export default function DashboardEssential() {
           }
         }
       } catch (error) {
-        console.error('Error fetching organizations:', error);
       }
     };
     fetchOrganizations();

@@ -159,7 +159,6 @@ export function MetricBreakdown() {
 
         setData(processedData);
       } catch (error) {
-        console.error('Error fetching metric breakdown:', error);
       } finally {
         setLoading(false);
       }
@@ -219,7 +218,6 @@ export function MetricBreakdown() {
       
       toast("Gráfico exportado com sucesso!");
     } catch (error) {
-      console.error('Erro ao exportar gráfico:', error);
       toast("Erro ao exportar gráfico");
     }
   };

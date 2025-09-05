@@ -151,7 +151,6 @@ export function SignupForm() {
       });
 
     } catch (error: any) {
-      console.error('Signup error:', error);
       toast({
         title: "Erro no cadastro",
         description: error.message || "Erro inesperado durante o cadastro",

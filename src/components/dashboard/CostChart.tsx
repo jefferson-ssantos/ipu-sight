@@ -58,7 +58,7 @@ interface CostChartProps {
   getChartData?: (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedPeriod?: string) => Promise<any>;
 }
 
-export function CostChart({ 
+export function CostChart({
   title, 
   type = "area", 
   data, 
@@ -107,14 +107,7 @@ export function CostChart({
   useEffect(() => {
     if (dashboardData?.contractedIPUs && dashboardData?.pricePerIPU) {
       const calculatedValue = dashboardData.contractedIPUs * dashboardData.pricePerIPU;
-      console.log('CostChart: Calculating contracted value:', {
-        contractedIPUs: dashboardData.contractedIPUs,
-        pricePerIPU: dashboardData.pricePerIPU,
-        calculatedValue
-      });
       setContractedValue(calculatedValue);
-    } else {
-      console.log('CostChart: Dashboard data not available for contracted value:', dashboardData);
     }
   }, [dashboardData]);
 
@@ -123,12 +116,9 @@ export function CostChart({
       setChartData(data);
     } else if (getChartData) {
       const fetchData = async () => {
-        console.log('CostChart: Fetching data with cycleFilter:', selectedCycleFilter, 'metric:', metric, 'type:', type);
-        
         if (type === 'bar') {
           // Special handling for billing periods stacked bar chart
           const billingResult = await getChartData('billing-periods', selectedOrg, selectedCycleFilter);
-          console.log('CostChart: Billing periods data:', billingResult);
           if (billingResult && typeof billingResult === 'object' && 'data' in billingResult) {
             setBillingData(billingResult);
             setChartData(billingResult.data);
@@ -138,7 +128,6 @@ export function CostChart({
         } else {
           const chartType = type === 'pie' ? 'distribution' : 'evolution';
           const realData = await getChartData(chartType, selectedOrg, selectedCycleFilter);
-          console.log('CostChart: Received data:', realData);
           if (Array.isArray(realData)) {
             setChartData(realData.length > 0 ? realData : (type === 'pie' ? orgData : mockData));
           } else {
@@ -300,7 +289,7 @@ export function CostChart({
                   stroke="hsl(var(--destructive))" 
                   strokeDasharray="5 5"
                   strokeWidth={3}
-                  label={{ 
+                  label={{
                     value: `Valor Contratado: ${formatCurrency(contractedValue)}`, 
                     position: "top",
                     style: { fill: "hsl(var(--destructive))", fontWeight: "bold" }
@@ -433,7 +422,6 @@ export function CostChart({
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (error) {
-      console.error('Error generating chart image:', error);
     }
   };
 

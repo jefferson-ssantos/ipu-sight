@@ -67,7 +67,6 @@ export default function ConfigConnections() {
       if (error) throw error;
       setConfigs(data || []);
     } catch (error) {
-      console.error('Erro ao buscar configurações:', error);
       toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
@@ -116,7 +115,6 @@ export default function ConfigConnections() {
       });
       fetchConfigs();
     } catch (error) {
-      console.error('Erro ao salvar configuração:', error);
       toast.error('Erro ao salvar configuração');
     }
   };
@@ -146,7 +144,6 @@ export default function ConfigConnections() {
       toast.success('Configuração excluída com sucesso');
       fetchConfigs();
     } catch (error) {
-      console.error('Erro ao excluir configuração:', error);
       toast.error('Erro ao excluir configuração');
     }
   };

@@ -73,7 +73,6 @@ export default function DashboardStarter() {
           }
         }
       } catch (error) {
-        console.error('Error fetching organizations:', error);
       }
     };
     fetchOrganizations();

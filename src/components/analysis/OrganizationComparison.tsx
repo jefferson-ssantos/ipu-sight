@@ -56,7 +56,6 @@ export function OrganizationComparison() {
       
       toast("Gráfico exportado com sucesso!");
     } catch (error) {
-      console.error('Erro ao exportar gráfico:', error);
       toast("Erro ao exportar gráfico");
     }
   };

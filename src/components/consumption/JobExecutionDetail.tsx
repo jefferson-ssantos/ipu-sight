@@ -94,7 +94,6 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching job execution data:', error);
         return;
       }
 
@@ -105,7 +104,6 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
 
       setJobs(processedData);
     } catch (error) {
-      console.error('Error fetching job execution data:', error);
     } finally {
       setLoading(false);
     }
@@ -202,7 +200,7 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
 
   return (
     <Card>
-      <CardHeader>      
+      <CardHeader>		
         <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />

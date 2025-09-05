@@ -89,7 +89,6 @@ export function OrganizationDetail({ selectedOrg, selectedCycleFilter }: Organiz
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching organization data:', error);
         return;
       }
 
@@ -137,7 +136,6 @@ export function OrganizationDetail({ selectedOrg, selectedCycleFilter }: Organiz
 
       setOrganizations(orgsArray);
     } catch (error) {
-      console.error('Error fetching organization data:', error);
     } finally {
       setLoading(false);
     }

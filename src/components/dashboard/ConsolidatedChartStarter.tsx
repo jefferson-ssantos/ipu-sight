@@ -66,7 +66,6 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
           setChartData([]);
         }
       } catch (error) {
-        console.error('Error fetching chart data:', error);
         toast.error('Erro ao carregar dados do gráfico');
       } finally {
         setLoading(false);
@@ -119,7 +118,6 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
 
       toast.success('Gráfico baixado com sucesso!');
     } catch (error) {
-      console.error('Error downloading chart:', error);
       toast.error('Erro ao baixar o gráfico');
     }
   };

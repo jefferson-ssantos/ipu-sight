@@ -102,7 +102,6 @@ export function AssetDetailsTable({ onClose, selectedOrg }: AssetDetailsTablePro
 
         setAssets(transformedAssets);
       } catch (error) {
-        console.error('Error fetching asset data:', error);
       } finally {
         setLoading(false);
       }

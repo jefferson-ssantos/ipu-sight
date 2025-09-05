@@ -114,7 +114,6 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching asset data:', error);
         return;
       }
 
@@ -126,7 +125,6 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
 
       setAssets(processedData);
     } catch (error) {
-      console.error('Error fetching asset data:', error);
     } finally {
       setLoading(false);
     }

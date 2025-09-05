@@ -19,14 +19,11 @@ export function CostTrendAnalysis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('CostTrendAnalysis: Fetching data with period:', period, 'metric:', metric);
         // Pass period to getChartData
         const evolutionData = await getChartData('evolution', undefined, period);
-        console.log('CostTrendAnalysis: Received data:', evolutionData);
         const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
         setChartData(dataArray);
       } catch (error) {
-        console.error('Error fetching trend data:', error);
         setChartData([]);
       }
     };
@@ -101,7 +98,6 @@ export function CostTrendAnalysis() {
       
       toast("Gráfico exportado com sucesso!");
     } catch (error) {
-      console.error('Erro ao exportar gráfico:', error);
       toast("Erro ao exportar gráfico");
     }
   };

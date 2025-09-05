@@ -50,7 +50,6 @@ export function usePermissions() {
       setProfile(data);
       setPermissions(calculatePermissions(data.plan_type, data.user_role));
     } catch (error) {
-      console.error('Error fetching user profile:', error);
       // Default permissions in case of error
       setPermissions({
         canAccessDashboard: true,

@@ -89,13 +89,11 @@ export function TagManager({ selectedOrg }: TagManagerProps) {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching tags:', error);
         return;
       }
 
       setTags(data || []);
     } catch (error) {
-      console.error('Error fetching tags:', error);
     } finally {
       setLoading(false);
     }
@@ -130,7 +128,6 @@ export function TagManager({ selectedOrg }: TagManagerProps) {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching assets:', error);
         return;
       }
 
@@ -145,7 +142,6 @@ export function TagManager({ selectedOrg }: TagManagerProps) {
 
       setAssets(uniqueAssets);
     } catch (error) {
-      console.error('Error fetching assets:', error);
     }
   };
 
@@ -185,7 +181,6 @@ export function TagManager({ selectedOrg }: TagManagerProps) {
       resetForm();
       fetchTags();
     } catch (error: any) {
-      console.error('Error saving tag:', error);
       if (error.code === '23505') {
         toast.error('Já existe uma tag para esta combinação de asset');
       } else {
@@ -208,7 +203,6 @@ export function TagManager({ selectedOrg }: TagManagerProps) {
       toast.success('Tag excluída com sucesso!');
       fetchTags();
     } catch (error) {
-      console.error('Error deleting tag:', error);
       toast.error('Erro ao excluir tag');
     }
   };

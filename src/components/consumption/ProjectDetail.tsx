@@ -88,7 +88,6 @@ export function ProjectDetail({ selectedOrg, selectedCycleFilter }: ProjectDetai
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching project data:', error);
         return;
       }
 
@@ -130,7 +129,6 @@ export function ProjectDetail({ selectedOrg, selectedCycleFilter }: ProjectDetai
 
       setProjects(projectsArray);
     } catch (error) {
-      console.error('Error fetching project data:', error);
     } finally {
       setLoading(false);
     }
