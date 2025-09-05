@@ -133,7 +133,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
           while (hasMore) {
             let query = supabase
               .from('api_consumoasset')
-              .select('project_name, consumption_date, consumption_ipu, runtime_environment')
+              .select('project_name, consumption_date, consumption_ipu, runtime_environment, org_id')
               .in('configuracao_id', configIds)
               .not('project_name', 'is', null)
               .not('project_name', 'eq', '')
@@ -143,7 +143,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
 
             // Apply organization filter if selected
             if (selectedOrgLocal !== "all") {
-              query = query.eq('runtime_environment', selectedOrgLocal);
+              query = query.eq('org_id', selectedOrgLocal);
             }
 
             const { data: batchData, error } = await query
