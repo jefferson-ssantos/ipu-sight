@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
-import { ArrowUpDown, Download, Calendar } from "lucide-react";
+import { ArrowUpDown, Download, Calendar, Filter } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
@@ -150,64 +150,81 @@ export function OrganizationComparison({
 
   return (
     <Card className="bg-gradient-card shadow-medium">
-      <CardHeader className="pb-4">
+      <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <CardTitle className="text-xl font-heading font-bold text-foreground">
-                Análise Custos por Organização
-              </CardTitle>
-              <p className="text-muted-foreground text-sm mt-1">
-                Custos por organização ao longo dos ciclos
-              </p>
-            </div>
+          <div>
+            <CardTitle className="text-lg font-heading font-bold">
+              Análise Custos por Organização
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Custos por organização ao longo dos ciclos
+            </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            {/* Organization Filter */}
-            <Select value={selectedOrg} onValueChange={onOrgChange}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableOrgs.map(org => 
-                  <SelectItem key={org.value} value={org.value}>
-                    {org.label}
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-
-            {/* Cycle Filter */}
-            <Select value={selectedCycleFilter} onValueChange={onCycleFilterChange}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CYCLE_FILTER_OPTIONS.map(option => 
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-
-            <Select value={metric} onValueChange={setMetric}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ipu">IPUs</SelectItem>
-                <SelectItem value="cost">Custo</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Exportar
+          </Button>
         </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 mt-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filtros:</span>
+          </div>
+          
+          {/* Organization Filter */}
+          <Select value={selectedOrg} onValueChange={onOrgChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableOrgs.map(org => 
+                <SelectItem key={org.value} value={org.value}>
+                  {org.label}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+
+          {/* Cycle Filter */}
+          <Select value={selectedCycleFilter} onValueChange={onCycleFilterChange}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CYCLE_FILTER_OPTIONS.map(option => 
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+
+          <Select value={metric} onValueChange={setMetric}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ipu">IPUs</SelectItem>
+              <SelectItem value="cost">Custo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Active Filters */}
+        { selectedOrg !== 'all' && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Badge variant="secondary" className="text-xs">
+              Organização: {availableOrgs.find(o => o.value === selectedOrg)?.label || selectedOrg}
+            </Badge>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent>

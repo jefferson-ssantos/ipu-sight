@@ -398,7 +398,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os Ciclos</SelectItem>              
+              <SelectItem value="all">Todas as Organizações</SelectItem>              
               <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
               <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
               <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
@@ -408,9 +408,9 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
             </SelectContent>
           </Select>
 
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
+                    <Select value={selectedProject} onValueChange={setSelectedProject}>
             <SelectTrigger className="w-56">
-              <SelectValue placeholder="Projetos" />
+              <SelectValue placeholder="Métricas" />
             </SelectTrigger>
             <SelectContent>
               {projectOptions.map(option => (
@@ -429,7 +429,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
         { selectedProject !== 'all' && (
           <div className="flex flex-wrap gap-2 mt-2">
             <Badge variant="secondary" className="text-xs">
-              Projeto: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
+              Métrica: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
             </Badge>
           </div>
         )}
