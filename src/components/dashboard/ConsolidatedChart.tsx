@@ -222,7 +222,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg font-heading font-bold">
-              Análise Consolidada de Custos
+              Análise Consolidada de Custos por Métrica
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
               Custos por métrica ao longo dos ciclos
@@ -264,6 +264,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todas as Organizações</SelectItem>              
               <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
               <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
               <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>

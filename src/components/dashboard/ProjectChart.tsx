@@ -362,7 +362,7 @@ export function ProjectChart() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg font-heading font-bold">
-              Análise Consolidada de Custos por Projetos
+              Análise Consolidada de Custos por Projeto
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
               Custos por projetos ao longo dos ciclos
@@ -385,21 +385,6 @@ export function ProjectChart() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Filtros:</span>
           </div>
-          
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Ciclos</SelectItem>
-              <SelectItem value="1" disabled={!availableCycles || availableCycles.length < 1}>Ciclo Atual</SelectItem>
-              <SelectItem value="2" disabled={!availableCycles || availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
-              <SelectItem value="3" disabled={!availableCycles || availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
-              <SelectItem value="6" disabled={!availableCycles || availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
-              <SelectItem value="9" disabled={!availableCycles || availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
-              <SelectItem value="12" disabled={!availableCycles || availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
-            </SelectContent>
-          </Select>
 
           <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
             <SelectTrigger className="w-60">
@@ -414,6 +399,21 @@ export function ProjectChart() {
                   {option.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Ciclos</SelectItem>
+              <SelectItem value="1" disabled={!availableCycles || availableCycles.length < 1}>Ciclo Atual</SelectItem>
+              <SelectItem value="2" disabled={!availableCycles || availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
+              <SelectItem value="3" disabled={!availableCycles || availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
+              <SelectItem value="6" disabled={!availableCycles || availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
+              <SelectItem value="9" disabled={!availableCycles || availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
+              <SelectItem value="12" disabled={!availableCycles || availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
             </SelectContent>
           </Select>
 
