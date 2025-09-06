@@ -389,7 +389,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     strokeDasharray="5 5" 
                     strokeWidth={2}
                     label={{ 
-                      value: `Valor Contratado: ${valueType === 'cost' ? formatCurrency(contractedValue) : formatIPU(contractedValue)}`, 
+                      value: `${valueType === 'cost' ? 'Valor Contratado' : 'IPUs Contratadas'}: ${valueType === 'cost' ? formatCurrency(contractedValue) : formatIPU(contractedValue)}`, 
                       position: "top",
                       fill: "hsl(var(--destructive))",
                       fontSize: 12,
