@@ -51,7 +51,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [contractedValue, setContractedValue] = useState<number>(0);
 
   // Use useDashboardData hook to fetch data
-  const { getChartData: getDashboardChartData, availableCycles } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
+  const { getChartData: getDashboardChartData, availableCycles, data: dashboardData } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -72,10 +72,37 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       try {
         const result = await getDashboardChartData('billing-periods', selectedOrgLocal, period);
         if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
+          // Get price per IPU for conversion
+          const pricePerIPU = dashboardData?.pricePerIPU || 1;
+          
+          // Process data based on value type
+          let processedData = result.data;
+          if (valueType === 'ipu' && pricePerIPU > 0) {
+            // Convert cost values to IPU values
+            processedData = result.data.map((item: any) => {
+              const convertedItem = { ...item };
+              // Convert all metric values from cost to IPU
+              if (result.meters) {
+                result.meters.forEach((meter: string) => {
+                  if (convertedItem[meter]) {
+                    convertedItem[meter] = convertedItem[meter] / pricePerIPU;
+                  }
+                });
+              }
+              return convertedItem;
+            });
+          }
+          
           // Handle object result with data property
-          setChartData(result.data);
+          setChartData(processedData);
           setAllDataKeys(result.meters || []);
-          setContractedValue(result.contractedReferenceValue || 0);
+          
+          // Convert contracted value based on value type
+          let adjustedContractedValue = result.contractedReferenceValue || 0;
+          if (valueType === 'ipu' && pricePerIPU > 0) {
+            adjustedContractedValue = adjustedContractedValue / pricePerIPU;
+          }
+          setContractedValue(adjustedContractedValue);
 
           // Update metric options based on fetched meters
           const newMetricOptions = (result.meters || []).map((meter: string) => ({ value: meter, label: meter }));
@@ -102,7 +129,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     if (getDashboardChartData) {
       fetchData();
     }
-  }, [selectedOrgLocal, period, getDashboardChartData]);
+  }, [selectedOrgLocal, period, getDashboardChartData, valueType, dashboardData?.pricePerIPU]);
 
   // Update selectedOrgLocal when selectedOrg prop changes
   useEffect(() => {
