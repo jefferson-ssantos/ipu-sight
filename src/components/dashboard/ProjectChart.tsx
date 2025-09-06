@@ -47,6 +47,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
   const [period, setPeriod] = useState("3"); // Default to 3 cycles
   const [selectedProject, setSelectedProject] = useState<string>("all");
+  const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
@@ -59,6 +60,10 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
+  };
+
+  const formatIPU = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   useEffect(() => {
@@ -204,7 +209,11 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
             cycleProjectData[periodKey][item.project_name] = 0;
           }
           
-          cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
+          if (valueType === "cost") {
+            cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0) * pricePerIpu;
+          } else {
+            cycleProjectData[periodKey][item.project_name] += (item.consumption_ipu || 0);
+          }
           projectSet.add(item.project_name);
         });
 
@@ -238,7 +247,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
     };
 
     fetchProjectData();
-  }, [user, period, selectedOrgLocal, availableCycles]);
+  }, [user, period, selectedOrgLocal, availableCycles, valueType]);
 
   // Update selectedOrgLocal when selectedOrg prop changes
   useEffect(() => {
@@ -285,7 +294,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
     if (value > 0) {
       return (
         <text x={x + width / 2} y={y} fill="#3a3a3a" textAnchor="middle" dy={-6} fontSize={12} fontWeight="bold">
-          {formatCurrency(value)}
+          {valueType === 'cost' ? formatCurrency(value) : formatIPU(value)}
         </text>
       );
     }
@@ -333,7 +342,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                   {project}:
                 </span>
                 <span className="font-medium text-foreground">
-                  {formatCurrency(item.value)}
+                  {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
                 </span>
               </div>
             );
@@ -341,7 +350,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
           <div className="border-t border-border mt-2 pt-2">
             <div className="flex justify-between items-center text-sm font-medium">
               <span>Total:</span>
-              <span>{formatCurrency(total)}</span>
+              <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
             </div>
           </div>
         </div>
@@ -408,9 +417,9 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
             </SelectContent>
           </Select>
 
-                    <Select value={selectedProject} onValueChange={setSelectedProject}>
+          <Select value={selectedProject} onValueChange={setSelectedProject}>
             <SelectTrigger className="w-56">
-              <SelectValue placeholder="Métricas" />
+              <SelectValue placeholder="Projetos" />
             </SelectTrigger>
             <SelectContent>
               {projectOptions.map(option => (
@@ -423,13 +432,23 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
               ))}
             </SelectContent>
           </Select>
+
+          <Select value={valueType} onValueChange={(value: "cost" | "ipu") => setValueType(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ipu">IPUs</SelectItem>
+              <SelectItem value="cost">Custo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Active Filters */}
         { selectedProject !== 'all' && (
           <div className="flex flex-wrap gap-2 mt-2">
             <Badge variant="secondary" className="text-xs">
-              Métrica: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
+              Projeto: {projectOptions.find(p => p.value === selectedProject)?.label || selectedProject}
             </Badge>
           </div>
         )}
@@ -468,7 +487,9 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
-                  tickFormatter={formatCurrency}
+                  tickFormatter={(value) => 
+                    valueType === 'cost' ? formatCurrency(value) : formatIPU(value)
+                  }
                   domain={yAxisDomain()}
                 />
                 <Tooltip content={<CustomTooltip />} />

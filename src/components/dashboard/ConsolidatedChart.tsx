@@ -43,6 +43,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
   const [period, setPeriod] = useState("3"); // Default to 3 cycles
   const [selectedMetric, setSelectedMetric] = useState<string>("all");
+  const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
@@ -59,6 +60,10 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
+  };
+
+  const formatIPU = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   useEffect(() => {
@@ -149,7 +154,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     if (value > 0) {
         return (
             <text x={x + width / 2} y={y} fill="#3a3a3a" textAnchor="middle" dy={-6} fontSize={12} fontWeight="bold">
-                {formatCurrency(value)}
+                {valueType === 'cost' ? formatCurrency(value) : formatIPU(value)}
             </text>
         );
     }
@@ -197,7 +202,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                   {metric}:
                 </span>
                 <span className="font-medium text-foreground">
-                  {formatCurrency(item.value)}
+                  {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
                 </span>
               </div>
             );
@@ -205,7 +210,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           <div className="border-t border-border mt-2 pt-2">
             <div className="flex justify-between items-center text-sm font-medium">
               <span>Total:</span>
-              <span>{formatCurrency(total)}</span>
+              <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
             </div>
           </div>
         </div>
@@ -287,6 +292,16 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
               ))}
             </SelectContent>
           </Select>
+
+          <Select value={valueType} onValueChange={(value: "cost" | "ipu") => setValueType(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ipu">IPUs</SelectItem>
+              <SelectItem value="cost">Custo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Active Filters */}
@@ -329,10 +344,12 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                   textAnchor="end"
                   height={80}
                 />
-                <YAxis 
+                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
-                  tickFormatter={formatCurrency}
+                  tickFormatter={(value) => 
+                    valueType === 'cost' ? formatCurrency(value) : formatIPU(value)
+                  }
                   domain={yAxisDomain()}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -345,7 +362,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     strokeDasharray="5 5" 
                     strokeWidth={2}
                     label={{ 
-                      value: `Valor Contratado: ${formatCurrency(contractedValue)}`, 
+                      value: `Valor Contratado: ${valueType === 'cost' ? formatCurrency(contractedValue) : formatIPU(contractedValue)}`, 
                       position: "top",
                       fill: "hsl(var(--destructive))",
                       fontSize: 12,
