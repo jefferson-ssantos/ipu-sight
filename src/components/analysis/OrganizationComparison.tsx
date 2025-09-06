@@ -238,7 +238,7 @@ export function OrganizationComparison({
         ) : (
           <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 90 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="cycle" 
