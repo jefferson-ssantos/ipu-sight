@@ -22,7 +22,10 @@ export function CostTrendAnalysis() {
         // Pass period to getChartData
         const evolutionData = await getChartData('evolution', undefined, period);
         const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
-        setChartData(dataArray);
+        
+        // Filter out incomplete current cycle
+        const filteredData = filterCompleteCycles(dataArray);
+        setChartData(filteredData);
       } catch (error) {
         setChartData([]);
       }
@@ -31,6 +34,26 @@ export function CostTrendAnalysis() {
       fetchData();
     }
   }, [period, metric, getChartData]);
+
+  const filterCompleteCycles = (data: any[]): any[] => {
+    const today = new Date();
+    return data.filter(item => {
+      // Check if the cycle has ended based on periodEnd or period string
+      let endDate: Date;
+      
+      if (item.periodEnd) {
+        endDate = new Date(item.periodEnd);
+      } else if (item.period && item.period.includes(' - ')) {
+        const periodParts = item.period.split(' - ');
+        const endDateStr = periodParts[1];
+        endDate = new Date(endDateStr.split('/').reverse().join('-')); // Convert DD/MM/YYYY to YYYY-MM-DD
+      } else {
+        return true; // If we can't determine the end date, include it
+      }
+      
+      return endDate <= today; // Only include cycles that have already ended
+    });
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

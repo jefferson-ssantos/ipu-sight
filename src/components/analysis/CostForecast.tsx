@@ -118,7 +118,8 @@ export function CostForecast() {
     const today = new Date();
     return data.filter(item => {
       const endDate = new Date(item.billing_period_end_date);
-      return endDate <= today; // Only include cycles that have already ended
+      // Only include cycles that have already ended (not including today)
+      return endDate < today;
     });
   };
 
