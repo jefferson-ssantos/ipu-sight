@@ -154,21 +154,24 @@ export function CostForecast() {
       // Calculate confidence based on data variance
       const confidence = calculateConfidence(historical, i);
       
+      // Generate dates for forecast periods
       const lastHistoricalEndDate = new Date(historical[historical.length - 1].billing_period_end_date);
       
-      // Calculate the next period start date (day after last historical end date)
-      const forecastStartDate = new Date(lastHistoricalEndDate);
-      forecastStartDate.setDate(forecastStartDate.getDate() + 1);
+      // Start the next period the day after the last historical period
+      const baseStartDate = new Date(lastHistoricalEndDate);
+      baseStartDate.setDate(baseStartDate.getDate() + 1);
       
-      // Add months for each forecast period
-      const adjustedStartDate = new Date(forecastStartDate);
-      adjustedStartDate.setMonth(adjustedStartDate.getMonth() + i);
+      // Calculate start date for this forecast period (add i months to base)
+      const currentStartDate = new Date(baseStartDate);
+      currentStartDate.setMonth(currentStartDate.getMonth() + i);
       
-      // Calculate end date (last day of the month)
-      const forecastEndDate = new Date(adjustedStartDate.getFullYear(), adjustedStartDate.getMonth() + 1, 0);
+      // Calculate end date (add one month to start date, then go to last day of that month)
+      const currentEndDate = new Date(currentStartDate);
+      currentEndDate.setMonth(currentEndDate.getMonth() + 1);
+      currentEndDate.setDate(0); // This sets it to the last day of the previous month (which is the month we want)
       
       combinedForecast.push({
-        period: `${adjustedStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${forecastEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
+        period: `${currentStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${currentEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
         ipu: Math.max(0, weightedIPU),
         cost: Math.max(0, weightedCost),
         isForecast: true,
