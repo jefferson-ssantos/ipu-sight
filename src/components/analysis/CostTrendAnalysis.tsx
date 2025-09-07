@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export function CostTrendAnalysis() {
   const { data, loading, getChartData, availableCycles } = useDashboardData(); // Destructure availableCycles
-  const [period, setPeriod] = useState("3"); // Changed from "6" to "3" to match default ConsolidatedChart
+  const [period, setPeriod] = useState("2"); // Start with 2 cycles (excluding current incomplete cycle)
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -183,12 +183,11 @@ export function CostTrendAnalysis() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
-                <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
-                <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
-                <SelectItem value="6" disabled={availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
-                <SelectItem value="9" disabled={availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
-                <SelectItem value="12" disabled={availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
+                <SelectItem value="2" disabled={availableCycles.length < 3}>Últimos 2 Ciclos Completos</SelectItem>
+                <SelectItem value="3" disabled={availableCycles.length < 4}>Últimos 3 Ciclos Completos</SelectItem>
+                <SelectItem value="6" disabled={availableCycles.length < 7}>Últimos 6 Ciclos Completos</SelectItem>
+                <SelectItem value="9" disabled={availableCycles.length < 10}>Últimos 9 Ciclos Completos</SelectItem>
+                <SelectItem value="12" disabled={availableCycles.length < 13}>Últimos 12 Ciclos Completos</SelectItem>
               </SelectContent>
             </Select>
 

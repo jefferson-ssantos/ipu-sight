@@ -20,13 +20,19 @@ export default function Analysis() {
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="trends" className="flex items-center gap-2">
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 h-12 p-1.5 bg-muted/50 rounded-lg">
+          <TabsTrigger 
+            value="trends" 
+            className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md"
+          >
             <Activity className="h-4 w-4" />
             Tendências
           </TabsTrigger>
-          <TabsTrigger value="forecast" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="forecast" 
+            className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md"
+          >
             <TrendingUp className="h-4 w-4" />
             Previsão
           </TabsTrigger>

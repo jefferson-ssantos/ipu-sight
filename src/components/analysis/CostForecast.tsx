@@ -62,20 +62,21 @@ export function CostForecast() {
         
         setPricePerIPU(clientData.preco_por_ipu);
 
-        // Get historical evolution data using the existing function
+        // Get historical evolution data using the existing function, excluding current incomplete cycle
         const { data: evolutionData } = await supabase
           .rpc('get_cost_evolution_data', {
-            cycle_limit: 12 // Get up to 12 cycles for better forecasting
+            cycle_limit: 13 // Get up to 13 cycles to have 12 complete cycles after filtering
           });
 
         if (!evolutionData) return;
 
-        // Process historical data
+        // Process historical data and filter out incomplete current cycle
         const processedHistorical = processHistoricalData(evolutionData, clientData.preco_por_ipu);
-        setHistoricalData(processedHistorical);
+        const filteredHistorical = filterCompleteCycles(processedHistorical);
+        setHistoricalData(filteredHistorical);
 
-        // Generate forecast
-        const forecast = generateAdvancedForecast(processedHistorical, forecastPeriod, clientData.preco_por_ipu);
+        // Generate forecast using filtered data
+        const forecast = generateAdvancedForecast(filteredHistorical, forecastPeriod, clientData.preco_por_ipu);
         setForecastData(forecast);
 
       } catch (error) {
@@ -111,6 +112,14 @@ export function CostForecast() {
     return Array.from(periodMap.values()).sort((a, b) => 
       new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime()
     );
+  };
+
+  const filterCompleteCycles = (data: HistoricalData[]): HistoricalData[] => {
+    const today = new Date();
+    return data.filter(item => {
+      const endDate = new Date(item.billing_period_end_date);
+      return endDate <= today; // Only include cycles that have already ended
+    });
   };
 
   const formatPeriodLabel = (startDate: string, endDate: string): string => {
