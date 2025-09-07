@@ -19,13 +19,17 @@ export function CostTrendAnalysis() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Pass period to getChartData
-        const evolutionData = await getChartData('evolution', undefined, period);
+        // Add 1 to period to compensate for filtering out current incomplete cycle
+        const adjustedPeriod = (parseInt(period) + 1).toString();
+        const evolutionData = await getChartData('evolution', undefined, adjustedPeriod);
         const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
         
         // Filter out incomplete current cycle
         const filteredData = filterCompleteCycles(dataArray);
-        setChartData(filteredData);
+        
+        // Now limit to the requested number of cycles
+        const limitedData = filteredData.slice(-parseInt(period));
+        setChartData(limitedData);
       } catch (error) {
         setChartData([]);
       }
@@ -202,7 +206,7 @@ export function CostTrendAnalysis() {
           
           <div className="flex items-center gap-4">
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-60">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
