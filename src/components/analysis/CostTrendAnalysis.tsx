@@ -237,15 +237,32 @@ export function CostTrendAnalysis() {
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, isPositive: false, isStable: true };
     
-    // Usar linha total (pontilhada) para cálculo de tendência
-    const currentKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
     if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false, isStable: true };
     
-    let currentValue = currentPeriodData[currentKey] || 0;
-    const previousValue = previousPeriodData[currentKey] || 0;
+    // Calcular valores com base nas métricas selecionadas
+    let currentValue = 0;
+    let previousValue = 0;
+    
+    if (selectedMeters.includes('all')) {
+      // Se "todas as métricas" estiver selecionado, usar linha total
+      const currentKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
+      currentValue = currentPeriodData[currentKey] || 0;
+      previousValue = previousPeriodData[currentKey] || 0;
+    } else {
+      // Somar apenas as métricas selecionadas
+      const metricsToSum = availableMeters.filter(m => selectedMeters.includes(m.id));
+      
+      for (const metric of metricsToSum) {
+        const metricKey = metric.id.replace(/[^a-zA-Z0-9]/g, '_');
+        const dataKey = selectedMetric === 'cost' ? `${metricKey}_cost` : `${metricKey}_ipu`;
+        
+        currentValue += currentPeriodData[dataKey] || 0;
+        previousValue += previousPeriodData[dataKey] || 0;
+      }
+    }
     
     // Se o período atual está incompleto, projete o valor total baseado na média diária
     const today = new Date();
