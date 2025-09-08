@@ -263,13 +263,13 @@ export function CostTrendAnalysis() {
   };
 
   const calculateTrend = () => {
-    if (chartData.length < 2) return { percentage: 0, isPositive: false };
+    if (chartData.length < 2) return { percentage: 0, isPositive: false, isStable: true };
     
     const currentKey = selectedMetric === 'cost' ? 'cost' : 'ipu';
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
-    if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false };
+    if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false, isStable: true };
     
     let currentValue = currentPeriodData[currentKey] || 0;
     const previousValue = previousPeriodData[currentKey] || 0;
@@ -291,10 +291,15 @@ export function CostTrendAnalysis() {
     }
     
     const percentage = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
+    const absolutePercentage = Math.abs(percentage);
+    
+    // Considerar estável se variação for menor que 2%
+    const isStable = absolutePercentage < 2;
     
     return {
-      percentage: Math.abs(percentage),
-      isPositive: percentage > 0
+      percentage: absolutePercentage,
+      isPositive: percentage > 0,
+      isStable
     };
   };
 
@@ -360,7 +365,12 @@ export function CostTrendAnalysis() {
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="text-sm text-muted-foreground">Tendência Atual</div>
               <div className="text-lg font-semibold flex items-center gap-2">
-                {trend.isPositive ? (
+                {trend.isStable ? (
+                  <>
+                    <div className="h-4 w-4 bg-blue-500 rounded-full" />
+                    <span className="text-blue-600">Estável</span>
+                  </>
+                ) : trend.isPositive ? (
                   <>
                     <TrendingUp className="h-4 w-4 text-destructive" />
                     <span className="text-destructive">Crescimento</span>
@@ -397,8 +407,10 @@ export function CostTrendAnalysis() {
           <div>
             <CardTitle className="flex items-center gap-2">
               Análise de Tendências
-              <Badge variant={trend.isPositive ? "destructive" : "default"}>
-                {trend.isPositive ? (
+              <Badge variant={trend.isStable ? "secondary" : trend.isPositive ? "destructive" : "default"}>
+                {trend.isStable ? (
+                  <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
+                ) : trend.isPositive ? (
                   <TrendingUp className="h-3 w-3 mr-1" />
                 ) : (
                   <TrendingDown className="h-3 w-3 mr-1" />
