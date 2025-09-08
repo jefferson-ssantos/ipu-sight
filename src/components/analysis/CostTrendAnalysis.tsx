@@ -12,9 +12,59 @@ import { toast } from "sonner";
 export function CostTrendAnalysis() {
   const { data, loading, getChartData, availableCycles } = useDashboardData();
   const [period, setPeriod] = useState("12");
-  const [metric, setMetric] = useState("cost");
+  const [selectedMetric, setSelectedMetric] = useState("cost");
+  const [availableMetrics, setAvailableMetrics] = useState<{ id: string; name: string }[]>([
+    { id: 'cost', name: 'Custo Total' },
+    { id: 'ipu', name: 'IPUs Totais' }
+  ]);
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  // Buscar métricas disponíveis dos dados
+  useEffect(() => {
+    const fetchAvailableMetrics = async () => {
+      try {
+        // Buscar dados de evolução para extrair métricas
+        const evolutionData = await getChartData('evolution', undefined, '24');
+        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
+        
+        // Extrair métricas únicas dos dados de evolução
+        const metricsSet = new Set<string>();
+        
+        // Se os dados têm estrutura de métricas detalhadas
+        dataArray.forEach(item => {
+          if (item.meters && Array.isArray(item.meters)) {
+            item.meters.forEach((meter: string) => metricsSet.add(meter));
+          }
+        });
+        
+        // Converter para array com formato adequado
+        const metrics = [
+          { id: 'cost', name: 'Custo Total' },
+          { id: 'ipu', name: 'IPUs Totais' }
+        ];
+        
+        // Adicionar métricas específicas encontradas
+        Array.from(metricsSet).forEach(meterName => {
+          if (meterName && meterName !== 'cost' && meterName !== 'ipu') {
+            metrics.push({
+              id: meterName,
+              name: meterName
+            });
+          }
+        });
+        
+        setAvailableMetrics(metrics);
+      } catch (error) {
+        // Manter métricas padrão em caso de erro
+        console.error('Erro ao buscar métricas:', error);
+      }
+    };
+    
+    if (getChartData) {
+      fetchAvailableMetrics();
+    }
+  }, [getChartData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,8 +77,11 @@ export function CostTrendAnalysis() {
         // Filter out incomplete current cycle
         const filteredData = filterCompleteCycles(dataArray);
         
+        // Process data based on selected metric
+        const processedData = processDataForMetric(filteredData, selectedMetric);
+        
         // Now limit to the requested number of cycles
-        const limitedData = filteredData.slice(-parseInt(period));
+        const limitedData = processedData.slice(-parseInt(period));
         setChartData(limitedData);
       } catch (error) {
         setChartData([]);
@@ -37,7 +90,39 @@ export function CostTrendAnalysis() {
     if (getChartData) {
       fetchData();
     }
-  }, [period, metric, getChartData]);
+  }, [period, selectedMetric, getChartData]);
+
+  const processDataForMetric = (data: any[], metric: string) => {
+    if (metric === 'cost' || metric === 'ipu') {
+      return data;
+    }
+    
+    // Para métricas específicas, processar os dados
+    return data.map(item => {
+      const metricValue = getMetricValue(item, metric);
+      return {
+        ...item,
+        cost: metricValue,
+        ipu: metricValue
+      };
+    });
+  };
+
+  const getMetricValue = (item: any, metric: string): number => {
+    // Se temos dados detalhados por métrica
+    if (item.data && Array.isArray(item.data)) {
+      const metricData = item.data.find((d: any) => d.name === metric);
+      return metricData?.value || 0;
+    }
+    
+    // Se temos métricas no array meters
+    if (item.meters && Array.isArray(item.meters) && item.costs && Array.isArray(item.costs)) {
+      const metricIndex = item.meters.indexOf(metric);
+      return metricIndex >= 0 ? (item.costs[metricIndex] || 0) : 0;
+    }
+    
+    return 0;
+  };
 
   const filterCompleteCycles = (data: any[]): any[] => {
     const today = new Date();
@@ -70,10 +155,20 @@ export function CostTrendAnalysis() {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  const getMetricLabel = () => {
+    const metric = availableMetrics.find(m => m.id === selectedMetric);
+    return metric?.name || selectedMetric;
+  };
+
+  const getValueFormatter = () => {
+    if (selectedMetric === 'cost') return formatCurrency;
+    return formatIPU;
+  };
+
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, isPositive: false };
     
-    const currentKey = metric === 'cost' ? 'cost' : 'ipu';
+    const currentKey = selectedMetric === 'cost' ? 'cost' : 'ipu';
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
@@ -130,7 +225,7 @@ export function CostTrendAnalysis() {
       });
       
       const link = document.createElement('a');
-      link.download = `analise-tendencia-custos-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `analise-tendencia-${selectedMetric}-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
       
@@ -143,11 +238,12 @@ export function CostTrendAnalysis() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
+      const formatter = getValueFormatter();
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{label}</p>
           <p className="text-primary">
-            {metric === 'cost' ? formatCurrency(value) : `${formatIPU(value)} IPUs`}
+            {selectedMetric === 'cost' ? formatter(value) : `${formatter(value)} ${selectedMetric === 'ipu' ? 'IPUs' : ''}`}
           </p>
         </div>
       );
@@ -160,7 +256,7 @@ export function CostTrendAnalysis() {
       {/* Insights Card */}
       <Card className="bg-gradient-card shadow-medium">
         <CardHeader>
-          <CardTitle>Insights da Análise</CardTitle>
+          <CardTitle>Insights da Análise - {getMetricLabel()}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -203,7 +299,7 @@ export function CostTrendAnalysis() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              Análise de Tendências
+              Análise de Tendências - {getMetricLabel()}
               <Badge variant={trend.isPositive ? "destructive" : "default"}>
                 {trend.isPositive ? (
                   <TrendingUp className="h-3 w-3 mr-1" />
@@ -229,13 +325,16 @@ export function CostTrendAnalysis() {
               </SelectContent>
             </Select>
 
-            <Select value={metric} onValueChange={setMetric}>
-              <SelectTrigger className="w-32">
+            <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ipu">IPUs</SelectItem>
-                <SelectItem value="cost">Custo</SelectItem>
+                {availableMetrics.map(metric => (
+                  <SelectItem key={metric.id} value={metric.id}>
+                    {metric.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -262,9 +361,7 @@ export function CostTrendAnalysis() {
                 <YAxis 
                   tick={{ fontSize: 12 }}
                   tickLine={false}
-                  tickFormatter={(value) => 
-                    metric === 'cost' ? formatCurrency(value) : formatIPU(value)
-                  }
+                  tickFormatter={getValueFormatter()}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend 
@@ -272,11 +369,12 @@ export function CostTrendAnalysis() {
                 />
                 <Line 
                   type="monotone" 
-                  dataKey={metric === 'cost' ? 'cost' : 'ipu'} 
+                  dataKey={selectedMetric === 'cost' ? 'cost' : 'ipu'} 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                  name={metric === 'cost' ? 'Custo Total' : 'IPUs Consumidas'}
+                  name={getMetricLabel()}
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
