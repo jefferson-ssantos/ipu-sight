@@ -7,7 +7,8 @@ import { Download, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from "recharts";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
-import { useDashboardData } from "@/hooks/useDashboardData"; // Import useDashboardData
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 
 interface ConsolidatedChartProps {
   selectedOrg?: string;
@@ -290,17 +291,15 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           </Select>
 
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-auto min-w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as Organizações</SelectItem>              
-              <SelectItem value="1" disabled={availableCycles.length < 1}>Ciclo Atual</SelectItem>
-              <SelectItem value="2" disabled={availableCycles.length < 2}>Últimos 2 Ciclos</SelectItem>
-              <SelectItem value="3" disabled={availableCycles.length < 3}>Últimos 3 Ciclos</SelectItem>
-              <SelectItem value="6" disabled={availableCycles.length < 6}>Últimos 6 Ciclos</SelectItem>
-              <SelectItem value="9" disabled={availableCycles.length < 9}>Últimos 9 Ciclos</SelectItem>
-              <SelectItem value="12" disabled={availableCycles.length < 12}>Últimos 12 Ciclos</SelectItem>
+              {CYCLE_FILTER_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
