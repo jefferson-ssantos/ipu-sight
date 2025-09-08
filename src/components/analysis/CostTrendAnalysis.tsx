@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, TrendingDown, Download } from "lucide-react";
@@ -16,7 +17,7 @@ export function CostTrendAnalysis() {
   const { user } = useAuth();
   const [period, setPeriod] = useState("12");
   const [selectedMetric, setSelectedMetric] = useState("cost"); // Filtro original Valor/IPUs
-  const [selectedMeter, setSelectedMeter] = useState("all"); // Novo filtro de Métrica
+  const [selectedMeters, setSelectedMeters] = useState<string[]>(["all"]); // Multi-select para métricas
   const [availableMeters, setAvailableMeters] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -90,20 +91,11 @@ export function CostTrendAnalysis() {
         // Add 1 to period to compensate for filtering out current incomplete cycle
         const adjustedPeriod = (parseInt(period) + 1).toString();
         
-        let evolutionData;
-        
-        // Se "Todas as Métricas" estiver selecionado, usar função original
-        if (selectedMeter === 'all') {
-          evolutionData = await getChartData('evolution', undefined, adjustedPeriod);
-        } else {
-          // Caso contrário, usar filtro de meter específico
-          evolutionData = await getChartDataWithMeterFilter(adjustedPeriod, selectedMeter);
-        }
-        
-        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
+        // Buscar dados multi-série
+        const multiSeriesData = await getMultiSeriesChartData(adjustedPeriod, selectedMeters);
         
         // Filter out incomplete current cycle
-        const filteredData = filterCompleteCycles(dataArray);
+        const filteredData = filterCompleteCycles(multiSeriesData);
         
         // Now limit to the requested number of cycles
         const limitedData = filteredData.slice(-parseInt(period));
@@ -115,10 +107,10 @@ export function CostTrendAnalysis() {
     if (getChartData) {
       fetchData();
     }
-  }, [period, selectedMetric, selectedMeter, getChartData]);
+  }, [period, selectedMetric, selectedMeters, getChartData]);
 
-  // Nova função para buscar dados com filtro de meter_name
-  const getChartDataWithMeterFilter = async (cycleLimit: string, meterFilter: string) => {
+  // Nova função para buscar dados multi-série
+  const getMultiSeriesChartData = async (cycleLimit: string, selectedMetersList: string[]) => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -145,20 +137,13 @@ export function CostTrendAnalysis() {
 
       const configIds = configs.map(config => config.id);
 
-      // Buscar dados com filtro opcional de meter_name
-      let query = supabase
+      // Buscar dados de consumo
+      const { data: consumptionData, error } = await supabase
         .from('api_consumosummary')
         .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
         .in('configuracao_id', configIds)
         .gt('consumption_ipu', 0)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage');
-
-      // Aplicar filtro de meter_name se não for "all"
-      if (meterFilter !== 'all') {
-        query = query.eq('meter_name', meterFilter);
-      }
-
-      const { data: consumptionData, error } = await query
+        .neq('meter_name', 'Sandbox Organizations IPU Usage')
         .order('billing_period_start_date');
 
       if (error || !consumptionData) return [];
@@ -174,42 +159,64 @@ export function CostTrendAnalysis() {
         .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
         .slice(-parseInt(cycleLimit));
 
-      // Group consumption by billing period
+      // Determinar quais métricas incluir
+      const includeAll = selectedMetersList.includes('all');
+      const metricsToInclude = includeAll ? 
+        availableMeters.filter(m => m.id !== 'all').map(m => m.id) : 
+        selectedMetersList.filter(m => m !== 'all');
+
+      // Group consumption by billing period and meter
       const periodMap = new Map();
 
-      // Inicializar todos os ciclos com valor zero
+      // Inicializar todos os ciclos
       sortedCycles.forEach(cycle => {
         const periodKey = `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`;
         const periodLabel = `${new Date(cycle.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
         
-        periodMap.set(periodKey, {
+        const periodData: any = {
           period: periodLabel,
-          totalIPU: 0,
           billing_period_start_date: cycle.billing_period_start_date,
           billing_period_end_date: cycle.billing_period_end_date,
           periodStart: cycle.billing_period_start_date,
-          periodEnd: cycle.billing_period_end_date
+          periodEnd: cycle.billing_period_end_date,
+          totalIPU: 0,
+          totalCost: 0
+        };
+
+        // Inicializar cada métrica com zero
+        metricsToInclude.forEach(metricName => {
+          const metricKey = metricName.replace(/[^a-zA-Z0-9]/g, '_');
+          periodData[`${metricKey}_ipu`] = 0;
+          periodData[`${metricKey}_cost`] = 0;
         });
+        
+        periodMap.set(periodKey, periodData);
       });
 
       // Somar consumo real dos dados retornados
       consumptionData.forEach(item => {
         const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
         if (periodMap.has(periodKey)) {
-          periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
+          const periodData = periodMap.get(periodKey);
+          const itemIPU = item.consumption_ipu || 0;
+          const itemCost = itemIPU * client.preco_por_ipu;
+          
+          // Adicionar ao total
+          periodData.totalIPU += itemIPU;
+          periodData.totalCost += itemCost;
+          
+          // Adicionar à métrica específica se ela estiver selecionada
+          if (metricsToInclude.includes(item.meter_name)) {
+            const metricKey = item.meter_name.replace(/[^a-zA-Z0-9]/g, '_');
+            periodData[`${metricKey}_ipu`] = (periodData[`${metricKey}_ipu`] || 0) + itemIPU;
+            periodData[`${metricKey}_cost`] = (periodData[`${metricKey}_cost`] || 0) + itemCost;
+          }
         }
       });
 
-      // Converter para array e calcular custos
+      // Converter para array
       const result = Array.from(periodMap.values())
-        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
-        .map(item => ({
-          period: item.period,
-          ipu: item.totalIPU,
-          cost: item.totalIPU * client.preco_por_ipu,
-          periodStart: item.periodStart,
-          periodEnd: item.periodEnd
-        }));
+        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
 
       return result;
     } catch (error) {
@@ -249,9 +256,12 @@ export function CostTrendAnalysis() {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
-  const getMeterLabel = () => {
-    const foundMeter = availableMeters.find(m => m.id === selectedMeter);
-    return foundMeter?.name || selectedMeter;
+  const getSelectedMetersLabels = () => {
+    if (selectedMeters.includes('all')) return 'Todas as Métricas';
+    return selectedMeters.map(id => {
+      const foundMeter = availableMeters.find(m => m.id === id);
+      return foundMeter?.name || id;
+    }).join(', ');
   };
 
   const getMetricLabel = () => {
@@ -266,7 +276,8 @@ export function CostTrendAnalysis() {
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, isPositive: false, isStable: true };
     
-    const currentKey = selectedMetric === 'cost' ? 'cost' : 'ipu';
+    // Usar linha total (pontilhada) para cálculo de tendência
+    const currentKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
@@ -328,7 +339,8 @@ export function CostTrendAnalysis() {
       });
       
       const link = document.createElement('a');
-      link.download = `analise-tendencia-${selectedMeter === 'all' ? 'todas-metricas' : selectedMeter}-${new Date().toISOString().split('T')[0]}.png`;
+      const metersLabel = selectedMeters.includes('all') ? 'todas-metricas' : selectedMeters.join('-');
+      link.download = `analise-tendencia-${metersLabel}-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
       
@@ -340,14 +352,14 @@ export function CostTrendAnalysis() {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const value = payload[0].value;
-      const formatter = getValueFormatter();
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">{label}</p>
-          <p className="text-primary">
-            {selectedMetric === 'cost' ? formatCurrency(value) : `${formatIPU(value)} IPUs`}
-          </p>
+          <p className="font-medium mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: {selectedMetric === 'cost' ? formatCurrency(entry.value) : `${formatIPU(entry.value)} IPUs`}
+            </p>
+          ))}
         </div>
       );
     }
@@ -445,24 +457,32 @@ export function CostTrendAnalysis() {
               </SelectContent>
             </Select>
 
-            <Select value={selectedMeter} onValueChange={setSelectedMeter}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Selecione uma métrica" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableMeters.length > 0 ? (
-                  availableMeters.map(meterItem => (
-                    <SelectItem key={meterItem.id} value={meterItem.id}>
-                      {meterItem.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="loading" disabled>
-                    Carregando métricas...
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Métricas</label>
+              <ToggleGroup 
+                type="multiple" 
+                value={selectedMeters} 
+                onValueChange={(value) => {
+                  // Se "all" for selecionado, desmarcar todas as outras
+                  if (value.includes('all')) {
+                    setSelectedMeters(['all']);
+                  } else if (value.length === 0) {
+                    // Se nenhuma métrica estiver selecionada, selecionar "all"
+                    setSelectedMeters(['all']);
+                  } else {
+                    // Caso contrário, usar as métricas selecionadas (excluindo "all")
+                    setSelectedMeters(value.filter(v => v !== 'all'));
+                  }
+                }}
+                className="flex-wrap justify-start"
+              >
+                {availableMeters.map(meterItem => (
+                  <ToggleGroupItem key={meterItem.id} value={meterItem.id} size="sm">
+                    {meterItem.name}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
 
             <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
@@ -472,39 +492,92 @@ export function CostTrendAnalysis() {
         </CardHeader>
 
         <CardContent>
-          <div ref={chartRef} className="h-96 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="period" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  tickFormatter={getValueFormatter()}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  verticalAlign="top" 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey={selectedMetric === 'cost' ? 'cost' : 'ipu'} 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                  name={selectedMeter === 'all' ? getMetricLabel() : `${getMeterLabel()} - ${getMetricLabel()}`}
-                  connectNulls={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {loading ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-muted-foreground">Carregando dados...</div>
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <p className="text-lg mb-2">Nenhum dado disponível</p>
+                <p className="text-sm">Não há dados suficientes para as métricas selecionadas</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="period"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    tickFormatter={getValueFormatter()}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend verticalAlign="top" />
+                  
+                  {/* Linha total pontilhada */}
+                  <Line 
+                    type="monotone" 
+                    dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    name={selectedMetric === 'cost' ? 'Custo Total' : 'IPUs Totais'}
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                  />
+                  
+                  {/* Linhas coloridas para cada métrica */}
+                  {(() => {
+                    const metricsToShow = selectedMeters.includes('all') ? 
+                      availableMeters.filter(m => m.id !== 'all') : 
+                      availableMeters.filter(m => selectedMeters.includes(m.id));
+                    
+                    const colors = [
+                      'hsl(var(--chart-1))',
+                      'hsl(var(--chart-2))',
+                      'hsl(var(--chart-3))',
+                      'hsl(var(--chart-4))',
+                      'hsl(var(--chart-5))',
+                      '#8B5CF6',
+                      '#F59E0B',
+                      '#EF4444',
+                      '#10B981',
+                      '#06B6D4'
+                    ];
+                    
+                    return metricsToShow.map((metric, index) => {
+                      const metricKey = metric.id.replace(/[^a-zA-Z0-9]/g, '_');
+                      const dataKey = selectedMetric === 'cost' ? `${metricKey}_cost` : `${metricKey}_ipu`;
+                      const color = colors[index % colors.length];
+                      
+                      return (
+                        <Line
+                          key={metric.id}
+                          type="monotone"
+                          dataKey={dataKey}
+                          stroke={color}
+                          strokeWidth={2}
+                          name={metric.name}
+                          dot={{ fill: color, strokeWidth: 2, r: 3 }}
+                          activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
+                        />
+                      );
+                    });
+                  })()}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
