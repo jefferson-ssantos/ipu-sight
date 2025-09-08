@@ -370,13 +370,8 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
-        useCORS: true,
-        allowTaint: true,
-        foreignObjectRendering: true,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: chartElement.scrollWidth,
-        windowHeight: chartElement.scrollHeight,
+        height: chartElement.offsetHeight,
+        width: chartElement.offsetWidth,
       });
 
       const link = document.createElement('a');

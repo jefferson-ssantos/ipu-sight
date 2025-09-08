@@ -209,14 +209,9 @@ export function MetricBreakdown() {
       const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
-        useCORS: true,
-        allowTaint: true,
         logging: false,
-        foreignObjectRendering: true,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: chartContainer.scrollWidth,
-        windowHeight: chartContainer.scrollHeight,
+        height: chartContainer.offsetHeight,
+        width: chartContainer.offsetWidth,
       });
       
       const link = document.createElement('a');
