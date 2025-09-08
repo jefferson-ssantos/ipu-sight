@@ -156,8 +156,8 @@ export function CostTrendAnalysis() {
   };
 
   const getMetricLabel = () => {
-    const metric = availableMetrics.find(m => m.id === selectedMetric);
-    return metric?.name || selectedMetric;
+    const foundMetric = availableMetrics.find(m => m.id === selectedMetric);
+    return foundMetric?.name || selectedMetric;
   };
 
   const getValueFormatter = () => {
