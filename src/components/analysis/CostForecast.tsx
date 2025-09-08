@@ -669,6 +669,7 @@ export function CostForecast() {
                       name={selectedMetric === 'cost' ? 'Custo Total' : 'IPUs Totais'}
                       dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                      connectNulls={true}
                     />
                     
                     {/* Linhas coloridas para cada métrica */}
@@ -682,47 +683,27 @@ export function CostForecast() {
                         const dataKey = selectedMetric === 'cost' ? `${metricKey}_cost` : `${metricKey}_ipu`;
                         const color = colors[index % colors.length];
                         
-                        return [
-                        // Linha histórica
-                        <Line
-                          key={`${meterItem.id}-historical`}
-                          type="monotone"
-                          dataKey={dataKey}
-                          stroke={color}
-                          strokeWidth={2}
-                          name={meterItem.name}
-                          dot={{ fill: color, strokeWidth: 2, r: 3 }}
-                          activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
-                          connectNulls={false}
-                        />,
-                        // Linha de previsão para cada métrica
-                        <Line
-                          key={`${meterItem.id}-forecast`}
-                          type="monotone"
-                          dataKey={dataKey}
-                          stroke={color}
-                          strokeWidth={2}
-                          strokeDasharray="4 2"
-                          name={`${meterItem.name} (Previsão)`}
-                          dot={(props) => {
-                            const { payload } = props;
-                            if (payload?.isForecast) {
+                        return (
+                          <Line
+                            key={meterItem.id}
+                            type="monotone"
+                            dataKey={dataKey}
+                            stroke={color}
+                            strokeWidth={2}
+                            name={meterItem.name}
+                            dot={(props: any) => {
+                              if (props.payload?.isForecast) {
+                                return <circle {...props} fill="hsl(0 70% 50%)" strokeWidth={2} r={3} />;
+                              }
                               return <circle {...props} fill={color} strokeWidth={2} r={3} />;
-                            }
-                            return null;
-                          }}
-                          activeDot={(props) => {
-                            const { payload } = props;
-                            if (payload?.isForecast) {
-                              return <circle {...props} r={5} stroke={color} strokeWidth={2} fill={color} />;
-                            }
-                            return null;
-                          }}
-                          connectNulls={false}
-                        />
-                      ];
-                    }).flat();
-                  })()}
+                            }}
+                            strokeDasharray="0"
+                            activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
+                            connectNulls={true}
+                          />
+                        );
+                      });
+                    })()}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
