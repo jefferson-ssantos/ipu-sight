@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, Filter } from "lucide-react";
@@ -50,6 +51,9 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
   const [contractedValue, setContractedValue] = useState<number>(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCycleData, setSelectedCycleData] = useState<{period: string, metrics: Array<{name: string, value: number, color: string}>} | null>(null);
+  const [pricePerIpu, setPricePerIpu] = useState<number>(0);
 
   // Use useDashboardData hook to fetch data
   const { getChartData: getDashboardChartData, availableCycles, data: dashboardData } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
@@ -75,6 +79,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
           // Get price per IPU for conversion
           const pricePerIPU = dashboardData?.pricePerIPU || 1;
+          setPricePerIpu(pricePerIPU);
           
           // Process data based on value type
           let processedData = result.data;
@@ -213,29 +218,47 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+      // Get metrics with values > 0 and sort by value (descending)
+      const metricsWithValues = filteredDataKeys.map((key: string, index: number) => {
+        const value = payload.find((p: any) => p.dataKey === key)?.value || 0;
+        return {
+          name: key,
+          value,
+          color: colors[index % colors.length]
+        };
+      }).filter((m: any) => m.value > 0).sort((a: any, b: any) => b.value - a.value);
+
+      // Show first 12 metrics
+      const displayMetrics = metricsWithValues.slice(0, 12);
+      const total = metricsWithValues.reduce((sum: number, item: any) => sum + item.value, 0);
       
       return (
-        <div className="bg-background border border-border rounded-lg shadow-lg p-3">
-          <p className="font-medium text-foreground mb-2">{label}</p>
-          {payload.map((item: any, index: number) => {
-            const metric = item.dataKey;
-            return (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <div
-                  className="w-3 h-3 rounded"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-muted-foreground">
-                  {metric}:
-                </span>
-                <span className="font-medium text-foreground">
-                  {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
+        <div className="bg-background border border-border rounded-lg shadow-lg p-4 max-w-md">
+          <p className="font-medium text-foreground mb-3">{label}</p>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {displayMetrics.map((metric: any, index: number) => (
+              <div key={index} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div
+                    className="w-3 h-3 rounded flex-shrink-0"
+                    style={{ backgroundColor: metric.color }}
+                  />
+                  <span className="text-muted-foreground truncate">
+                    {metric.name}
+                  </span>
+                </div>
+                <span className="font-medium text-foreground flex-shrink-0">
+                  {valueType === 'cost' ? formatCurrency(metric.value) : formatIPU(metric.value)}
                 </span>
               </div>
-            );
-          })}
-          <div className="border-t border-border mt-2 pt-2">
+            ))}
+          </div>
+          {metricsWithValues.length > 12 && (
+            <div className="text-xs text-muted-foreground mt-2 text-center">
+              E mais {metricsWithValues.length - 12} métricas...
+            </div>
+          )}
+          <div className="border-t border-border mt-3 pt-3">
             <div className="flex justify-between items-center text-sm font-medium">
               <span>Total:</span>
               <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
@@ -246,6 +269,20 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     }
     return null;
   };
+
+  const handleBarClick = useCallback((data: any) => {
+    if (!data || !data.activePayload) return;
+    
+    const period = data.activeLabel;
+    const metrics = filteredDataKeys.map((key, index) => ({
+      name: key,
+      value: data.activePayload.find((p: any) => p.dataKey === key)?.value || 0,
+      color: colors[index % colors.length]
+    })).filter(m => m.value > 0).sort((a, b) => b.value - a.value);
+    
+    setSelectedCycleData({ period, metrics });
+    setModalOpen(true);
+  }, [filteredDataKeys]);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
@@ -360,7 +397,11 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartDataWithDisplayTotal} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart 
+                data={chartDataWithDisplayTotal} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                onClick={handleBarClick}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="period" 
@@ -405,6 +446,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     fill={colors[index % colors.length]}
                     radius={[4, 4, 0, 0]}                    
                     name={key}
+                    style={{ cursor: 'pointer' }}
                   >
                     {index === filteredDataKeys.length - 1 && (
                         <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
@@ -415,6 +457,96 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             </ResponsiveContainer>
           )}
         </div>
+
+        {/* Modal for cycle details */}
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
+            <DialogHeader className="pb-6">
+              <DialogTitle className="text-xl">
+                <span className="font-semibold">Detalhes do Ciclo:</span> {selectedCycleData?.period}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="overflow-y-auto max-h-[calc(85vh-140px)] pr-2">
+              {selectedCycleData && (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
+                          {selectedCycleData.metrics.length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Métricas</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
+                          {valueType === 'cost' 
+                            ? formatCurrency(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0))
+                            : formatIPU(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0))
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {valueType === 'cost' ? 'Custo Total' : 'IPUs Totais'}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
+                          {valueType === 'cost' 
+                            ? formatCurrency(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0) / selectedCycleData.metrics.length)
+                            : formatIPU(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0) / selectedCycleData.metrics.length)
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">Média por Métrica</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid gap-4">
+                    <h3 className="font-semibold text-lg mb-2">Métricas do Ciclo</h3>
+                    <div className="grid gap-3">
+                      {selectedCycleData.metrics.map((metric, index) => (
+                        <div key={index} className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div
+                                className="w-5 h-5 rounded-full flex-shrink-0 shadow-sm"
+                                style={{ backgroundColor: metric.color }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-foreground truncate">
+                                  {metric.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {((metric.value / selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0)) * 100).toFixed(1)}% do total
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-semibold text-lg">
+                                {valueType === 'cost' ? formatCurrency(metric.value) : formatIPU(metric.value)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {formatIPU(valueType === 'cost' ? metric.value / pricePerIpu : metric.value)} IPUs
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

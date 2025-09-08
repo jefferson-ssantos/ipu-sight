@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -18,34 +19,50 @@ interface OrganizationComparisonProps {
   onCycleFilterChange?: (value: string) => void;
 }
 
-const CustomTooltip = ({ active, payload, label, metric, formatCurrency, formatIPU }: any) => {
+const CustomTooltip = ({ active, payload, label, metric, formatCurrency, formatIPU, uniqueOrgs, colors }: any) => {
   if (active && payload && payload.length) {
-    const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    // Get organizations with values > 0 and sort by value (descending)
+    const orgsWithValues = uniqueOrgs.map((orgName: string, index: number) => {
+      const orgKey = orgName.replace(/\s+/g, '_');
+      const value = payload.find((p: any) => p.dataKey === orgKey)?.value || 0;
+      return {
+        name: orgName,
+        value,
+        color: colors[index % colors.length]
+      };
+    }).filter((o: any) => o.value > 0).sort((a: any, b: any) => b.value - a.value);
+
+    // Show first 12 organizations
+    const displayOrgs = orgsWithValues.slice(0, 12);
+    const total = orgsWithValues.reduce((sum: number, item: any) => sum + item.value, 0);
     
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg p-3">
-        <p className="font-medium text-foreground mb-2">Ciclo: {label}</p>
-        {payload.map((item: any, index: number) => {
-          if (item.value > 0) {
-            const orgName = item.dataKey.replace(/_/g, ' ');
-            return (
-              <div key={index} className="flex items-center gap-2 text-sm">
+      <div className="bg-background border border-border rounded-lg shadow-lg p-4 max-w-md">
+        <p className="font-medium text-foreground mb-3">Ciclo: {label}</p>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {displayOrgs.map((org: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <div
-                  className="w-3 h-3 rounded"
-                  style={{ backgroundColor: item.color }}
+                  className="w-3 h-3 rounded flex-shrink-0"
+                  style={{ backgroundColor: org.color }}
                 />
-                <span className="text-muted-foreground">
-                  {orgName}:
-                </span>
-                <span className="font-medium text-foreground">
-                  {metric === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
+                <span className="text-muted-foreground truncate">
+                  {org.name}
                 </span>
               </div>
-            );
-          }
-          return null;
-        })}
-        <div className="border-t border-border mt-2 pt-2">
+              <span className="font-medium text-foreground flex-shrink-0">
+                {metric === 'cost' ? formatCurrency(org.value) : formatIPU(org.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+        {orgsWithValues.length > 12 && (
+          <div className="text-xs text-muted-foreground mt-2 text-center">
+            E mais {orgsWithValues.length - 12} organizações...
+          </div>
+        )}
+        <div className="border-t border-border mt-3 pt-3">
           <div className="flex justify-between items-center text-sm font-medium">
             <span>Total:</span>
             <span>{metric === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
@@ -69,6 +86,9 @@ export function OrganizationComparison({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCycleData, setSelectedCycleData] = useState<{period: string, organizations: Array<{name: string, value: number, color: string}>} | null>(null);
+  const [pricePerIpu, setPricePerIpu] = useState<number>(0);
   const chartRef = useRef<HTMLDivElement>(null);
 
   const formatCurrency = useCallback((value: number) => {
@@ -111,6 +131,10 @@ export function OrganizationComparison({
           return;
         }
 
+        // Get price per IPU
+        const pricePerIPU = data?.pricePerIPU || 1;
+        setPricePerIpu(pricePerIPU);
+
         // For now, we'll create dummy organization data per cycle
         // In a real scenario, you'd need to modify getChartData to return organization breakdown per cycle
         const processedData = dataArray.map((item: any) => ({
@@ -137,7 +161,7 @@ export function OrganizationComparison({
     };
 
     fetchCycleData();
-  }, [getChartData, selectedOrg, selectedCycleFilter, metric, data?.organizations]);
+  }, [getChartData, selectedOrg, selectedCycleFilter, metric, data?.organizations, data?.pricePerIPU]);
 
   // Get unique organizations for creating bars
   const uniqueOrgs = useMemo(() => data?.organizations?.map(org => org.org_name) || [], [data?.organizations]);
@@ -202,8 +226,26 @@ const colors = [
   );
 
   const renderTooltip = useCallback((props: any) => (
-    <CustomTooltip {...props} metric={metric} formatCurrency={formatCurrency} formatIPU={formatIPU} />
-  ), [metric, formatCurrency, formatIPU]);
+    <CustomTooltip {...props} metric={metric} formatCurrency={formatCurrency} formatIPU={formatIPU} uniqueOrgs={uniqueOrgs} colors={colors} />
+  ), [metric, formatCurrency, formatIPU, uniqueOrgs]);
+
+  const handleBarClick = useCallback((data: any) => {
+    if (!data || !data.activePayload) return;
+    
+    const period = data.activeLabel;
+    const organizations = uniqueOrgs.map((orgName: string, index: number) => {
+      const orgKey = orgName.replace(/\s+/g, '_');
+      const value = data.activePayload.find((p: any) => p.dataKey === orgKey)?.value || 0;
+      return {
+        name: orgName,
+        value,
+        color: colors[index % colors.length]
+      };
+    }).filter(o => o.value > 0).sort((a, b) => b.value - a.value);
+    
+    setSelectedCycleData({ period, organizations });
+    setModalOpen(true);
+  }, [uniqueOrgs]);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
@@ -295,7 +337,11 @@ const colors = [
         ) : (
           <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+              <BarChart 
+                data={chartData} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                onClick={handleBarClick}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="cycle" 
@@ -339,6 +385,7 @@ const colors = [
                     radius={[4, 4, 0, 0]}
                     name={orgName}
                     stackId="stack"
+                    style={{ cursor: 'pointer' }}
                   >
                     {index === uniqueOrgs.length - 1 && (
                         <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
@@ -349,6 +396,96 @@ const colors = [
             </ResponsiveContainer>
           </div>
         )}
+
+        {/* Modal for cycle details */}
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
+            <DialogHeader className="pb-6">
+              <DialogTitle className="text-xl">
+                <span className="font-semibold">Detalhes do Ciclo:</span> {selectedCycleData?.period}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="overflow-y-auto max-h-[calc(85vh-140px)] pr-2">
+              {selectedCycleData && (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
+                          {selectedCycleData.organizations.length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Organizações</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
+                          {metric === 'cost' 
+                            ? formatCurrency(selectedCycleData.organizations.reduce((sum, o) => sum + o.value, 0))
+                            : formatIPU(selectedCycleData.organizations.reduce((sum, o) => sum + o.value, 0))
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {metric === 'cost' ? 'Custo Total' : 'IPUs Totais'}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
+                          {metric === 'cost' 
+                            ? formatCurrency(selectedCycleData.organizations.reduce((sum, o) => sum + o.value, 0) / selectedCycleData.organizations.length)
+                            : formatIPU(selectedCycleData.organizations.reduce((sum, o) => sum + o.value, 0) / selectedCycleData.organizations.length)
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">Média por Organização</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Organizations Grid */}
+                  <div className="grid gap-4">
+                    <h3 className="font-semibold text-lg mb-2">Organizações do Ciclo</h3>
+                    <div className="grid gap-3">
+                      {selectedCycleData.organizations.map((org, index) => (
+                        <div key={index} className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div
+                                className="w-5 h-5 rounded-full flex-shrink-0 shadow-sm"
+                                style={{ backgroundColor: org.color }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-foreground truncate">
+                                  {org.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {((org.value / selectedCycleData.organizations.reduce((sum, o) => sum + o.value, 0)) * 100).toFixed(1)}% do total
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-semibold text-lg">
+                                {metric === 'cost' ? formatCurrency(org.value) : formatIPU(org.value)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {formatIPU(metric === 'cost' ? org.value / pricePerIpu : org.value)} IPUs
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
