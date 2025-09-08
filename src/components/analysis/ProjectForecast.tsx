@@ -233,16 +233,35 @@ export function ProjectForecast() {
     const periods = parseInt(forecastPeriod.replace(/\D/g, ''));
     const metricKey = metric === 'cost' ? 'totalCost' : 'totalIPU';
     
-    const values = historicalData.map(item => item[metricKey] || 0);
-    
-    // Method 1: Linear Regression
-    const linearForecast = generateLinearForecast(values, periods);
-    
-    // Method 2: Moving Average with trend
-    const movingAvgForecast = generateMovingAverageForecast(values, periods);
-    
-    // Method 3: Seasonal decomposition (simplified)
-    const seasonalForecast = generateSeasonalForecast(values, periods);
+    // Generate forecast for total values
+    const totalValues = historicalData.map(item => item[metricKey] || 0);
+    const totalLinearForecast = generateLinearForecast(totalValues, periods);
+    const totalMovingAvgForecast = generateMovingAverageForecast(totalValues, periods);
+    const totalSeasonalForecast = generateSeasonalForecast(totalValues, periods);
+
+    // Generate forecasts for individual projects
+    const individualForecasts: any = {};
+    const projectsToForecast = selectedProjects.includes('all') ? 
+      availableProjects.filter(p => p.id !== 'all') : 
+      availableProjects.filter(p => selectedProjects.includes(p.id));
+
+    projectsToForecast.forEach(project => {
+      const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+      const dataKey = metric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+      
+      const itemValues = historicalData.map(item => item[dataKey] || 0);
+      if (itemValues.some(v => v > 0)) {
+        const itemLinear = generateLinearForecast(itemValues, periods);
+        const itemMovingAvg = generateMovingAverageForecast(itemValues, periods);
+        const itemSeasonal = generateSeasonalForecast(itemValues, periods);
+        
+        individualForecasts[dataKey] = {
+          linear: itemLinear,
+          movingAvg: itemMovingAvg,
+          seasonal: itemSeasonal
+        };
+      }
+    });
     
     // Combine methods with weights
     const forecast = [];
@@ -261,25 +280,40 @@ export function ProjectForecast() {
       currentEndDate.setMonth(currentEndDate.getMonth() + 1);
       currentEndDate.setDate(currentEndDate.getDate() - 1); // End the day before next month starts
       
-      const linearValue = linearForecast[i - 1];
-      const movingAvgValue = movingAvgForecast[i - 1];
-      const seasonalValue = seasonalForecast[i - 1];
+      // Calculate total forecast
+      const totalLinearValue = totalLinearForecast[i - 1];
+      const totalMovingAvgValue = totalMovingAvgForecast[i - 1];
+      const totalSeasonalValue = totalSeasonalForecast[i - 1];
       
-      // Weighted combination
-      const combinedValue = (linearValue * 0.4) + (movingAvgValue * 0.3) + (seasonalValue * 0.3);
+      // Weighted combination for total
+      const totalCombinedValue = (totalLinearValue * 0.4) + (totalMovingAvgValue * 0.3) + (totalSeasonalValue * 0.3);
       
       // Calculate confidence based on historical variance
-      const variance = calculateVariance(values);
-      const confidence = Math.max(0.6, Math.min(0.95, 1 - (variance / Math.abs(combinedValue))));
+      const variance = calculateVariance(totalValues);
+      const confidence = Math.max(0.6, Math.min(0.95, 1 - (variance / Math.abs(totalCombinedValue))));
       
-      forecast.push({
+      // Build forecast item with individual predictions
+      const forecastItem: any = {
         period: `${currentStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${currentEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
-        [metricKey]: Math.max(0, combinedValue),
-        cost: metric === 'cost' ? Math.max(0, combinedValue) : 0,
-        ipu: metric === 'ipu' ? Math.max(0, combinedValue) : 0,
+        [metricKey]: Math.max(0, totalCombinedValue),
+        totalCost: metric === 'cost' ? Math.max(0, totalCombinedValue) : 0,
+        totalIPU: metric === 'ipu' ? Math.max(0, totalCombinedValue) : 0,
         confidence: confidence,
         isForecast: true
+      };
+
+      // Add individual project forecasts
+      Object.keys(individualForecasts).forEach(dataKey => {
+        const forecast_data = individualForecasts[dataKey];
+        const itemLinearValue = forecast_data.linear[i - 1];
+        const itemMovingAvgValue = forecast_data.movingAvg[i - 1];
+        const itemSeasonalValue = forecast_data.seasonal[i - 1];
+        
+        const itemCombinedValue = (itemLinearValue * 0.4) + (itemMovingAvgValue * 0.3) + (itemSeasonalValue * 0.3);
+        forecastItem[dataKey] = Math.max(0, itemCombinedValue);
       });
+
+      forecast.push(forecastItem);
     }
     
     return forecast;
@@ -347,14 +381,14 @@ export function ProjectForecast() {
       };
     }
     
-    const metric_key = selectedMetric as keyof Pick<any, 'cost' | 'ipu'>;
-    const totalForecast = forecastData.reduce((sum, item) => sum + (item[metric_key] || 0), 0);
+    const metricKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
+    const totalForecast = forecastData.reduce((sum, item) => sum + (item[metricKey] || 0), 0);
     const averageForecast = totalForecast / forecastData.length;
     const avgConfidence = forecastData.reduce((sum, item) => sum + item.confidence, 0) / forecastData.length;
     
     // Compare with recent historical average
     const recentHistorical = chartData.slice(-3);
-    const totalHistorical = recentHistorical.reduce((sum, item) => sum + (item[metric_key] || 0), 0);
+    const totalHistorical = recentHistorical.reduce((sum, item) => sum + (item[metricKey] || 0), 0);
     const avgHistorical = recentHistorical.length > 0 ? totalHistorical / recentHistorical.length : 0;
     
     let growthRate = 0;
@@ -627,47 +661,100 @@ export function ProjectForecast() {
                       tickFormatter={selectedMetric === 'cost' ? formatCurrency : formatIPU}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    
-                    {/* Linha total (pontilhada) */}
-                    <Line
-                      type="monotone"
-                      dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      strokeDasharray="8 4"
-                      name={getMetricLabel()}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                    />
-                    
-                    {/* Linhas individuais para cada projeto */}
-                    {availableProjects
-                      .filter(project => {
-                        if (project.id === 'all') return false;
-                        // Se "all" estiver selecionado, mostrar todos os projetos
-                        if (selectedProjects.includes('all')) return true;
-                        // Caso contrário, mostrar apenas os projetos selecionados
-                        return selectedProjects.includes(project.id);
-                      })
-                      .map((project, index) => {
-                        const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
-                        const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
-                        const color = colors[index % colors.length];
-                        
-                        return (
-                          <Line
-                            key={project.id}
-                            type="monotone"
-                            dataKey={dataKey}
-                            stroke={color}
-                            strokeWidth={2}
-                            name={project.name}
-                            dot={{ fill: color, strokeWidth: 2, r: 3 }}
-                            activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
-                          />
-                        );
-                      })
-                    }
+                  <Legend />
+                  
+                  {/* Linha total pontilhada para histórico */}
+                  <Line
+                    type="monotone"
+                    dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    strokeDasharray="8 4"
+                    name={getMetricLabel()}
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                    connectNulls={false}
+                  />
+                  
+                  {/* Linha vermelha de previsão total */}
+                  <Line
+                    type="monotone"
+                    dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                    stroke="hsl(0 70% 50%)"
+                    strokeWidth={3}
+                    strokeDasharray="8 4"
+                    name="Previsão Total"
+                    dot={(props) => {
+                      const { payload } = props;
+                      if (payload?.isForecast) {
+                        return <circle {...props} fill="hsl(0 70% 50%)" strokeWidth={2} r={4} />;
+                      }
+                      return null;
+                    }}
+                    activeDot={(props) => {
+                      const { payload } = props;
+                      if (payload?.isForecast) {
+                        return <circle {...props} r={6} stroke="hsl(0 70% 50%)" strokeWidth={2} fill="hsl(0 70% 50%)" />;
+                      }
+                      return null;
+                    }}
+                    connectNulls={false}
+                  />
+                  
+                  {/* Linhas individuais para cada projeto */}
+                  {availableProjects
+                    .filter(project => {
+                      if (project.id === 'all') return false;
+                      // Se "all" estiver selecionado, mostrar todos os projetos
+                      if (selectedProjects.includes('all')) return true;
+                      // Caso contrário, mostrar apenas os projetos selecionados
+                      return selectedProjects.includes(project.id);
+                    })
+                    .map((project, index) => {
+                      const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+                      const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+                      const color = colors[index % colors.length];
+                      
+                      return [
+                        // Linha histórica
+                        <Line
+                          key={`${project.id}-historical`}
+                          type="monotone"
+                          dataKey={dataKey}
+                          stroke={color}
+                          strokeWidth={2}
+                          name={project.name}
+                          dot={{ fill: color, strokeWidth: 2, r: 3 }}
+                          activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
+                          connectNulls={false}
+                        />,
+                        // Linha de previsão para cada projeto
+                        <Line
+                          key={`${project.id}-forecast`}
+                          type="monotone"
+                          dataKey={dataKey}
+                          stroke={color}
+                          strokeWidth={2}
+                          strokeDasharray="4 2"
+                          name={`${project.name} (Previsão)`}
+                          dot={(props) => {
+                            const { payload } = props;
+                            if (payload?.isForecast) {
+                              return <circle {...props} fill={color} strokeWidth={2} r={3} />;
+                            }
+                            return null;
+                          }}
+                          activeDot={(props) => {
+                            const { payload } = props;
+                            if (payload?.isForecast) {
+                              return <circle {...props} r={5} stroke={color} strokeWidth={2} fill={color} />;
+                            }
+                            return null;
+                          }}
+                          connectNulls={false}
+                        />
+                      ];
+                    }).flat()
+                  }
                   </LineChart>
                 </ResponsiveContainer>
               </div>
