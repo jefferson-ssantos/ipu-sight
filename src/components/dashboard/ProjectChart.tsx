@@ -82,7 +82,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   const { user } = useAuth();
   const { availableCycles } = useDashboardData();
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
-  const [period, setPeriod] = useState("all");
+  const [period, setPeriod] = useState("12");
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);

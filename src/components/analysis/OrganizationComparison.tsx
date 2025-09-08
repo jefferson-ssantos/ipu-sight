@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,30 @@ interface OrganizationComparisonProps {
   onCycleFilterChange?: (value: string) => void;
 }
 
+const CustomTooltip = ({ active, payload, label, metric, formatCurrency, formatIPU }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+        <p className="font-medium">Ciclo: {label}</p>
+        {payload.map((entry: any, index: number) => {
+          if (entry.value > 0) {
+            return (
+              <p key={index} style={{ color: entry.color }}>
+                {entry.dataKey.replace(/_/g, ' ')}: {metric === 'cost' ? formatCurrency(entry.value) : formatIPU(entry.value)}
+              </p>
+            );
+          }
+          return null;
+        })}
+      </div>
+    );
+  }
+  return null;
+};
+
 export function OrganizationComparison({ 
   selectedOrg = "all", 
-  selectedCycleFilter = "all",
+  selectedCycleFilter = "12",
   availableOrgs = [],
   onOrgChange,
   onCycleFilterChange
@@ -32,18 +53,18 @@ export function OrganizationComparison({
   const [chartLoading, setChartLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
-  };
+  }, []);
 
-  const formatIPU = (value: number) => {
+  const formatIPU = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR').format(value);
-  };
+  }, []);
 
-  const renderCustomizedLabel = (props: any) => {
+  const renderCustomizedLabel = useCallback((props: any) => {
     const { x, y, width, value } = props;
     if (value > 0) {
       return (
@@ -53,7 +74,7 @@ export function OrganizationComparison({
       );
     }
     return null;
-  };
+  }, [metric, formatCurrency, formatIPU]);
 
   // Fetch evolution data to get cycles with organization breakdown
   useEffect(() => {
@@ -101,21 +122,23 @@ export function OrganizationComparison({
   }, [getChartData, selectedOrg, selectedCycleFilter, metric, data?.organizations]);
 
   // Get unique organizations for creating bars
-  const uniqueOrgs = data?.organizations?.map(org => org.org_name) || [];
+  const uniqueOrgs = useMemo(() => data?.organizations?.map(org => org.org_name) || [], [data?.organizations]);
 
   // Calculate contracted reference value based on metric
-  const contractedReferenceValue = data ? 
-    (metric === 'cost' ? (data.contractedIPUs * data.pricePerIPU) : data.contractedIPUs) : 0;
+  const contractedReferenceValue = useMemo(() => (data ? 
+    (metric === 'cost' ? (data.contractedIPUs * data.pricePerIPU) : data.contractedIPUs) : 0),
+  [data, metric]);
 
   // Determine the max value for the Y-axis to ensure the reference line is visible
-  const yAxisMaxValue = chartData.length > 0
-    ? Math.max(
-        ...chartData.map(d => d.displayTotal),
-        contractedReferenceValue
-      )
-    : contractedReferenceValue;
-
-  const yAxisDomainMax = yAxisMaxValue > 0 ? yAxisMaxValue * 1.2 : 'auto'; // Add 20% padding
+  const yAxisDomainMax = useMemo(() => {
+    const yAxisMaxValue = chartData.length > 0
+      ? Math.max(
+          ...chartData.map(d => d.displayTotal),
+          contractedReferenceValue
+        )
+      : contractedReferenceValue;
+    return yAxisMaxValue > 0 ? yAxisMaxValue * 1.2 : 'auto';
+  }, [chartData, contractedReferenceValue]);
 
   // Color palette for different organizations
 const colors = [
@@ -155,26 +178,14 @@ const colors = [
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium">Ciclo: {label}</p>
-          {payload.map((entry: any, index: number) => {
-            if (entry.value > 0) {
-              return (
-                <p key={index} style={{ color: entry.color }}>
-                  {entry.dataKey.replace(/_/g, ' ')}: {metric === 'cost' ? formatCurrency(entry.value) : formatIPU(entry.value)}
-                </p>
-              );
-            }
-            return null;
-          })}
-        </div>
-      );
-    }
-    return null;
-  };
+  const yAxisTickFormatter = useCallback((value: number) => 
+    metric === 'cost' ? formatCurrency(value) : formatIPU(value),
+    [metric, formatCurrency, formatIPU]
+  );
+
+  const renderTooltip = useCallback((props: any) => (
+    <CustomTooltip {...props} metric={metric} formatCurrency={formatCurrency} formatIPU={formatIPU} />
+  ), [metric, formatCurrency, formatIPU]);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
@@ -279,13 +290,11 @@ const colors = [
                 <YAxis 
                   tick={{ fontSize: 12 }}
                   tickLine={false}
-                  tickFormatter={(value) => 
-                    metric === 'cost' ? formatCurrency(value) : formatIPU(value)
-                  }
+                  tickFormatter={yAxisTickFormatter}
                   domain={[0, yAxisDomainMax]}
                 />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend verticalAlign="top" />
+                <Tooltip content={renderTooltip} />
+                <Legend verticalAlign="top" iconType="circle" />
                 
                  {/* Reference line for contracted value - always displayed when value exists */}
                  {contractedReferenceValue > 0 && (
@@ -296,8 +305,10 @@ const colors = [
                      strokeWidth={2}
                      label={{ 
                        value: `${metric === 'cost' ? 'Valor Contratado' : 'IPUs Contratadas'}: ${metric === 'cost' ? formatCurrency(contractedReferenceValue) : formatIPU(contractedReferenceValue)}`,
-                       position: "top",
-                       style: { fill: "hsl(var(--destructive))", fontSize: "12px", fontWeight: "500" }
+                       position: "insideTopRight",
+                       fill: "hsl(var(--destructive))",
+                       fontSize: 12,
+                       fontWeight: 500
                      }}
                    />
                  )}
