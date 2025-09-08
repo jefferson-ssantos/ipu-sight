@@ -244,15 +244,21 @@ export function ProjectTrendAnalysis() {
     
     if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false, isStable: true };
     
-    // Calcular valores com base nos projetos selecionados
+    // Sempre somar os projetos selecionados para garantir consistência
     let currentValue = 0;
     let previousValue = 0;
     
     if (selectedProjects.includes('all')) {
-      // Se "todos os projetos" estiver selecionado, usar linha total
-      const currentKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
-      currentValue = currentPeriodData[currentKey] || 0;
-      previousValue = previousPeriodData[currentKey] || 0;
+      // Se "todos os projetos" estiver selecionado, somar todos os projetos disponíveis
+      const projectsToSum = availableProjects.filter(p => p.id !== 'all');
+      
+      for (const project of projectsToSum) {
+        const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+        const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+        
+        currentValue += currentPeriodData[dataKey] || 0;
+        previousValue += previousPeriodData[dataKey] || 0;
+      }
     } else {
       // Somar apenas os projetos selecionados
       const projectsToSum = availableProjects.filter(p => selectedProjects.includes(p.id));
