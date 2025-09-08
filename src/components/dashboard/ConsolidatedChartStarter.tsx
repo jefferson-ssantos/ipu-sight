@@ -21,7 +21,7 @@ interface ChartDataItem {
 
 export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: ConsolidatedChartStarterProps) {
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
-  const [period, setPeriod] = useState("all");
+  const [period, setPeriod] = useState("12");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
 
