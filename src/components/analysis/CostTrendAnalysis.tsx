@@ -56,12 +56,12 @@ export function CostTrendAnalysis() {
           return;
         }
 
-        // Extrair valores únicos de meter_name
+        // Extrair valores únicos de meter_name e ordenar alfabeticamente
         const uniqueMeters = [...new Set(
           meterData
             ?.map(item => item.meter_name)
             .filter(Boolean) || []
-        )];
+        )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
         // Criar lista com "Todas as Métricas" no topo
         const meters = [
