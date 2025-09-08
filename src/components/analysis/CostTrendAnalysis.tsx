@@ -109,17 +109,25 @@ export function CostTrendAnalysis() {
   const trend = calculateTrend();
 
   const handleDownload = async () => {
-    if (!chartRef.current) return;
+    const chartContainer = document.getElementById('cost-trend-container');
+    if (!chartContainer) return;
     
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: false,
+        foreignObjectRendering: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: chartContainer.scrollWidth,
+        windowHeight: chartContainer.scrollHeight,
       });
       
       const link = document.createElement('a');
-      link.download = `analise-tendencias-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `analise-tendencia-custos-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
       

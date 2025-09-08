@@ -212,6 +212,11 @@ export function MetricBreakdown() {
         useCORS: true,
         allowTaint: true,
         logging: false,
+        foreignObjectRendering: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: chartContainer.scrollWidth,
+        windowHeight: chartContainer.scrollHeight,
       });
       
       const link = document.createElement('a');
