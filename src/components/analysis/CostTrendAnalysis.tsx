@@ -126,118 +126,28 @@ export function CostTrendAnalysis() {
     }
   }, [period, selectedMetric, selectedMeters, getChartData]);
 
-  // Nova função para buscar dados multi-série
+  // Nova função para buscar dados multi-série usando edge function
   const getMultiSeriesChartData = async (cycleLimit: string, selectedMetersList: string[]) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('cliente_id')
-        .eq('id', user?.id)
-        .maybeSingle();
-
-      if (!profile?.cliente_id) return [];
-
-      const { data: client } = await supabase
-        .from('api_clientes')
-        .select('preco_por_ipu')
-        .eq('id', profile.cliente_id)
-        .maybeSingle();
-
-      if (!client?.preco_por_ipu) return [];
-
-      const { data: configs } = await supabase
-        .from('api_configuracaoidmc')
-        .select('id')
-        .eq('cliente_id', profile.cliente_id);
-
-      if (!configs || configs.length === 0) return [];
-
-      const configIds = configs.map(config => config.id);
-
-      // Buscar dados de consumo
-      const { data: consumptionData, error } = await supabase
-        .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
-        .in('configuracao_id', configIds)
-        .gt('consumption_ipu', 0)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage')
-        .order('billing_period_start_date');
-
-      if (error || !consumptionData) return [];
-
-      // Obter todos os ciclos únicos
-      const { data: allCycles } = await supabase
-        .rpc('get_available_cycles');
-
-      if (!allCycles) return [];
-
-      // Ordenar ciclos e limitar se necessário
-      const sortedCycles = allCycles
-        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
-        .slice(-parseInt(cycleLimit));
-
-      // Determinar quais métricas incluir
-      const includeAll = selectedMetersList.includes('all');
-      const metricsToInclude = includeAll ? 
-        availableMeters.filter(m => m.id !== 'all').map(m => m.id) : 
-        selectedMetersList.filter(m => m !== 'all');
-
-      // Group consumption by billing period and meter
-      const periodMap = new Map();
-
-      // Inicializar todos os ciclos
-      sortedCycles.forEach(cycle => {
-        const periodKey = `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`;
-        const periodLabel = `${new Date(cycle.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
-        
-        const periodData: any = {
-          period: periodLabel,
-          billing_period_start_date: cycle.billing_period_start_date,
-          billing_period_end_date: cycle.billing_period_end_date,
-          periodStart: cycle.billing_period_start_date,
-          periodEnd: cycle.billing_period_end_date,
-          totalIPU: 0,
-          totalCost: 0
-        };
-
-        // Inicializar cada métrica com zero
-        metricsToInclude.forEach(metricName => {
-          const metricKey = metricName.replace(/[^a-zA-Z0-9]/g, '_');
-          periodData[`${metricKey}_ipu`] = 0;
-          periodData[`${metricKey}_cost`] = 0;
-        });
-        
-        periodMap.set(periodKey, periodData);
-      });
-
-      // Somar consumo real dos dados retornados
-      consumptionData.forEach(item => {
-        const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-        if (periodMap.has(periodKey)) {
-          const periodData = periodMap.get(periodKey);
-          const itemIPU = item.consumption_ipu || 0;
-          const itemCost = itemIPU * client.preco_por_ipu;
-          
-          // Adicionar ao total
-          periodData.totalIPU += itemIPU;
-          periodData.totalCost += itemCost;
-          
-          // Adicionar à métrica específica se ela estiver selecionada
-          if (metricsToInclude.includes(item.meter_name)) {
-            const metricKey = item.meter_name.replace(/[^a-zA-Z0-9]/g, '_');
-            periodData[`${metricKey}_ipu`] = (periodData[`${metricKey}_ipu`] || 0) + itemIPU;
-            periodData[`${metricKey}_cost`] = (periodData[`${metricKey}_cost`] || 0) + itemCost;
-          }
+      console.log('🚀 Calling edge function for multi-series data');
+      
+      const { data: response, error } = await supabase.functions.invoke('get-multi-series-data', {
+        body: {
+          cycleLimit: parseInt(cycleLimit),
+          selectedMeters: selectedMetersList,
+          selectedMetric: selectedMetric
         }
       });
 
-      // Converter para array - mantém todos os períodos para consistência
-      const result = Array.from(periodMap.values())
-        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw error;
+      }
 
-      return result;
+      console.log('✅ Edge function response:', response);
+      return response.data || [];
     } catch (error) {
-      console.error('Erro ao buscar dados do gráfico:', error);
+      console.error('❌ Error calling edge function:', error);
       return [];
     }
   };
