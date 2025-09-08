@@ -332,7 +332,7 @@ export function CostTrendAnalysis() {
       {/* Insights Card */}
       <Card className="bg-gradient-card shadow-medium">
         <CardHeader>
-          <CardTitle>Insights da Análise</CardTitle>
+          <CardTitle>Insights da Análise - {getSelectedMetersLabels()}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
