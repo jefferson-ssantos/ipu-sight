@@ -10,8 +10,8 @@ import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 export function CostTrendAnalysis() {
-  const { data, loading, getChartData, availableCycles } = useDashboardData(); // Destructure availableCycles
-  const [period, setPeriod] = useState("2"); // Start with 2 cycles (excluding current incomplete cycle)
+  const { data, loading, getChartData, availableCycles } = useDashboardData();
+  const [period, setPeriod] = useState("12");
   const [metric, setMetric] = useState("cost");
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -268,11 +268,7 @@ export function CostTrendAnalysis() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend 
-                  verticalAlign="bottom"
-                  height={36}
-                  wrapperStyle={{
-                    paddingTop: "20px"
-                  }}
+                  verticalAlign="top" 
                 />
                 <Line 
                   type="monotone" 

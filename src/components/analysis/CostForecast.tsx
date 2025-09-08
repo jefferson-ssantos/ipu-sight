@@ -553,7 +553,9 @@ export function CostForecast() {
                   }
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend 
+                  verticalAlign="top" 
+                />
                 
                 {/* Historical Line */}
                 <Line 
