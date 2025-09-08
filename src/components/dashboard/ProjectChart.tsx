@@ -47,26 +47,32 @@ const CustomTooltip = React.memo(({ active, payload, label, valueType, formatCur
     const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
     
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+      <div className="bg-background border border-border rounded-lg shadow-lg p-3 max-w-sm">
         <p className="font-medium text-foreground mb-2">{label}</p>
-        {payload.map((item: any, index: number) => {
-          const project = item.dataKey;
-          return (
-            <div key={index} className="flex items-center gap-2 text-sm">
-              <div
-                className="w-3 h-3 rounded"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-muted-foreground">
-                {project}:
-              </span>
-              <span className="font-medium text-foreground">
-                {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
-              </span>
-            </div>
-          );
-        })}
-        <div className="border-t border-border mt-2 pt-2">
+        
+        {/* Scrollable items container */}
+        <div className="max-h-48 overflow-y-auto pr-1 mb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          {payload.map((item: any, index: number) => {
+            const project = item.dataKey;
+            return (
+              <div key={index} className="flex items-center gap-2 text-sm mb-1">
+                <div
+                  className="w-3 h-3 rounded flex-shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-muted-foreground truncate">
+                  {project}:
+                </span>
+                <span className="font-medium text-foreground flex-shrink-0">
+                  {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Fixed total at bottom */}
+        <div className="border-t border-border pt-2">
           <div className="flex justify-between items-center text-sm font-medium">
             <span>Total:</span>
             <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
