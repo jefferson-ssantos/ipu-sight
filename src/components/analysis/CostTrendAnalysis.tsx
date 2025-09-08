@@ -15,7 +15,8 @@ export function CostTrendAnalysis() {
   const { data, loading, getChartData, availableCycles } = useDashboardData();
   const { user } = useAuth();
   const [period, setPeriod] = useState("12");
-  const [selectedMeter, setSelectedMeter] = useState("all"); // Changed to meter-based filtering
+  const [selectedMetric, setSelectedMetric] = useState("cost"); // Filtro original Valor/IPUs
+  const [selectedMeter, setSelectedMeter] = useState("all"); // Novo filtro de Métrica
   const [availableMeters, setAvailableMeters] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -88,8 +89,16 @@ export function CostTrendAnalysis() {
         // Add 1 to period to compensate for filtering out current incomplete cycle
         const adjustedPeriod = (parseInt(period) + 1).toString();
         
-        // Buscar dados com filtro de meter_name
-        const evolutionData = await getChartDataWithMeterFilter(adjustedPeriod, selectedMeter);
+        let evolutionData;
+        
+        // Se "Todas as Métricas" estiver selecionado, usar função original
+        if (selectedMeter === 'all') {
+          evolutionData = await getChartData('evolution', undefined, adjustedPeriod);
+        } else {
+          // Caso contrário, usar filtro de meter específico
+          evolutionData = await getChartDataWithMeterFilter(adjustedPeriod, selectedMeter);
+        }
+        
         const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
         
         // Filter out incomplete current cycle
@@ -105,7 +114,7 @@ export function CostTrendAnalysis() {
     if (getChartData) {
       fetchData();
     }
-  }, [period, selectedMeter, getChartData]);
+  }, [period, selectedMetric, selectedMeter, getChartData]);
 
   // Nova função para buscar dados com filtro de meter_name
   const getChartDataWithMeterFilter = async (cycleLimit: string, meterFilter: string) => {
@@ -244,20 +253,26 @@ export function CostTrendAnalysis() {
     return foundMeter?.name || selectedMeter;
   };
 
+  const getMetricLabel = () => {
+    return selectedMetric === 'cost' ? 'Custo Total' : 'IPUs Totais';
+  };
+
   const getValueFormatter = () => {
-    return formatCurrency; // Sempre exibir como moeda
+    if (selectedMetric === 'cost') return formatCurrency;
+    return formatIPU;
   };
 
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, isPositive: false };
     
+    const currentKey = selectedMetric === 'cost' ? 'cost' : 'ipu';
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
     if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false };
     
-    let currentValue = currentPeriodData.cost || 0;
-    const previousValue = previousPeriodData.cost || 0;
+    let currentValue = currentPeriodData[currentKey] || 0;
+    const previousValue = previousPeriodData[currentKey] || 0;
     
     // Se o período atual está incompleto, projete o valor total baseado na média diária
     const today = new Date();
@@ -325,7 +340,7 @@ export function CostTrendAnalysis() {
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{label}</p>
           <p className="text-primary">
-            {formatter(value)}
+            {selectedMetric === 'cost' ? formatCurrency(value) : `${formatIPU(value)} IPUs`}
           </p>
         </div>
       );
@@ -407,6 +422,16 @@ export function CostTrendAnalysis() {
               </SelectContent>
             </Select>
 
+            <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cost">Custo Total</SelectItem>
+                <SelectItem value="ipu">IPUs Totais</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={selectedMeter} onValueChange={setSelectedMeter}>
               <SelectTrigger className="w-64">
                 <SelectValue placeholder="Selecione uma métrica" />
@@ -457,11 +482,11 @@ export function CostTrendAnalysis() {
                 />
                 <Line 
                   type="monotone" 
-                  dataKey="cost" 
+                  dataKey={selectedMetric === 'cost' ? 'cost' : 'ipu'} 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                  name={getMeterLabel()}
+                  name={selectedMeter === 'all' ? getMetricLabel() : `${getMeterLabel()} - ${getMetricLabel()}`}
                   connectNulls={false}
                 />
               </LineChart>
