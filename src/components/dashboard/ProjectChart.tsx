@@ -110,6 +110,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCycleData, setSelectedCycleData] = useState<{period: string, projects: Array<{name: string, value: number, color: string}>} | null>(null);
+  const [pricePerIpu, setPricePerIpu] = useState<number>(0);
 
   const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -158,6 +159,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
           return;
         }
         const pricePerIpu = client.preco_por_ipu;
+        setPricePerIpu(pricePerIpu);
 
         const { data: configs } = await supabase
           .from('api_configuracaoidmc')
@@ -574,17 +576,20 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
             <div className="overflow-y-auto max-h-[calc(85vh-140px)] pr-2">
               {selectedCycleData && (
                 <div className="space-y-6">
-                  {/* Summary Card */}
-                  <div className="bg-muted/50 rounded-lg p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
                           {selectedCycleData.projects.length}
                         </div>
                         <div className="text-sm text-muted-foreground">Projetos</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
                           {valueType === 'cost' 
                             ? formatCurrency(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
                             : formatIPU(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
@@ -593,17 +598,20 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                         <div className="text-sm text-muted-foreground">
                           {valueType === 'cost' ? 'Custo Total' : 'IPUs Totais'}
                         </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-card shadow-medium">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">
                           {valueType === 'cost' 
                             ? formatCurrency(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0) / selectedCycleData.projects.length)
                             : formatIPU(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0) / selectedCycleData.projects.length)
                           }
                         </div>
                         <div className="text-sm text-muted-foreground">Média por Projeto</div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </div>
 
                   {/* Projects Grid */}
@@ -632,7 +640,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                                 {valueType === 'cost' ? formatCurrency(project.value) : formatIPU(project.value)}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {valueType === 'cost' ? 'Custo' : 'IPUs'}
+                                {formatIPU(valueType === 'cost' ? project.value / pricePerIpu : project.value)} IPUs
                               </div>
                             </div>
                           </div>
