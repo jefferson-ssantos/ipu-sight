@@ -565,12 +565,9 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
             <DialogHeader className="pb-6">
-              <DialogTitle className="text-xl font-semibold">
-                Detalhes do Ciclo: {selectedCycleData?.period}
+              <DialogTitle className="text-xl">
+                <span className="font-semibold">Detalhes do Ciclo:</span> {selectedCycleData?.period}
               </DialogTitle>
-              <div className="text-sm text-muted-foreground">
-                Total de projetos com consumo: {selectedCycleData?.projects.length || 0}
-              </div>
             </DialogHeader>
             
             <div className="overflow-y-auto max-h-[calc(85vh-140px)] pr-2">
