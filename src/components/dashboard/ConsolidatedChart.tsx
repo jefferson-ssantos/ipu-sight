@@ -199,12 +199,20 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       const chartElement = document.getElementById('consolidated-chart-container');
       if (!chartElement) return;
 
+      // Pequeno delay para garantir que elementos estejam renderizados
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(chartElement, {
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
         height: chartElement.offsetHeight,
         width: chartElement.offsetWidth,
+        useCORS: true,
+        allowTaint: false,
+        ignoreElements: (element) => {
+          return element.tagName === 'BUTTON' && element.textContent?.includes('Exportar');
+        }
       });
 
       const link = document.createElement('a');

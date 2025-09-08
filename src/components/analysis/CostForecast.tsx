@@ -368,12 +368,20 @@ export function CostForecast() {
     if (!chartContainer) return;
     
     try {
+      // Pequeno delay para garantir que elementos estejam renderizados
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
         height: chartContainer.offsetHeight,
         width: chartContainer.offsetWidth,
+        useCORS: true,
+        allowTaint: false,
+        ignoreElements: (element) => {
+          return element.tagName === 'BUTTON' && element.textContent?.includes('Exportar');
+        }
       });
       
       const link = document.createElement('a');
