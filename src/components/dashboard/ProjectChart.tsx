@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Filter } from "lucide-react";
+import { Download, Filter, Eye } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -42,41 +43,14 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
-const CustomTooltip = React.memo(({ active, payload, label, valueType, formatCurrency, formatIPU }: any) => {
+const CustomTooltip = React.memo(({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-    
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg p-3 max-w-sm">
+      <div className="bg-background border border-border rounded-lg shadow-lg p-3">
         <p className="font-medium text-foreground mb-2">{label}</p>
-        
-        {/* Scrollable items container */}
-        <div className="max-h-48 overflow-y-auto pr-1 mb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-          {payload.map((item: any, index: number) => {
-            const project = item.dataKey;
-            return (
-              <div key={index} className="flex items-center gap-2 text-sm mb-1">
-                <div
-                  className="w-3 h-3 rounded flex-shrink-0"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-muted-foreground truncate">
-                  {project}:
-                </span>
-                <span className="font-medium text-foreground flex-shrink-0">
-                  {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Fixed total at bottom */}
-        <div className="border-t border-border pt-2">
-          <div className="flex justify-between items-center text-sm font-medium">
-            <span>Total:</span>
-            <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
-          </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Eye className="h-4 w-4" />
+          <span>Clique para ver detalhes</span>
         </div>
       </div>
     );
@@ -95,6 +69,8 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   const [loading, setLoading] = useState(true);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCycleData, setSelectedCycleData] = useState<{period: string, projects: Array<{name: string, value: number, color: string}>} | null>(null);
 
   const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -371,15 +347,23 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
     [valueType, formatCurrency, formatIPU]
   );
 
-  const tooltipProps = useMemo(() => ({
-    valueType,
-    formatCurrency,
-    formatIPU
-  }), [valueType, formatCurrency, formatIPU]);
+  const handleBarClick = useCallback((data: any) => {
+    if (!data || !data.activePayload) return;
+    
+    const period = data.activeLabel;
+    const projects = filteredDataKeys.map((key, index) => ({
+      name: key,
+      value: data.activePayload.find((p: any) => p.dataKey === key)?.value || 0,
+      color: colors[index % colors.length]
+    })).filter(p => p.value > 0).sort((a, b) => b.value - a.value);
+    
+    setSelectedCycleData({ period, projects });
+    setModalOpen(true);
+  }, [filteredDataKeys]);
 
   const renderTooltip = useCallback((props: any) => (
-    <CustomTooltip {...props} {...tooltipProps} />
-  ), [tooltipProps]);
+    <CustomTooltip {...props} />
+  ), []);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
@@ -494,7 +478,11 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartDataWithDisplayTotal} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart 
+                data={chartDataWithDisplayTotal} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                onClick={handleBarClick}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="period" 
@@ -520,6 +508,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                     fill={colors[index % colors.length]}
                     radius={[4, 4, 0, 0]}
                     name={key}
+                    style={{ cursor: 'pointer' }}
                   >
                     {index === filteredDataKeys.length - 1 && (
                         <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
@@ -530,6 +519,52 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
             </ResponsiveContainer>
           )}
         </div>
+
+        {/* Modal for cycle details */}
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Ciclo</DialogTitle>
+            </DialogHeader>
+            
+            {selectedCycleData && (
+              <div className="space-y-4">
+                <div className="text-sm font-medium text-muted-foreground">
+                  {selectedCycleData.period}
+                </div>
+                
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {selectedCycleData.projects.map((project, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-4 h-4 rounded"
+                          style={{ backgroundColor: project.color }}
+                        />
+                        <span className="font-medium">{project.name}</span>
+                      </div>
+                      <span className="font-bold">
+                        {valueType === 'cost' ? formatCurrency(project.value) : formatIPU(project.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="border-t pt-3">
+                  <div className="flex justify-between items-center font-bold">
+                    <span>Total:</span>
+                    <span>
+                      {valueType === 'cost' 
+                        ? formatCurrency(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
+                        : formatIPU(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
