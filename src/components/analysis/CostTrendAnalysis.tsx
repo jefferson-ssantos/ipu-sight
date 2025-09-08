@@ -48,7 +48,8 @@ export function CostTrendAnalysis() {
           .select('meter_name')
           .in('configuracao_id', configIds)
           .gt('consumption_ipu', 0)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage');
+          .neq('meter_name', 'Sandbox Organizations IPU Usage')
+          .neq('meter_name', 'Metadata Record Consumption');
 
         if (error) {
           console.error('Erro ao buscar métricas:', error);
