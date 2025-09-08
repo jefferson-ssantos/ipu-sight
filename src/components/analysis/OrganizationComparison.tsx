@@ -339,17 +339,17 @@ const colors = [
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={chartData} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 55 }}
                 onClick={handleBarClick}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="cycle" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   tickLine={false}
-                  angle={-45}
+                  angle={-35}
                   textAnchor="end"
-                  height={80}
+                  height={50}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}
