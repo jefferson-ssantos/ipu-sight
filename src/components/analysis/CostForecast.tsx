@@ -165,10 +165,10 @@ export function CostForecast() {
       const currentStartDate = new Date(baseStartDate);
       currentStartDate.setMonth(currentStartDate.getMonth() + i);
       
-      // Calculate end date (add one month to start date, then go to last day of that month)
+      // Calculate end date properly
       const currentEndDate = new Date(currentStartDate);
       currentEndDate.setMonth(currentEndDate.getMonth() + 1);
-      currentEndDate.setDate(0); // This sets it to the last day of the previous month (which is the month we want)
+      currentEndDate.setDate(currentEndDate.getDate() - 1); // End the day before next month starts
       
       combinedForecast.push({
         period: `${currentStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${currentEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
@@ -540,10 +540,12 @@ export function CostForecast() {
                 <XAxis 
                   dataKey="period" 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  fontSize={10}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={100}
+                  interval={0}
+                  tick={{ fontSize: 10 }}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}

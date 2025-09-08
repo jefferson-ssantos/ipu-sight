@@ -257,7 +257,7 @@ export function ProjectForecast() {
       
       const currentEndDate = new Date(currentStartDate);
       currentEndDate.setMonth(currentEndDate.getMonth() + 1);
-      currentEndDate.setDate(0);
+      currentEndDate.setDate(currentEndDate.getDate() - 1); // End the day before next month starts
       
       combinedForecast.push({
         period: `${currentStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${currentEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
@@ -708,10 +708,12 @@ export function ProjectForecast() {
                   <XAxis 
                     dataKey="period" 
                     stroke="hsl(var(--foreground))"
-                    fontSize={12}
+                    fontSize={10}
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={100}
+                    interval={0}
+                    tick={{ fontSize: 10 }}
                   />
                   <YAxis 
                     stroke="hsl(var(--foreground))"
