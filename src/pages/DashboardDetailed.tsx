@@ -1,20 +1,17 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
-import { AssetDetailsTable } from "@/components/dashboard/AssetDetailsTable";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { OrganizationCostCard } from "@/components/dashboard/OrganizationCostCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, TrendingUp, Activity, Building2, Users, Calendar, Download, Filter, RefreshCw } from "lucide-react";
-import heroImage from "@/assets/finops-hero.jpg";
-import orysLogo from "@/assets/orys-logo.png";
+import { DollarSign, Activity, Building2, Calendar } from "lucide-react";
 
 export default function DashboardDetailed() {
   const {
@@ -22,9 +19,7 @@ export default function DashboardDetailed() {
   } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedOrgKPI, setSelectedOrgKPI] = useState<string>("all");
-  const [selectedPeriod, setSelectedPeriod] = useState("current");
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
-  const [showAssetTable, setShowAssetTable] = useState(false);
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{
     value: string;
@@ -36,8 +31,6 @@ export default function DashboardDetailed() {
     loading,
     error,
     refetch,
-    getChartData,
-    availableCycles
   } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
   
   // KPI-specific data hook
@@ -87,23 +80,23 @@ export default function DashboardDetailed() {
     fetchOrganizations();
   }, [user]);
   
-  const formatCurrency = (value: number) => {
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
-  };
+  }, []);
   
-  const formatIPU = (value: number) => {
+  const formatIPU = useCallback((value: number) => {
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(1).replace('.', ',')}M`;
     } else if (value >= 1000) {
       return `${(value / 1000).toFixed(0)}K`;
     }
     return value.toLocaleString('pt-BR');
-  };
+  }, []);
   
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
@@ -246,9 +239,6 @@ export default function DashboardDetailed() {
          {/* Consolidated Chart Section */}
          <ConsolidatedChart selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} availableOrgs={availableOrgs} />
        </div>
-
-      {/* Asset Details Table Modal */}
-      {showAssetTable && <AssetDetailsTable onClose={() => setShowAssetTable(false)} selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} />}
 
       {/* Organization Details Modal */}
       {selectedOrgForDetails && <OrgDetailsModal orgId={selectedOrgForDetails} onClose={() => setSelectedOrgForDetails(null)} billingPeriod={dashboardData?.currentCycle} />}

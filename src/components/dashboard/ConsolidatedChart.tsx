@@ -42,7 +42,7 @@ const colors = [
 
 export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedChartProps) {
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
-  const [period, setPeriod] = useState("3"); // Default to 3 cycles
+  const [period, setPeriod] = useState("all");
   const [selectedMetric, setSelectedMetric] = useState<string>("all");
   const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);

@@ -3,12 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
 import { ProjectChart } from "@/components/dashboard/ProjectChart";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
-import { OrganizationCostCard } from "@/components/dashboard/OrganizationCostCard";
 import { OrganizationComparison } from "@/components/analysis/OrganizationComparison";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +17,7 @@ export default function DashboardEssential() {
   const { user } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedOrgKPI, setSelectedOrgKPI] = useState<string>("all");
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("3");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("all");
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{
     value: string;

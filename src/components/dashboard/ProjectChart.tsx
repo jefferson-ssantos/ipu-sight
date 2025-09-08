@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -42,11 +42,47 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
+const CustomTooltip = ({ active, payload, label, valueType, formatCurrency, formatIPU }: any) => {
+  if (active && payload && payload.length) {
+    const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    
+    return (
+      <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+        <p className="font-medium text-foreground mb-2">{label}</p>
+        {payload.map((item: any, index: number) => {
+          const project = item.dataKey;
+          return (
+            <div key={index} className="flex items-center gap-2 text-sm">
+              <div
+                className="w-3 h-3 rounded"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-muted-foreground">
+                {project}:
+              </span>
+              <span className="font-medium text-foreground">
+                {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
+              </span>
+            </div>
+          );
+        })}
+        <div className="border-t border-border mt-2 pt-2">
+          <div className="flex justify-between items-center text-sm font-medium">
+            <span>Total:</span>
+            <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) {
   const { user } = useAuth();
   const { availableCycles } = useDashboardData();
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
-  const [period, setPeriod] = useState("3"); // Default to 3 cycles
+  const [period, setPeriod] = useState("all");
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
@@ -54,18 +90,18 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [allDataKeys, setAllDataKeys] = useState<string[]>([]);
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
-  };
+  }, []);
 
-  const formatIPU = (value: number) => {
+  const formatIPU = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR').format(value);
-  };
+  }, []);
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -271,12 +307,12 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
 
   const filteredDataKeys = getFilteredDataKeys();
 
-  const chartDataWithDisplayTotal = chartData.map(d => {
+  const chartDataWithDisplayTotal = useMemo(() => chartData.map(d => {
     const displayTotal = filteredDataKeys.reduce((acc, key) => acc + (d[key] || 0), 0);
     return { ...d, displayTotal };
-  });
+  }), [chartData, filteredDataKeys]);
 
-  const yAxisDomain = () => {
+  const yAxisDomain = useMemo(() => {
     if (chartDataWithDisplayTotal.length === 0) return [0, 1000]; // Default if no data
 
     let maxVal = 0;
@@ -288,9 +324,9 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
     });
 
     return [0, maxVal * 1.1]; // Add 10% padding
-  };
+  }, [chartDataWithDisplayTotal]);
 
-  const renderCustomizedLabel = (props: any) => {
+  const renderCustomizedLabel = useCallback((props: any) => {
     const { x, y, width, value } = props;
     if (value > 0) {
       return (
@@ -300,7 +336,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
       );
     }
     return null;
-  };
+  }, [valueType, formatCurrency, formatIPU]);
 
   const handleDownload = async () => {
     try {
@@ -324,41 +360,14 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-      
-      return (
-        <div className="bg-background border border-border rounded-lg shadow-lg p-3">
-          <p className="font-medium text-foreground mb-2">{label}</p>
-          {payload.map((item: any, index: number) => {
-            const project = item.dataKey;
-            return (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <div
-                  className="w-3 h-3 rounded"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-muted-foreground">
-                  {project}:
-                </span>
-                <span className="font-medium text-foreground">
-                  {valueType === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
-                </span>
-              </div>
-            );
-          })}
-          <div className="border-t border-border mt-2 pt-2">
-            <div className="flex justify-between items-center text-sm font-medium">
-              <span>Total:</span>
-              <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
+  const yAxisTickFormatter = useCallback((value: number) => 
+    valueType === 'cost' ? formatCurrency(value) : formatIPU(value),
+    [valueType, formatCurrency, formatIPU]
+  );
+
+  const renderTooltip = useCallback((props: any) => (
+    <CustomTooltip {...props} valueType={valueType} formatCurrency={formatCurrency} formatIPU={formatIPU} />
+  ), [valueType, formatCurrency, formatIPU]);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
@@ -486,12 +495,10 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
-                  tickFormatter={(value) => 
-                    valueType === 'cost' ? formatCurrency(value) : formatIPU(value)
-                  }
-                  domain={yAxisDomain()}
+                  tickFormatter={yAxisTickFormatter}
+                  domain={yAxisDomain}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={renderTooltip} />
 
                 {filteredDataKeys.map((key, index) => (
                   <Bar
@@ -499,6 +506,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
                     dataKey={key}
                     stackId="costs"
                     fill={colors[index % colors.length]}
+                    radius={[4, 4, 0, 0]}
                     name={key}
                   >
                     {index === filteredDataKeys.length - 1 && (

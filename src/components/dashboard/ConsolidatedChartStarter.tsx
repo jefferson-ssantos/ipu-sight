@@ -21,7 +21,7 @@ interface ChartDataItem {
 
 export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: ConsolidatedChartStarterProps) {
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
-  const [period, setPeriod] = useState("3");
+  const [period, setPeriod] = useState("all");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -163,7 +163,7 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
             className="gap-2"
           >
             <Download className="h-4 w-4" />
-            Baixar
+            Exportar
           </Button>
         </div>
 

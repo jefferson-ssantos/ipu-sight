@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, LabelList } from "recharts";
 import { ArrowUpDown, Download, Calendar, Filter } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ interface OrganizationComparisonProps {
 
 export function OrganizationComparison({ 
   selectedOrg = "all", 
-  selectedCycleFilter = "3",
+  selectedCycleFilter = "all",
   availableOrgs = [],
   onOrgChange,
   onCycleFilterChange
@@ -41,6 +41,18 @@ export function OrganizationComparison({
 
   const formatIPU = (value: number) => {
     return new Intl.NumberFormat('pt-BR').format(value);
+  };
+
+  const renderCustomizedLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    if (value > 0) {
+      return (
+        <text x={x + width / 2} y={y} fill="#3a3a3a" textAnchor="middle" dy={-6} fontSize={12} fontWeight="bold">
+          {metric === 'cost' ? formatCurrency(value) : formatIPU(value)}
+        </text>
+      );
+    }
+    return null;
   };
 
   // Fetch evolution data to get cycles with organization breakdown
@@ -64,6 +76,7 @@ export function OrganizationComparison({
         // In a real scenario, you'd need to modify getChartData to return organization breakdown per cycle
         const processedData = dataArray.map((item: any) => ({
           cycle: item.period,
+          displayTotal: metric === 'cost' ? item.cost : item.ipu,
           totalIPU: item.ipu,
           totalCost: item.cost,
           // For demonstration, we'll split data proportionally based on current org distribution
@@ -94,17 +107,32 @@ export function OrganizationComparison({
   const contractedReferenceValue = data ? 
     (metric === 'cost' ? (data.contractedIPUs * data.pricePerIPU) : data.contractedIPUs) : 0;
 
+  // Determine the max value for the Y-axis to ensure the reference line is visible
+  const yAxisMaxValue = chartData.length > 0
+    ? Math.max(
+        ...chartData.map(d => d.displayTotal),
+        contractedReferenceValue
+      )
+    : contractedReferenceValue;
+
+  const yAxisDomainMax = yAxisMaxValue > 0 ? yAxisMaxValue * 1.2 : 'auto'; // Add 20% padding
+
   // Color palette for different organizations
-  const colors = [
-    "hsl(var(--primary))",
-    "hsl(var(--secondary))", 
-    "hsl(var(--accent))",
-    "hsl(220 70% 50%)",
-    "hsl(280 70% 50%)",
-    "hsl(340 70% 50%)",
-    "hsl(60 70% 50%)",
-    "hsl(120 70% 50%)"
-  ];
+const colors = [
+  "hsl(var(--primary))",
+  "hsl(var(--secondary))", 
+  "hsl(var(--accent))",
+  'hsl(283 70% 60%)', // Purple
+  'hsl(142 70% 45%)', // Green
+  'hsl(346 70% 60%)', // Pink
+  'hsl(197 70% 55%)', // Blue
+  'hsl(43 70% 55%)', // Yellow
+  'hsl(15 70% 55%)', // Red-orange
+  'hsl(260 70% 65%)', // Violet
+  'hsl(120 35% 50%)', // Teal
+  'hsl(210 40% 60%)', // Slate
+  'hsl(340 60% 65%)', // Rose
+];
 
   const handleDownload = async () => {
     if (!chartRef.current) return;
@@ -238,7 +266,7 @@ export function OrganizationComparison({
         ) : (
           <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 90 }}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="cycle" 
@@ -254,10 +282,10 @@ export function OrganizationComparison({
                   tickFormatter={(value) => 
                     metric === 'cost' ? formatCurrency(value) : formatIPU(value)
                   }
-                  domain={[0, 'dataMax']}
+                  domain={[0, yAxisDomainMax]}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend verticalAlign="top" />
                 
                  {/* Reference line for contracted value - always displayed when value exists */}
                  {contractedReferenceValue > 0 && (
@@ -282,7 +310,11 @@ export function OrganizationComparison({
                     radius={[4, 4, 0, 0]}
                     name={orgName}
                     stackId="stack"
-                  />
+                  >
+                    {index === uniqueOrgs.length - 1 && (
+                        <LabelList dataKey="displayTotal" content={renderCustomizedLabel} />
+                    )}
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
