@@ -8,7 +8,7 @@ import { CYCLE_FILTER_OPTIONS } from '@/lib/cycleFilterOptions';
 
 export default function ConsumptionProjects() {
   const [selectedOrg, setSelectedOrg] = useState<string>('');
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>('1');
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>('12');
   const { data, loading, availableCycles } = useDashboardData();
 
   return (

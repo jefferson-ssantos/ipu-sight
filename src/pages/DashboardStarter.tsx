@@ -13,7 +13,7 @@ import { DollarSign, Activity, Building2, Calendar } from "lucide-react";
 export default function DashboardStarter() {
   const { user } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("all");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("12");
   const [availableOrgs, setAvailableOrgs] = useState<Array<{
     value: string;
     label: string;

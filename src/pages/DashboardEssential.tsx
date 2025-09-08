@@ -17,7 +17,7 @@ export default function DashboardEssential() {
   const { user } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedOrgKPI, setSelectedOrgKPI] = useState<string>("all");
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("all");
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("12");
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{
     value: string;

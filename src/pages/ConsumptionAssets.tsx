@@ -9,7 +9,7 @@ import { FileText } from 'lucide-react';
 
 export default function ConsumptionAssets() {
   const [selectedOrg, setSelectedOrg] = useState<string>('');
-  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>('1');
+  const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>('12');
   const { data, loading, availableCycles } = useDashboardData();
 
   return (
