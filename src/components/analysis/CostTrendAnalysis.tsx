@@ -311,7 +311,7 @@ export function CostTrendAnalysis() {
             </CardTitle>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-60">
                 <SelectValue />
@@ -327,14 +327,20 @@ export function CostTrendAnalysis() {
 
             <Select value={selectedMetric} onValueChange={setSelectedMetric}>
               <SelectTrigger className="w-48">
-                <SelectValue />
+                <SelectValue placeholder="Selecione uma métrica" />
               </SelectTrigger>
               <SelectContent>
-                {availableMetrics.map(metric => (
-                  <SelectItem key={metric.id} value={metric.id}>
-                    {metric.name}
+                {availableMetrics.length > 0 ? (
+                  availableMetrics.map(metricItem => (
+                    <SelectItem key={metricItem.id} value={metricItem.id}>
+                      {metricItem.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="loading" disabled>
+                    Carregando métricas...
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
 
