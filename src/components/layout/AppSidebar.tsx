@@ -21,6 +21,7 @@ import {
   Cable
 } from "lucide-react";
 import orysLogo from "@/assets/logo-laranja.png";
+import orysLogoCollapsed from "@/assets/orys-logo.png";
 
 import {
   Sidebar,
@@ -199,7 +200,11 @@ export function AppSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img src={orysLogo} alt="Orys Logo" className="h-14 w-40" />
+          <img 
+            src={open ? orysLogo : orysLogoCollapsed} 
+            alt="Orys Logo" 
+            className={open ? "h-14 w-40" : "h-8 w-8 mx-auto"}
+          />
         </div>
       </div>
 
