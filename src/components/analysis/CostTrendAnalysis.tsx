@@ -231,9 +231,8 @@ export function CostTrendAnalysis() {
         }
       });
 
-      // Converter para array e filtrar períodos sem dados
+      // Converter para array - mantém todos os períodos para consistência
       const result = Array.from(periodMap.values())
-        .filter(item => item.totalIPU > 0) // Só incluir períodos com consumo
         .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
 
       return result;
