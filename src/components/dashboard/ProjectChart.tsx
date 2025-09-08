@@ -43,14 +43,53 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
-const CustomTooltip = React.memo(({ active, payload, label }: any) => {
+const CustomTooltip = React.memo(({ active, payload, label, filteredDataKeys, valueType, formatCurrency, formatIPU }: any) => {
   if (active && payload && payload.length) {
+    // Get projects with values > 0 and sort by value (descending)
+    const projectsWithValues = filteredDataKeys.map((key: string, index: number) => {
+      const value = payload.find((p: any) => p.dataKey === key)?.value || 0;
+      return {
+        name: key,
+        value,
+        color: colors[index % colors.length]
+      };
+    }).filter((p: any) => p.value > 0).sort((a: any, b: any) => b.value - a.value);
+
+    // Show first 12 projects
+    const displayProjects = projectsWithValues.slice(0, 12);
+    const total = projectsWithValues.reduce((sum: number, item: any) => sum + item.value, 0);
+    
     return (
-      <div className="bg-background border border-border rounded-lg shadow-lg p-3">
-        <p className="font-medium text-foreground mb-2">{label}</p>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Eye className="h-4 w-4" />
-          <span>Clique para ver detalhes</span>
+      <div className="bg-background border border-border rounded-lg shadow-lg p-4 max-w-md">
+        <p className="font-medium text-foreground mb-3">{label}</p>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {displayProjects.map((project: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div
+                  className="w-3 h-3 rounded flex-shrink-0"
+                  style={{ backgroundColor: project.color }}
+                />
+                <span className="text-muted-foreground truncate">
+                  {project.name}
+                </span>
+              </div>
+              <span className="font-medium text-foreground flex-shrink-0">
+                {valueType === 'cost' ? formatCurrency(project.value) : formatIPU(project.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+        {projectsWithValues.length > 12 && (
+          <div className="text-xs text-muted-foreground mt-2 text-center">
+            E mais {projectsWithValues.length - 12} projetos...
+          </div>
+        )}
+        <div className="border-t border-border mt-3 pt-3">
+          <div className="flex justify-between items-center text-sm font-medium">
+            <span>Total:</span>
+            <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
+          </div>
         </div>
       </div>
     );
@@ -362,8 +401,8 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   }, [filteredDataKeys]);
 
   const renderTooltip = useCallback((props: any) => (
-    <CustomTooltip {...props} />
-  ), []);
+    <CustomTooltip {...props} filteredDataKeys={filteredDataKeys} valueType={valueType} formatCurrency={formatCurrency} formatIPU={formatIPU} />
+  ), [filteredDataKeys, valueType, formatCurrency, formatIPU]);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
@@ -522,47 +561,88 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
 
         {/* Modal for cycle details */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Detalhes do Ciclo</DialogTitle>
+          <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
+            <DialogHeader className="pb-6">
+              <DialogTitle className="text-xl font-semibold">
+                Detalhes do Ciclo: {selectedCycleData?.period}
+              </DialogTitle>
+              <div className="text-sm text-muted-foreground">
+                Total de projetos com consumo: {selectedCycleData?.projects.length || 0}
+              </div>
             </DialogHeader>
             
-            {selectedCycleData && (
-              <div className="space-y-4">
-                <div className="text-sm font-medium text-muted-foreground">
-                  {selectedCycleData.period}
-                </div>
-                
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {selectedCycleData.projects.map((project, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-4 h-4 rounded"
-                          style={{ backgroundColor: project.color }}
-                        />
-                        <span className="font-medium">{project.name}</span>
+            <div className="overflow-y-auto max-h-[calc(85vh-140px)] pr-2">
+              {selectedCycleData && (
+                <div className="space-y-6">
+                  {/* Summary Card */}
+                  <div className="bg-muted/50 rounded-lg p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {selectedCycleData.projects.length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Projetos</div>
                       </div>
-                      <span className="font-bold">
-                        {valueType === 'cost' ? formatCurrency(project.value) : formatIPU(project.value)}
-                      </span>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {valueType === 'cost' 
+                            ? formatCurrency(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
+                            : formatIPU(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {valueType === 'cost' ? 'Custo Total' : 'IPUs Totais'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {valueType === 'cost' 
+                            ? formatCurrency(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0) / selectedCycleData.projects.length)
+                            : formatIPU(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0) / selectedCycleData.projects.length)
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">Média por Projeto</div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                
-                <div className="border-t pt-3">
-                  <div className="flex justify-between items-center font-bold">
-                    <span>Total:</span>
-                    <span>
-                      {valueType === 'cost' 
-                        ? formatCurrency(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
-                        : formatIPU(selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0))
-                      }
-                    </span>
+                  </div>
+
+                  {/* Projects Grid */}
+                  <div className="grid gap-4">
+                    <h3 className="font-semibold text-lg mb-2">Projetos do Ciclo</h3>
+                    <div className="grid gap-3">
+                      {selectedCycleData.projects.map((project, index) => (
+                        <div key={index} className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div
+                                className="w-5 h-5 rounded-full flex-shrink-0 shadow-sm"
+                                style={{ backgroundColor: project.color }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-foreground truncate">
+                                  {project.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {((project.value / selectedCycleData.projects.reduce((sum, p) => sum + p.value, 0)) * 100).toFixed(1)}% do total
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-semibold text-lg">
+                                {valueType === 'cost' ? formatCurrency(project.value) : formatIPU(project.value)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {valueType === 'cost' ? 'Custo' : 'IPUs'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </CardContent>
