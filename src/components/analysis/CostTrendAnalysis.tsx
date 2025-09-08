@@ -256,7 +256,7 @@ export function CostTrendAnalysis() {
       {/* Insights Card */}
       <Card className="bg-gradient-card shadow-medium">
         <CardHeader>
-          <CardTitle>Insights da Análise - {getMetricLabel()}</CardTitle>
+          <CardTitle>Insights da Análise</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -299,7 +299,7 @@ export function CostTrendAnalysis() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              Análise de Tendências - {getMetricLabel()}
+              Análise de Tendências
               <Badge variant={trend.isPositive ? "destructive" : "default"}>
                 {trend.isPositive ? (
                   <TrendingUp className="h-3 w-3 mr-1" />
