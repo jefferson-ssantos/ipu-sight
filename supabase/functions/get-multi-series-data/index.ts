@@ -144,6 +144,14 @@ Deno.serve(async (req) => {
 
     console.log(`🎯 Total consumption records fetched: ${allConsumptionData.length}`);
 
+    if (allConsumptionData.length === 0) {
+      console.error('❌ No consumption data found');
+      return new Response(
+        JSON.stringify({ error: 'No consumption data found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Extract unique cycles from consumption data and sort them
     const cycleMap = new Map();
     allConsumptionData.forEach(item => {
@@ -159,9 +167,13 @@ Deno.serve(async (req) => {
     const allCycles = Array.from(cycleMap.values())
       .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
 
-    // Limit cycles as requested
+    console.log('🗓️ Total unique cycles found:', allCycles.length);
+    console.log('📋 Sample cycles:', allCycles.slice(0, 3));
+
+    // Limit cycles as requested  
     const sortedCycles = allCycles.slice(-cycleLimit);
-    console.log('📅 Processing cycles:', sortedCycles.length);
+    console.log('📅 Processing cycles after limit:', sortedCycles.length);
+    console.log('🎯 Selected cycles:', sortedCycles);
 
     // Get available meters from fetched data
     const availableMeters = [...new Set(
@@ -183,9 +195,12 @@ Deno.serve(async (req) => {
     const periodMap = new Map();
 
     // Initialize all cycles
-    sortedCycles.forEach(cycle => {
+    console.log('🔧 Initializing periods for cycles...');
+    sortedCycles.forEach((cycle, index) => {
       const periodKey = `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`;
       const periodLabel = `${new Date(cycle.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
+      
+      console.log(`📝 Creating period ${index + 1}: ${periodLabel}`);
       
       const periodData: any = {
         period: periodLabel,
@@ -211,37 +226,64 @@ Deno.serve(async (req) => {
 
     // Aggregate consumption data - filter by cycles we're showing
     let processedRecords = 0;
+    let matchedPeriods = 0;
     const cyclePeriods = new Set(sortedCycles.map(c => `${c.billing_period_start_date}_${c.billing_period_end_date}`));
     
-    allConsumptionData.forEach(item => {
+    console.log('🔄 Starting data aggregation...');
+    console.log('🎯 Target cycle periods:', Array.from(cyclePeriods));
+    
+    allConsumptionData.forEach((item, index) => {
       const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-      if (periodMap.has(periodKey) && cyclePeriods.has(periodKey)) {
+      
+      if (index < 5) {
+        console.log(`📋 Sample item ${index + 1}: ${periodKey}, meter: ${item.meter_name}, ipu: ${item.consumption_ipu}`);
+      }
+      
+      if (cyclePeriods.has(periodKey)) {
+        matchedPeriods++;
         const periodData = periodMap.get(periodKey);
-        const itemIPU = item.consumption_ipu || 0;
-        const itemCost = itemIPU * client.preco_por_ipu;
         
-        // Add to total
-        periodData.totalIPU += itemIPU;
-        periodData.totalCost += itemCost;
-        
-        // Add to specific metric if selected
-        if (metricsToInclude.includes(item.meter_name)) {
-          const metricKey = item.meter_name.replace(/[^a-zA-Z0-9]/g, '_');
-          periodData[`${metricKey}_ipu`] = (periodData[`${metricKey}_ipu`] || 0) + itemIPU;
-          periodData[`${metricKey}_cost`] = (periodData[`${metricKey}_cost`] || 0) + itemCost;
+        if (periodData) {
+          const itemIPU = item.consumption_ipu || 0;
+          const itemCost = itemIPU * client.preco_por_ipu;
+          
+          // Add to total
+          periodData.totalIPU += itemIPU;
+          periodData.totalCost += itemCost;
+          
+          // Add to specific metric if selected
+          if (metricsToInclude.includes(item.meter_name)) {
+            const metricKey = item.meter_name.replace(/[^a-zA-Z0-9]/g, '_');
+            periodData[`${metricKey}_ipu`] = (periodData[`${metricKey}_ipu`] || 0) + itemIPU;
+            periodData[`${metricKey}_cost`] = (periodData[`${metricKey}_cost`] || 0) + itemCost;
+          }
+          
+          processedRecords++;
         }
-        
-        processedRecords++;
       }
     });
 
     console.log('🔍 Processed', processedRecords, 'consumption records');
+    console.log('🎯 Matched periods:', matchedPeriods);
+    console.log('📊 Period map size after aggregation:', periodMap.size);
 
     // Convert to array and sort
     const result = Array.from(periodMap.values())
       .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
 
     console.log('📊 Final result contains', result.length, 'periods');
+    
+    // Log sample results for debugging
+    if (result.length > 0) {
+      console.log('🔍 Sample result data:', {
+        period: result[0].period,
+        totalIPU: result[0].totalIPU,
+        totalCost: result[0].totalCost
+      });
+    } else {
+      console.error('❌ Result is empty - no periods generated');
+    }
+    
     console.log('💯 Function completed successfully');
 
     return new Response(
