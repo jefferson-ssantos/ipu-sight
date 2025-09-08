@@ -199,11 +199,11 @@ export function AppSidebar() {
     >
       {/* Header */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center">
           <img 
             src={open ? orysLogo : orysLogoCollapsed} 
             alt="Orys Logo" 
-            className={open ? "h-14 w-40" : "h-8 w-8 mx-auto"}
+            className={open ? "h-14 w-40" : "h-10 w-10 object-contain"}
           />
         </div>
       </div>
@@ -365,7 +365,10 @@ export function AppSidebar() {
           <Button
             onClick={handleLogout}
             variant="ghost"
-            className="w-full justify-start h-12 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            className={`w-full h-12 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 ${
+              open ? "justify-start" : "justify-center px-0"
+            }`}
+            title={!open ? "Sair" : undefined}
           >
             <LogOut className="h-5 w-5 flex-shrink-0" />
             {open && <span className="ml-3">Sair</span>}
