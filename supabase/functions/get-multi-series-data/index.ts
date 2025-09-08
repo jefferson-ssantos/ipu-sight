@@ -9,6 +9,8 @@ interface RequestBody {
   cycleLimit: number;
   selectedMeters: string[];
   selectedMetric: string;
+  dimension?: 'meter' | 'project';
+  selectedItems?: string[];
 }
 
 Deno.serve(async (req) => {
@@ -48,8 +50,8 @@ Deno.serve(async (req) => {
 
     console.log('✅ User authenticated:', user.id);
 
-    const { cycleLimit, selectedMeters, selectedMetric }: RequestBody = await req.json();
-    console.log('📊 Request params:', { cycleLimit, selectedMeters, selectedMetric });
+    const { cycleLimit, selectedMeters, selectedMetric, dimension = 'meter', selectedItems }: RequestBody = await req.json();
+    console.log('📊 Request params:', { cycleLimit, selectedMeters, selectedMetric, dimension, selectedItems });
 
     // Get user profile and client data
     const { data: profile } = await supabase
@@ -102,7 +104,7 @@ Deno.serve(async (req) => {
     const configIds = configs.map(config => config.id);
     console.log('⚙️ Configuration IDs:', configIds);
 
-    // Fetch ALL consumption data without limit using pagination
+    // Fetch consumption data based on dimension
     const allConsumptionData = [];
     let from = 0;
     const batchSize = 1000;
@@ -110,35 +112,72 @@ Deno.serve(async (req) => {
 
     console.log('🔄 Starting data fetching with pagination...');
 
-    while (hasMore) {
-      console.log(`📦 Fetching batch from ${from} to ${from + batchSize - 1}`);
-      
-      const { data: batchData, error } = await supabase
-        .from('api_consumosummary')
-        .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
-        .in('configuracao_id', configIds)
-        .gt('consumption_ipu', 0)
-        .neq('meter_name', 'Sandbox Organizations IPU Usage')
-        .order('billing_period_start_date')
-        .range(from, from + batchSize - 1);
+    if (dimension === 'project') {
+      // Fetch project data from api_consumoasset
+      while (hasMore) {
+        console.log(`📦 Fetching project batch from ${from} to ${from + batchSize - 1}`);
+        
+        const { data: batchData, error } = await supabase
+          .from('api_consumoasset')
+          .select('consumption_date, consumption_ipu, project_name')
+          .in('configuracao_id', configIds)
+          .gt('consumption_ipu', 0)
+          .not('project_name', 'is', null)
+          .neq('project_name', '')
+          .order('consumption_date')
+          .range(from, from + batchSize - 1);
 
-      if (error) {
-        console.error('❌ Error fetching batch:', error);
-        throw error;
+        if (error) {
+          console.error('❌ Error fetching project batch:', error);
+          throw error;
+        }
+
+        if (!batchData || batchData.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        allConsumptionData.push(...batchData);
+        console.log(`✅ Fetched ${batchData.length} project records, total: ${allConsumptionData.length}`);
+
+        if (batchData.length < batchSize) {
+          hasMore = false;
+        } else {
+          from += batchSize;
+        }
       }
+    } else {
+      // Fetch meter data from api_consumosummary (existing logic)
+      while (hasMore) {
+        console.log(`📦 Fetching meter batch from ${from} to ${from + batchSize - 1}`);
+        
+        const { data: batchData, error } = await supabase
+          .from('api_consumosummary')
+          .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
+          .in('configuracao_id', configIds)
+          .gt('consumption_ipu', 0)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage')
+          .order('billing_period_start_date')
+          .range(from, from + batchSize - 1);
 
-      if (!batchData || batchData.length === 0) {
-        hasMore = false;
-        break;
-      }
+        if (error) {
+          console.error('❌ Error fetching meter batch:', error);
+          throw error;
+        }
 
-      allConsumptionData.push(...batchData);
-      console.log(`✅ Fetched ${batchData.length} records, total: ${allConsumptionData.length}`);
+        if (!batchData || batchData.length === 0) {
+          hasMore = false;
+          break;
+        }
 
-      if (batchData.length < batchSize) {
-        hasMore = false;
-      } else {
-        from += batchSize;
+        allConsumptionData.push(...batchData);
+        console.log(`✅ Fetched ${batchData.length} meter records, total: ${allConsumptionData.length}`);
+
+        if (batchData.length < batchSize) {
+          hasMore = false;
+        } else {
+          from += batchSize;
+        }
       }
     }
 
@@ -152,20 +191,52 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract unique cycles from consumption data and sort them
-    const cycleMap = new Map();
-    allConsumptionData.forEach(item => {
-      const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-      if (!cycleMap.has(cycleKey)) {
-        cycleMap.set(cycleKey, {
-          billing_period_start_date: item.billing_period_start_date,
-          billing_period_end_date: item.billing_period_end_date
-        });
-      }
-    });
+    // Extract cycles differently based on dimension
+    let allCycles = [];
+    
+    if (dimension === 'project') {
+      // For projects, get billing cycles from api_ciclofaturamento
+      const { data: cycleData, error: cycleError } = await supabase
+        .from('api_ciclofaturamento')
+        .select('billing_period_start_date, billing_period_end_date')
+        .in('configuracao_id', configIds)
+        .order('billing_period_start_date');
 
-    const allCycles = Array.from(cycleMap.values())
-      .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
+      if (cycleError) {
+        console.error('❌ Error fetching billing cycles:', cycleError);
+        throw cycleError;
+      }
+
+      // Remove duplicates and sort
+      const cycleMap = new Map();
+      cycleData?.forEach(item => {
+        const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+        if (!cycleMap.has(cycleKey)) {
+          cycleMap.set(cycleKey, {
+            billing_period_start_date: item.billing_period_start_date,
+            billing_period_end_date: item.billing_period_end_date
+          });
+        }
+      });
+
+      allCycles = Array.from(cycleMap.values())
+        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
+    } else {
+      // For meters, extract cycles from consumption data
+      const cycleMap = new Map();
+      allConsumptionData.forEach(item => {
+        const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+        if (!cycleMap.has(cycleKey)) {
+          cycleMap.set(cycleKey, {
+            billing_period_start_date: item.billing_period_start_date,
+            billing_period_end_date: item.billing_period_end_date
+          });
+        }
+      });
+
+      allCycles = Array.from(cycleMap.values())
+        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
+    }
 
     console.log('🗓️ Total unique cycles found:', allCycles.length);
     console.log('📋 Sample cycles:', allCycles.slice(0, 3));
@@ -175,21 +246,39 @@ Deno.serve(async (req) => {
     console.log('📅 Processing cycles after limit:', sortedCycles.length);
     console.log('🎯 Selected cycles:', sortedCycles);
 
-    // Get available meters from fetched data
-    const availableMeters = [...new Set(
-      allConsumptionData
-        .map(item => item.meter_name)
-        .filter(Boolean)
-        .filter(name => name !== 'Sandbox Organizations IPU Usage' && name !== 'Metadata Record Consumption')
-    )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    // Get available items based on dimension
+    let availableItems = [];
+    let itemsToInclude = [];
+    
+    if (dimension === 'project') {
+      availableItems = [...new Set(
+        allConsumptionData
+          .map(item => item.project_name)
+          .filter(Boolean)
+          .filter(name => name !== '')
+      )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-    console.log('🏷️ Available meters:', availableMeters.length);
+      console.log('🏷️ Available projects:', availableItems.length);
 
-    // Determine which metrics to include
-    const includeAll = selectedMeters.includes('all');
-    const metricsToInclude = includeAll ? availableMeters : selectedMeters.filter(m => m !== 'all');
+      // Determine which projects to include
+      const includeAll = selectedItems?.includes('all') || selectedMeters.includes('all');
+      itemsToInclude = includeAll ? availableItems : (selectedItems || selectedMeters).filter(m => m !== 'all');
+    } else {
+      availableItems = [...new Set(
+        allConsumptionData
+          .map(item => item.meter_name)
+          .filter(Boolean)
+          .filter(name => name !== 'Sandbox Organizations IPU Usage' && name !== 'Metadata Record Consumption')
+      )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-    console.log('📋 Metrics to include:', metricsToInclude);
+      console.log('🏷️ Available meters:', availableItems.length);
+
+      // Determine which metrics to include
+      const includeAll = selectedMeters.includes('all');
+      itemsToInclude = includeAll ? availableItems : selectedMeters.filter(m => m !== 'all');
+    }
+
+    console.log('📋 Items to include:', itemsToInclude);
 
     // Process data into periods
     const periodMap = new Map();
@@ -212,11 +301,11 @@ Deno.serve(async (req) => {
         totalCost: 0
       };
 
-      // Initialize each metric with zero
-      metricsToInclude.forEach(metricName => {
-        const metricKey = metricName.replace(/[^a-zA-Z0-9]/g, '_');
-        periodData[`${metricKey}_ipu`] = 0;
-        periodData[`${metricKey}_cost`] = 0;
+      // Initialize each item with zero
+      itemsToInclude.forEach(itemName => {
+        const itemKey = itemName.replace(/[^a-zA-Z0-9]/g, '_');
+        periodData[`${itemKey}_ipu`] = 0;
+        periodData[`${itemKey}_cost`] = 0;
       });
       
       periodMap.set(periodKey, periodData);
@@ -232,36 +321,78 @@ Deno.serve(async (req) => {
     console.log('🔄 Starting data aggregation...');
     console.log('🎯 Target cycle periods:', Array.from(cyclePeriods));
     
-    allConsumptionData.forEach((item, index) => {
-      const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-      
-      if (index < 5) {
-        console.log(`📋 Sample item ${index + 1}: ${periodKey}, meter: ${item.meter_name}, ipu: ${item.consumption_ipu}`);
-      }
-      
-      if (cyclePeriods.has(periodKey)) {
-        matchedPeriods++;
-        const periodData = periodMap.get(periodKey);
-        
-        if (periodData) {
-          const itemIPU = item.consumption_ipu || 0;
-          const itemCost = itemIPU * client.preco_por_ipu;
-          
-          // Add to total
-          periodData.totalIPU += itemIPU;
-          periodData.totalCost += itemCost;
-          
-          // Add to specific metric if selected
-          if (metricsToInclude.includes(item.meter_name)) {
-            const metricKey = item.meter_name.replace(/[^a-zA-Z0-9]/g, '_');
-            periodData[`${metricKey}_ipu`] = (periodData[`${metricKey}_ipu`] || 0) + itemIPU;
-            periodData[`${metricKey}_cost`] = (periodData[`${metricKey}_cost`] || 0) + itemCost;
-          }
-          
-          processedRecords++;
+    if (dimension === 'project') {
+      // Project aggregation logic - map consumption dates to billing cycles
+      allConsumptionData.forEach((item, index) => {
+        if (index < 5) {
+          console.log(`📋 Sample project item ${index + 1}: ${item.consumption_date}, project: ${item.project_name}, ipu: ${item.consumption_ipu}`);
         }
-      }
-    });
+        
+        // Find which billing cycle this consumption date belongs to
+        const consumptionDate = new Date(item.consumption_date);
+        const matchingCycle = sortedCycles.find(cycle => {
+          const startDate = new Date(cycle.billing_period_start_date);
+          const endDate = new Date(cycle.billing_period_end_date);
+          return consumptionDate >= startDate && consumptionDate <= endDate;
+        });
+        
+        if (matchingCycle) {
+          const periodKey = `${matchingCycle.billing_period_start_date}_${matchingCycle.billing_period_end_date}`;
+          matchedPeriods++;
+          const periodData = periodMap.get(periodKey);
+          
+          if (periodData) {
+            const itemIPU = item.consumption_ipu || 0;
+            const itemCost = itemIPU * client.preco_por_ipu;
+            
+            // Add to total
+            periodData.totalIPU += itemIPU;
+            periodData.totalCost += itemCost;
+            
+            // Add to specific project if selected
+            if (itemsToInclude.includes(item.project_name)) {
+              const projectKey = item.project_name.replace(/[^a-zA-Z0-9]/g, '_');
+              periodData[`${projectKey}_ipu`] = (periodData[`${projectKey}_ipu`] || 0) + itemIPU;
+              periodData[`${projectKey}_cost`] = (periodData[`${projectKey}_cost`] || 0) + itemCost;
+            }
+            
+            processedRecords++;
+          }
+        }
+      });
+    } else {
+      // Meter aggregation logic (existing)
+      allConsumptionData.forEach((item, index) => {
+        const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+        
+        if (index < 5) {
+          console.log(`📋 Sample meter item ${index + 1}: ${periodKey}, meter: ${item.meter_name}, ipu: ${item.consumption_ipu}`);
+        }
+        
+        if (cyclePeriods.has(periodKey)) {
+          matchedPeriods++;
+          const periodData = periodMap.get(periodKey);
+          
+          if (periodData) {
+            const itemIPU = item.consumption_ipu || 0;
+            const itemCost = itemIPU * client.preco_por_ipu;
+            
+            // Add to total
+            periodData.totalIPU += itemIPU;
+            periodData.totalCost += itemCost;
+            
+            // Add to specific metric if selected
+            if (itemsToInclude.includes(item.meter_name)) {
+              const metricKey = item.meter_name.replace(/[^a-zA-Z0-9]/g, '_');
+              periodData[`${metricKey}_ipu`] = (periodData[`${metricKey}_ipu`] || 0) + itemIPU;
+              periodData[`${metricKey}_cost`] = (periodData[`${metricKey}_cost`] || 0) + itemCost;
+            }
+            
+            processedRecords++;
+          }
+        }
+      });
+    }
 
     console.log('🔍 Processed', processedRecords, 'consumption records');
     console.log('🎯 Matched periods:', matchedPeriods);
@@ -290,7 +421,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         data: result, 
         totalRecords: allConsumptionData.length,
-        availableMeters: availableMeters 
+        availableMeters: dimension === 'meter' ? availableItems : [],
+        availableProjects: dimension === 'project' ? availableItems : []
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

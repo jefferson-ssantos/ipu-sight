@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CostTrendAnalysis } from "@/components/analysis/CostTrendAnalysis";
+import { ProjectTrendAnalysis } from "@/components/analysis/ProjectTrendAnalysis";
 import { CostForecast } from "@/components/analysis/CostForecast";
-import { TrendingUp, BarChart3, PieChart, Activity } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart, Activity, FolderOpen } from "lucide-react";
 
 export default function Analysis() {
   const [selectedTab, setSelectedTab] = useState("trends");
@@ -39,7 +40,26 @@ export default function Analysis() {
         </TabsList>
 
         <TabsContent value="trends" className="space-y-4">
-          <CostTrendAnalysis />
+          <Tabs defaultValue="metrics" className="space-y-4">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="metrics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Por Métrica
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4" />
+                Por Projeto
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="metrics">
+              <CostTrendAnalysis />
+            </TabsContent>
+            
+            <TabsContent value="projects">
+              <ProjectTrendAnalysis />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="forecast" className="space-y-4">
