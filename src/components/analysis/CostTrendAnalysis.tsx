@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,22 @@ export function CostTrendAnalysis() {
   const [availableMeters, setAvailableMeters] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  // Cores personalizadas fornecidas pelo usuário
+  const colors = [
+    'hsl(24 70% 60%)', // Orange
+    'hsl(283 70% 60%)', // Purple
+    'hsl(142 70% 45%)', // Green
+    'hsl(346 70% 60%)', // Pink
+    'hsl(197 70% 55%)', // Blue
+    'hsl(43 70% 55%)', // Yellow
+    'hsl(15 70% 55%)', // Red-orange
+    'hsl(260 70% 65%)', // Violet
+    'hsl(120 35% 50%)', // Teal
+    'hsl(39 70% 50%)', // Amber
+    'hsl(210 40% 60%)', // Slate
+    'hsl(340 60% 65%)', // Rose
+  ];
 
   // Buscar métricas (meter_name) disponíveis da api_consumosummary
   useEffect(() => {
@@ -258,10 +275,44 @@ export function CostTrendAnalysis() {
 
   const getSelectedMetersLabels = () => {
     if (selectedMeters.includes('all')) return 'Todas as Métricas';
-    return selectedMeters.map(id => {
-      const foundMeter = availableMeters.find(m => m.id === id);
-      return foundMeter?.name || id;
-    }).join(', ');
+    if (selectedMeters.length === 0) return 'Selecione as métricas';
+    if (selectedMeters.length === 1) {
+      const foundMeter = availableMeters.find(m => m.id === selectedMeters[0]);
+      return foundMeter?.name || selectedMeters[0];
+    }
+    return `${selectedMeters.length} métricas selecionadas`;
+  };
+
+  const handleMeterToggle = (meterId: string, checked: boolean) => {
+    if (meterId === 'all') {
+      if (checked) {
+        setSelectedMeters(['all']);
+      } else {
+        setSelectedMeters([]);
+      }
+    } else {
+      let newSelection = [...selectedMeters];
+      
+      // Remove 'all' se estiver selecionado
+      newSelection = newSelection.filter(id => id !== 'all');
+      
+      if (checked) {
+        // Adicionar métrica se não estiver selecionada
+        if (!newSelection.includes(meterId)) {
+          newSelection.push(meterId);
+        }
+      } else {
+        // Remover métrica
+        newSelection = newSelection.filter(id => id !== meterId);
+      }
+      
+      // Se nenhuma métrica estiver selecionada, selecionar 'all'
+      if (newSelection.length === 0) {
+        newSelection = ['all'];
+      }
+      
+      setSelectedMeters(newSelection);
+    }
   };
 
   const getMetricLabel = () => {
@@ -459,29 +510,36 @@ export function CostTrendAnalysis() {
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">Métricas</label>
-              <ToggleGroup 
-                type="multiple" 
-                value={selectedMeters} 
-                onValueChange={(value) => {
-                  // Se "all" for selecionado, desmarcar todas as outras
-                  if (value.includes('all')) {
-                    setSelectedMeters(['all']);
-                  } else if (value.length === 0) {
-                    // Se nenhuma métrica estiver selecionada, selecionar "all"
-                    setSelectedMeters(['all']);
-                  } else {
-                    // Caso contrário, usar as métricas selecionadas (excluindo "all")
-                    setSelectedMeters(value.filter(v => v !== 'all'));
-                  }
-                }}
-                className="flex-wrap justify-start"
-              >
-                {availableMeters.map(meterItem => (
-                  <ToggleGroupItem key={meterItem.id} value={meterItem.id} size="sm">
-                    {meterItem.name}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-64 justify-between">
+                    {getSelectedMetersLabels()}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0">
+                  <div className="max-h-60 overflow-y-auto">
+                    {availableMeters.map((meterItem) => (
+                      <div key={meterItem.id} className="flex items-center space-x-2 px-3 py-2 hover:bg-accent">
+                        <Checkbox
+                          id={meterItem.id}
+                          checked={selectedMeters.includes(meterItem.id)}
+                          onCheckedChange={(checked) => handleMeterToggle(meterItem.id, checked as boolean)}
+                        />
+                        <label
+                          htmlFor={meterItem.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                        >
+                          {meterItem.name}
+                        </label>
+                        {selectedMeters.includes(meterItem.id) && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button variant="outline" size="sm" onClick={handleDownload}>
@@ -541,19 +599,6 @@ export function CostTrendAnalysis() {
                     const metricsToShow = selectedMeters.includes('all') ? 
                       availableMeters.filter(m => m.id !== 'all') : 
                       availableMeters.filter(m => selectedMeters.includes(m.id));
-                    
-                    const colors = [
-                      'hsl(var(--chart-1))',
-                      'hsl(var(--chart-2))',
-                      'hsl(var(--chart-3))',
-                      'hsl(var(--chart-4))',
-                      'hsl(var(--chart-5))',
-                      '#8B5CF6',
-                      '#F59E0B',
-                      '#EF4444',
-                      '#10B981',
-                      '#06B6D4'
-                    ];
                     
                     return metricsToShow.map((metric, index) => {
                       const metricKey = metric.id.replace(/[^a-zA-Z0-9]/g, '_');
