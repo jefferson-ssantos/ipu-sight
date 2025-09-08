@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
-const CustomTooltip = ({ active, payload, label, valueType, formatCurrency, formatIPU }: any) => {
+const CustomTooltip = React.memo(({ active, payload, label, valueType, formatCurrency, formatIPU }: any) => {
   if (active && payload && payload.length) {
     const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
     
@@ -76,7 +76,7 @@ const CustomTooltip = ({ active, payload, label, valueType, formatCurrency, form
     );
   }
   return null;
-};
+});
 
 export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) {
   const { user } = useAuth();
@@ -365,9 +365,15 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
     [valueType, formatCurrency, formatIPU]
   );
 
+  const tooltipProps = useMemo(() => ({
+    valueType,
+    formatCurrency,
+    formatIPU
+  }), [valueType, formatCurrency, formatIPU]);
+
   const renderTooltip = useCallback((props: any) => (
-    <CustomTooltip {...props} valueType={valueType} formatCurrency={formatCurrency} formatIPU={formatIPU} />
-  ), [valueType, formatCurrency, formatIPU]);
+    <CustomTooltip {...props} {...tooltipProps} />
+  ), [tooltipProps]);
 
   return (
     <Card className="bg-gradient-card shadow-medium">
