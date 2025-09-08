@@ -8,61 +8,77 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, TrendingDown, Download } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export function CostTrendAnalysis() {
   const { data, loading, getChartData, availableCycles } = useDashboardData();
+  const { user } = useAuth();
   const [period, setPeriod] = useState("12");
-  const [selectedMetric, setSelectedMetric] = useState("cost");
-  const [availableMetrics, setAvailableMetrics] = useState<{ id: string; name: string }[]>([
-    { id: 'cost', name: 'Custo Total' },
-    { id: 'ipu', name: 'IPUs Totais' }
-  ]);
+  const [selectedMeter, setSelectedMeter] = useState("all"); // Changed to meter-based filtering
+  const [availableMeters, setAvailableMeters] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Buscar métricas disponíveis dos dados
+  // Buscar métricas (meter_name) disponíveis da api_consumosummary
   useEffect(() => {
-    const fetchAvailableMetrics = async () => {
+    const fetchAvailableMeters = async () => {
       try {
-        // Buscar dados de evolução para extrair métricas
-        const evolutionData = await getChartData('evolution', undefined, '24');
-        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
-        
-        // Extrair métricas únicas dos dados de evolução
-        const metricsSet = new Set<string>();
-        
-        // Se os dados têm estrutura de métricas detalhadas
-        dataArray.forEach(item => {
-          if (item.meters && Array.isArray(item.meters)) {
-            item.meters.forEach((meter: string) => metricsSet.add(meter));
-          }
-        });
-        
-        // Converter para array com formato adequado
-        const metrics = [
-          { id: 'cost', name: 'Custo Total' },
-          { id: 'ipu', name: 'IPUs Totais' }
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('cliente_id')
+          .eq('id', user?.id)
+          .maybeSingle();
+
+        if (!profile?.cliente_id) return;
+
+        const { data: configs } = await supabase
+          .from('api_configuracaoidmc')
+          .select('id')
+          .eq('cliente_id', profile.cliente_id);
+
+        if (!configs || configs.length === 0) return;
+
+        const configIds = configs.map(config => config.id);
+
+        // Buscar meter_name únicos da tabela api_consumosummary
+        const { data: meterData, error } = await supabase
+          .from('api_consumosummary')
+          .select('meter_name')
+          .in('configuracao_id', configIds)
+          .gt('consumption_ipu', 0)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage');
+
+        if (error) {
+          console.error('Erro ao buscar métricas:', error);
+          return;
+        }
+
+        // Extrair valores únicos de meter_name
+        const uniqueMeters = [...new Set(
+          meterData
+            ?.map(item => item.meter_name)
+            .filter(Boolean) || []
+        )];
+
+        // Criar lista com "Todas as Métricas" no topo
+        const meters = [
+          { id: 'all', name: 'Todas as Métricas' },
+          ...uniqueMeters.map(meterName => ({
+            id: meterName,
+            name: meterName
+          }))
         ];
-        
-        // Adicionar métricas específicas encontradas
-        Array.from(metricsSet).forEach(meterName => {
-          if (meterName && meterName !== 'cost' && meterName !== 'ipu') {
-            metrics.push({
-              id: meterName,
-              name: meterName
-            });
-          }
-        });
-        
-        setAvailableMetrics(metrics);
+
+        setAvailableMeters(meters);
       } catch (error) {
-        // Manter métricas padrão em caso de erro
         console.error('Erro ao buscar métricas:', error);
+        setAvailableMeters([{ id: 'all', name: 'Todas as Métricas' }]);
       }
     };
     
     if (getChartData) {
-      fetchAvailableMetrics();
+      fetchAvailableMeters();
     }
   }, [getChartData]);
 
@@ -71,17 +87,16 @@ export function CostTrendAnalysis() {
       try {
         // Add 1 to period to compensate for filtering out current incomplete cycle
         const adjustedPeriod = (parseInt(period) + 1).toString();
-        const evolutionData = await getChartData('evolution', undefined, adjustedPeriod);
+        
+        // Buscar dados com filtro de meter_name
+        const evolutionData = await getChartDataWithMeterFilter(adjustedPeriod, selectedMeter);
         const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
         
         // Filter out incomplete current cycle
         const filteredData = filterCompleteCycles(dataArray);
         
-        // Process data based on selected metric
-        const processedData = processDataForMetric(filteredData, selectedMetric);
-        
         // Now limit to the requested number of cycles
-        const limitedData = processedData.slice(-parseInt(period));
+        const limitedData = filteredData.slice(-parseInt(period));
         setChartData(limitedData);
       } catch (error) {
         setChartData([]);
@@ -90,38 +105,107 @@ export function CostTrendAnalysis() {
     if (getChartData) {
       fetchData();
     }
-  }, [period, selectedMetric, getChartData]);
+  }, [period, selectedMeter, getChartData]);
 
-  const processDataForMetric = (data: any[], metric: string) => {
-    if (metric === 'cost' || metric === 'ipu') {
-      return data;
-    }
-    
-    // Para métricas específicas, processar os dados
-    return data.map(item => {
-      const metricValue = getMetricValue(item, metric);
-      return {
-        ...item,
-        cost: metricValue,
-        ipu: metricValue
-      };
-    });
-  };
+  // Nova função para buscar dados com filtro de meter_name
+  const getChartDataWithMeterFilter = async (cycleLimit: string, meterFilter: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('cliente_id')
+        .eq('id', user?.id)
+        .maybeSingle();
 
-  const getMetricValue = (item: any, metric: string): number => {
-    // Se temos dados detalhados por métrica
-    if (item.data && Array.isArray(item.data)) {
-      const metricData = item.data.find((d: any) => d.name === metric);
-      return metricData?.value || 0;
+      if (!profile?.cliente_id) return [];
+
+      const { data: client } = await supabase
+        .from('api_clientes')
+        .select('preco_por_ipu')
+        .eq('id', profile.cliente_id)
+        .maybeSingle();
+
+      if (!client?.preco_por_ipu) return [];
+
+      const { data: configs } = await supabase
+        .from('api_configuracaoidmc')
+        .select('id')
+        .eq('cliente_id', profile.cliente_id);
+
+      if (!configs || configs.length === 0) return [];
+
+      const configIds = configs.map(config => config.id);
+
+      // Buscar dados com filtro opcional de meter_name
+      let query = supabase
+        .from('api_consumosummary')
+        .select('billing_period_start_date, billing_period_end_date, consumption_ipu, meter_name')
+        .in('configuracao_id', configIds)
+        .gt('consumption_ipu', 0)
+        .neq('meter_name', 'Sandbox Organizations IPU Usage');
+
+      // Aplicar filtro de meter_name se não for "all"
+      if (meterFilter !== 'all') {
+        query = query.eq('meter_name', meterFilter);
+      }
+
+      const { data: consumptionData, error } = await query
+        .order('billing_period_start_date');
+
+      if (error || !consumptionData) return [];
+
+      // Obter todos os ciclos únicos
+      const { data: allCycles } = await supabase
+        .rpc('get_available_cycles');
+
+      if (!allCycles) return [];
+
+      // Ordenar ciclos e limitar se necessário
+      const sortedCycles = allCycles
+        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
+        .slice(-parseInt(cycleLimit));
+
+      // Group consumption by billing period
+      const periodMap = new Map();
+
+      // Inicializar todos os ciclos com valor zero
+      sortedCycles.forEach(cycle => {
+        const periodKey = `${cycle.billing_period_start_date}_${cycle.billing_period_end_date}`;
+        const periodLabel = `${new Date(cycle.billing_period_start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${new Date(cycle.billing_period_end_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}`;
+        
+        periodMap.set(periodKey, {
+          period: periodLabel,
+          totalIPU: 0,
+          billing_period_start_date: cycle.billing_period_start_date,
+          billing_period_end_date: cycle.billing_period_end_date,
+          periodStart: cycle.billing_period_start_date,
+          periodEnd: cycle.billing_period_end_date
+        });
+      });
+
+      // Somar consumo real dos dados retornados
+      consumptionData.forEach(item => {
+        const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+        if (periodMap.has(periodKey)) {
+          periodMap.get(periodKey).totalIPU += item.consumption_ipu || 0;
+        }
+      });
+
+      // Converter para array e calcular custos
+      const result = Array.from(periodMap.values())
+        .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
+        .map(item => ({
+          period: item.period,
+          ipu: item.totalIPU,
+          cost: item.totalIPU * client.preco_por_ipu,
+          periodStart: item.periodStart,
+          periodEnd: item.periodEnd
+        }));
+
+      return result;
+    } catch (error) {
+      console.error('Erro ao buscar dados do gráfico:', error);
+      return [];
     }
-    
-    // Se temos métricas no array meters
-    if (item.meters && Array.isArray(item.meters) && item.costs && Array.isArray(item.costs)) {
-      const metricIndex = item.meters.indexOf(metric);
-      return metricIndex >= 0 ? (item.costs[metricIndex] || 0) : 0;
-    }
-    
-    return 0;
   };
 
   const filterCompleteCycles = (data: any[]): any[] => {
@@ -155,27 +239,25 @@ export function CostTrendAnalysis() {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
-  const getMetricLabel = () => {
-    const foundMetric = availableMetrics.find(m => m.id === selectedMetric);
-    return foundMetric?.name || selectedMetric;
+  const getMeterLabel = () => {
+    const foundMeter = availableMeters.find(m => m.id === selectedMeter);
+    return foundMeter?.name || selectedMeter;
   };
 
   const getValueFormatter = () => {
-    if (selectedMetric === 'cost') return formatCurrency;
-    return formatIPU;
+    return formatCurrency; // Sempre exibir como moeda
   };
 
   const calculateTrend = () => {
     if (chartData.length < 2) return { percentage: 0, isPositive: false };
     
-    const currentKey = selectedMetric === 'cost' ? 'cost' : 'ipu';
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
     if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false };
     
-    let currentValue = currentPeriodData[currentKey] || 0;
-    const previousValue = previousPeriodData[currentKey] || 0;
+    let currentValue = currentPeriodData.cost || 0;
+    const previousValue = previousPeriodData.cost || 0;
     
     // Se o período atual está incompleto, projete o valor total baseado na média diária
     const today = new Date();
@@ -225,7 +307,7 @@ export function CostTrendAnalysis() {
       });
       
       const link = document.createElement('a');
-      link.download = `analise-tendencia-${selectedMetric}-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `analise-tendencia-${selectedMeter === 'all' ? 'todas-metricas' : selectedMeter}-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
       
@@ -243,7 +325,7 @@ export function CostTrendAnalysis() {
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{label}</p>
           <p className="text-primary">
-            {selectedMetric === 'cost' ? formatter(value) : `${formatter(value)} ${selectedMetric === 'ipu' ? 'IPUs' : ''}`}
+            {formatter(value)}
           </p>
         </div>
       );
@@ -325,15 +407,15 @@ export function CostTrendAnalysis() {
               </SelectContent>
             </Select>
 
-            <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-              <SelectTrigger className="w-48">
+            <Select value={selectedMeter} onValueChange={setSelectedMeter}>
+              <SelectTrigger className="w-64">
                 <SelectValue placeholder="Selecione uma métrica" />
               </SelectTrigger>
               <SelectContent>
-                {availableMetrics.length > 0 ? (
-                  availableMetrics.map(metricItem => (
-                    <SelectItem key={metricItem.id} value={metricItem.id}>
-                      {metricItem.name}
+                {availableMeters.length > 0 ? (
+                  availableMeters.map(meterItem => (
+                    <SelectItem key={meterItem.id} value={meterItem.id}>
+                      {meterItem.name}
                     </SelectItem>
                   ))
                 ) : (
@@ -375,11 +457,11 @@ export function CostTrendAnalysis() {
                 />
                 <Line 
                   type="monotone" 
-                  dataKey={selectedMetric === 'cost' ? 'cost' : 'ipu'} 
+                  dataKey="cost" 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                  name={getMetricLabel()}
+                  name={getMeterLabel()}
                   connectNulls={false}
                 />
               </LineChart>
