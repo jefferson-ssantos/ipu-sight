@@ -519,9 +519,15 @@ export function ProjectTrendAnalysis() {
                     dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
                   />
                   
-                  {/* Linhas individuais para cada projeto selecionado (exceto 'all') */}
-                  {!selectedProjects.includes('all') && availableProjects
-                    .filter(project => selectedProjects.includes(project.id) && project.id !== 'all')
+                  {/* Linhas individuais para cada projeto */}
+                  {availableProjects
+                    .filter(project => {
+                      if (project.id === 'all') return false;
+                      // Se "all" estiver selecionado, mostrar todos os projetos
+                      if (selectedProjects.includes('all')) return true;
+                      // Caso contrário, mostrar apenas os projetos selecionados
+                      return selectedProjects.includes(project.id);
+                    })
                     .map((project, index) => {
                       const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
                       const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
