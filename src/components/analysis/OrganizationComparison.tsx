@@ -20,19 +20,37 @@ interface OrganizationComparisonProps {
 
 const CustomTooltip = ({ active, payload, label, metric, formatCurrency, formatIPU }: any) => {
   if (active && payload && payload.length) {
+    const total = payload.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+    
     return (
-      <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-        <p className="font-medium">Ciclo: {label}</p>
-        {payload.map((entry: any, index: number) => {
-          if (entry.value > 0) {
+      <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+        <p className="font-medium text-foreground mb-2">Ciclo: {label}</p>
+        {payload.map((item: any, index: number) => {
+          if (item.value > 0) {
+            const orgName = item.dataKey.replace(/_/g, ' ');
             return (
-              <p key={index} style={{ color: entry.color }}>
-                {entry.dataKey.replace(/_/g, ' ')}: {metric === 'cost' ? formatCurrency(entry.value) : formatIPU(entry.value)}
-              </p>
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <div
+                  className="w-3 h-3 rounded"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-muted-foreground">
+                  {orgName}:
+                </span>
+                <span className="font-medium text-foreground">
+                  {metric === 'cost' ? formatCurrency(item.value) : formatIPU(item.value)}
+                </span>
+              </div>
             );
           }
           return null;
         })}
+        <div className="border-t border-border mt-2 pt-2">
+          <div className="flex justify-between items-center text-sm font-medium">
+            <span>Total:</span>
+            <span>{metric === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
+          </div>
+        </div>
       </div>
     );
   }
