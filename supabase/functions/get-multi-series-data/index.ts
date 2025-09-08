@@ -102,46 +102,6 @@ Deno.serve(async (req) => {
     const configIds = configs.map(config => config.id);
     console.log('⚙️ Configuration IDs:', configIds);
 
-    // Get available cycles
-    const { data: allCycles } = await supabase
-      .rpc('get_available_cycles');
-
-    if (!allCycles) {
-      console.error('❌ No cycles found');
-      return new Response(
-        JSON.stringify({ error: 'No cycles found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Sort cycles and limit
-    const sortedCycles = allCycles
-      .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime())
-      .slice(-cycleLimit);
-
-    console.log('📅 Processing cycles:', sortedCycles.length);
-
-    // Get available meters
-    const { data: meterData } = await supabase
-      .from('api_consumosummary')
-      .select('meter_name')
-      .in('configuracao_id', configIds)
-      .gt('consumption_ipu', 0)
-      .neq('meter_name', 'Sandbox Organizations IPU Usage')
-      .neq('meter_name', 'Metadata Record Consumption');
-
-    const availableMeters = [...new Set(
-      meterData?.map(item => item.meter_name).filter(Boolean) || []
-    )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-
-    console.log('🏷️ Available meters:', availableMeters.length);
-
-    // Determine which metrics to include
-    const includeAll = selectedMeters.includes('all');
-    const metricsToInclude = includeAll ? availableMeters : selectedMeters.filter(m => m !== 'all');
-
-    console.log('📋 Metrics to include:', metricsToInclude);
-
     // Fetch ALL consumption data without limit using pagination
     const allConsumptionData = [];
     let from = 0;
@@ -184,6 +144,41 @@ Deno.serve(async (req) => {
 
     console.log(`🎯 Total consumption records fetched: ${allConsumptionData.length}`);
 
+    // Extract unique cycles from consumption data and sort them
+    const cycleMap = new Map();
+    allConsumptionData.forEach(item => {
+      const cycleKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
+      if (!cycleMap.has(cycleKey)) {
+        cycleMap.set(cycleKey, {
+          billing_period_start_date: item.billing_period_start_date,
+          billing_period_end_date: item.billing_period_end_date
+        });
+      }
+    });
+
+    const allCycles = Array.from(cycleMap.values())
+      .sort((a, b) => new Date(a.billing_period_start_date).getTime() - new Date(b.billing_period_start_date).getTime());
+
+    // Limit cycles as requested
+    const sortedCycles = allCycles.slice(-cycleLimit);
+    console.log('📅 Processing cycles:', sortedCycles.length);
+
+    // Get available meters from fetched data
+    const availableMeters = [...new Set(
+      allConsumptionData
+        .map(item => item.meter_name)
+        .filter(Boolean)
+        .filter(name => name !== 'Sandbox Organizations IPU Usage' && name !== 'Metadata Record Consumption')
+    )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    console.log('🏷️ Available meters:', availableMeters.length);
+
+    // Determine which metrics to include
+    const includeAll = selectedMeters.includes('all');
+    const metricsToInclude = includeAll ? availableMeters : selectedMeters.filter(m => m !== 'all');
+
+    console.log('📋 Metrics to include:', metricsToInclude);
+
     // Process data into periods
     const periodMap = new Map();
 
@@ -214,11 +209,13 @@ Deno.serve(async (req) => {
 
     console.log('🗺️ Initialized period map with', periodMap.size, 'periods');
 
-    // Aggregate consumption data
+    // Aggregate consumption data - filter by cycles we're showing
     let processedRecords = 0;
+    const cyclePeriods = new Set(sortedCycles.map(c => `${c.billing_period_start_date}_${c.billing_period_end_date}`));
+    
     allConsumptionData.forEach(item => {
       const periodKey = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
-      if (periodMap.has(periodKey)) {
+      if (periodMap.has(periodKey) && cyclePeriods.has(periodKey)) {
         const periodData = periodMap.get(periodKey);
         const itemIPU = item.consumption_ipu || 0;
         const itemCost = itemIPU * client.preco_por_ipu;
