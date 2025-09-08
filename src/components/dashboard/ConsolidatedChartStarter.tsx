@@ -103,23 +103,25 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
 
   const handleDownload = async () => {
     try {
-      const chartElement = document.getElementById('consolidated-chart-starter');
+      const chartElement = document.getElementById('consolidated-chart-starter-container');
       if (!chartElement) return;
 
       const canvas = await html2canvas(chartElement, {
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       });
 
       const link = document.createElement('a');
-      link.download = `custo-consolidado-starter-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `analise-custos-starter-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
 
-      toast.success('Gráfico baixado com sucesso!');
+      toast.success('Gráfico exportado com sucesso!');
     } catch (error) {
-      toast.error('Erro ao baixar o gráfico');
+      toast.error('Erro ao exportar o gráfico');
     }
   };
 
@@ -145,7 +147,7 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
   };
 
   return (
-    <Card className="bg-gradient-card shadow-medium">
+    <Card className="bg-gradient-card shadow-medium" id="consolidated-chart-starter-container">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

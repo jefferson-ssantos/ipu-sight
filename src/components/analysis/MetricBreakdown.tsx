@@ -202,13 +202,16 @@ export function MetricBreakdown() {
   }));
 
   const handleDownload = async () => {
-    if (!chartRef.current) return;
+    const chartContainer = document.getElementById('metric-breakdown-container');
+    if (!chartContainer) return;
     
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: false,
       });
       
       const link = document.createElement('a');
@@ -241,7 +244,7 @@ export function MetricBreakdown() {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-gradient-card shadow-medium">
+      <Card className="bg-gradient-card shadow-medium" id="metric-breakdown-container">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Detalhamento por Métrica</CardTitle>
           

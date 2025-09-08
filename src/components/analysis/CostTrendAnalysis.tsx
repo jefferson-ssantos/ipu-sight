@@ -188,7 +188,7 @@ export function CostTrendAnalysis() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-card shadow-medium">
+      <Card className="bg-gradient-card shadow-medium" id="cost-trend-container">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">

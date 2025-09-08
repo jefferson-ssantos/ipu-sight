@@ -200,17 +200,20 @@ const colors = [
 ];
 
   const handleDownload = async () => {
-    if (!chartRef.current) return;
+    const chartContainer = document.getElementById('organization-comparison-container');
+    if (!chartContainer) return;
     
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: false,
       });
       
       const link = document.createElement('a');
-      link.download = `comparacao-organizacoes-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `analise-custos-organizacoes-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
       
@@ -248,7 +251,7 @@ const colors = [
   }, [uniqueOrgs]);
 
   return (
-    <Card className="bg-gradient-card shadow-medium">
+    <Card className="bg-gradient-card shadow-medium" id="organization-comparison-container">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

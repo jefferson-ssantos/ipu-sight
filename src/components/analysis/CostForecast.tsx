@@ -364,13 +364,16 @@ export function CostForecast() {
   const summary = calculateForecastSummary();
 
   const handleDownload = async () => {
-    if (!chartRef.current) return;
+    const chartContainer = document.getElementById('cost-forecast-container');
+    if (!chartContainer) return;
     
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: false,
       });
       
       const link = document.createElement('a');
@@ -484,7 +487,7 @@ export function CostForecast() {
       </div>
 
       {/* Forecast Chart */}
-      <Card className="bg-gradient-card shadow-medium">
+      <Card className="bg-gradient-card shadow-medium" id="cost-forecast-container">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />

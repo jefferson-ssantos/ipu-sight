@@ -363,23 +363,25 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
 
   const handleDownload = async () => {
     try {
-      const chartElement = document.getElementById('project-chart');
+      const chartElement = document.getElementById('project-chart-container');
       if (!chartElement) return;
 
       const canvas = await html2canvas(chartElement, {
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       });
 
       const link = document.createElement('a');
-      link.download = `custo-projetos-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `analise-custos-projetos-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL();
       link.click();
 
-      toast.success('Gráfico baixado com sucesso!');
+      toast.success('Gráfico exportado com sucesso!');
     } catch (error) {
-      toast.error('Erro ao baixar o gráfico');
+      toast.error('Erro ao exportar o gráfico');
     }
   };
 
@@ -407,7 +409,7 @@ export function ProjectChart({ selectedOrg, availableOrgs }: ProjectChartProps) 
   ), [filteredDataKeys, valueType, formatCurrency, formatIPU]);
 
   return (
-    <Card className="bg-gradient-card shadow-medium">
+    <Card className="bg-gradient-card shadow-medium" id="project-chart-container">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
