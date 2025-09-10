@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChartStarter } from "@/components/dashboard/ConsolidatedChartStarter";
+import { MetricBarChartStarter } from "@/components/dashboard/MetricBarChartStarter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,6 +175,12 @@ export default function DashboardStarter() {
 
         {/* Simplified Chart Section */}
         <ConsolidatedChartStarter 
+          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+          availableOrgs={availableOrgs} 
+        />
+
+        {/* Metric Bar Chart Section */}
+        <MetricBarChartStarter 
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
           availableOrgs={availableOrgs} 
         />
