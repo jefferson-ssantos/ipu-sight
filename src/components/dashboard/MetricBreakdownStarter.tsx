@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { Download, Filter, Calendar } from "lucide-react";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface MetricData {
   meter_name: string;
@@ -20,7 +24,12 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
   const [data, setData] = useState<MetricData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("1");
+  const [organizations, setOrganizations] = useState<Array<{id: string, name: string}>>([]);
+  const [availableCycles, setAvailableCycles] = useState<any[]>([]);
+  const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>("all");
+  const chartRef = useRef<HTMLDivElement>(null);
 
+  // Opções limitadas a 3 ciclos
   const cycleOptions = [
     { value: '1', label: 'Ciclo Atual' },
     { value: '2', label: 'Últimos 2 Ciclos' },
@@ -54,13 +63,36 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
 
         const configIds = configs.map(c => c.id);
 
-        // Get available cycles
+        // Get available cycles using the same function as dashboard
+        const { data: cyclesData } = await supabase
+          .rpc('get_available_cycles');
+
+        setAvailableCycles(cyclesData || []);
+
+        // Get organizations for filter
+        const { data: orgData } = await supabase
+          .from('api_consumosummary')
+          .select('org_id, org_name')
+          .in('configuracao_id', configIds)
+          .neq('meter_name', 'Sandbox Organizations IPU Usage')
+          .not('org_name', 'is', null);
+
+        const uniqueOrgs = Array.from(
+          new Map(orgData?.map(item => [item.org_id, item]) || []).values()
+        ).map(org => ({ id: org.org_id, name: org.org_name }));
+
+        setOrganizations(uniqueOrgs);
+
+        // Use consumption summary data with cycle filtering
+        const cycleLimit = selectedCycleFilter && selectedCycleFilter !== 'all' 
+          ? parseInt(selectedCycleFilter) 
+          : null;
+
+        // Get unique cycles for filtering
         const { data: availableCyclesData } = await supabase
           .rpc('get_available_cycles');
 
-        // Use consumption summary data with cycle filtering
-        const cycleLimit = parseInt(selectedCycleFilter);
-
+        // Apply cycle filtering manually
         let billingQuery = supabase
           .from('api_consumosummary')
           .select('meter_name, metric_category, consumption_ipu, billing_period_start_date, billing_period_end_date')
@@ -68,12 +100,14 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
           .neq('meter_name', 'Sandbox Organizations IPU Usage')
           .gt('consumption_ipu', 0);
 
-        if (selectedOrg && selectedOrg !== "all") {
-          billingQuery = billingQuery.eq('org_id', selectedOrg);
+        // Use prop selectedOrg or local state
+        const orgFilter = selectedOrg || selectedOrgLocal;
+        if (orgFilter !== "all") {
+          billingQuery = billingQuery.eq('org_id', orgFilter);
         }
 
-        // Apply cycle filtering
-        if (availableCyclesData?.length) {
+        // Apply cycle filtering (máximo 3 ciclos)
+        if (cycleLimit && availableCyclesData?.length) {
           const cyclesToInclude = availableCyclesData.slice(0, cycleLimit);
           
           if (cyclesToInclude.length === 1) {
@@ -81,6 +115,7 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
               .eq('billing_period_start_date', cyclesToInclude[0].billing_period_start_date)
               .eq('billing_period_end_date', cyclesToInclude[0].billing_period_end_date);
           } else if (cyclesToInclude.length > 1) {
+            // For multiple cycles, we need to use the or filter
             const orConditions = cyclesToInclude.map(cycle => 
               `and(billing_period_start_date.eq.${cycle.billing_period_start_date},billing_period_end_date.eq.${cycle.billing_period_end_date})`
             ).join(',');
@@ -128,7 +163,7 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
     };
 
     fetchData();
-  }, [selectedOrg, selectedCycleFilter]);
+  }, [selectedOrg, selectedOrgLocal, selectedCycleFilter]);
 
   const formatIPU = (value: number) => {
     return new Intl.NumberFormat('pt-BR').format(value);
@@ -141,14 +176,52 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
     'hsl(346 70% 60%)', // Pink
     'hsl(197 70% 55%)', // Blue
     'hsl(43 70% 55%)', // Yellow
+    'hsl(15 70% 55%)', // Red-orange
+    'hsl(260 70% 65%)', // Violet
+    'hsl(120 35% 50%)', // Teal
+    'hsl(39 70% 50%)', // Amber
+    'hsl(210 40% 60%)', // Slate
+    'hsl(340 60% 65%)', // Rose
   ];
 
-  const chartData = data.slice(0, 6).map((item, index) => ({
+  const chartData = data.slice(0, 8).map((item, index) => ({
     name: `${item.meter_name} (${item.metric_category})`,
     value: item.total_consumption,
     percentage: item.percentage,
     fill: colors[index % colors.length]
   }));
+
+  const handleDownload = async () => {
+    const chartContainer = document.getElementById('metric-breakdown-starter-container');
+    if (!chartContainer) return;
+    
+    try {
+      // Pequeno delay para garantir que elementos estejam renderizados
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(chartContainer, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        height: chartContainer.offsetHeight,
+        width: chartContainer.offsetWidth,
+        useCORS: true,
+        allowTaint: false,
+        ignoreElements: (element) => {
+          return element.tagName === 'BUTTON' && element.textContent?.includes('Exportar');
+        }
+      });
+      
+      const link = document.createElement('a');
+      link.download = `detalhamento-metricas-starter-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      
+      toast("Gráfico exportado com sucesso!");
+    } catch (error) {
+      toast("Erro ao exportar gráfico");
+    }
+  };
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -166,12 +239,12 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
 
   if (loading) {
     return (
-      <Card className="bg-gradient-card shadow-medium">
+      <Card className="bg-gradient-card shadow-medium" id="metric-breakdown-starter-container">
         <CardHeader>
-          <CardTitle>Detalhamento por Métrica</CardTitle>
+          <CardTitle>Análise Consolidada de Custos por Métrica</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-96">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
@@ -180,80 +253,120 @@ export function MetricBreakdownStarter({ selectedOrg }: MetricBreakdownStarterPr
   }
 
   return (
-    <Card className="bg-gradient-card shadow-medium">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Detalhamento por Métrica</CardTitle>
-        
-        <Select value={selectedCycleFilter} onValueChange={setSelectedCycleFilter}>
-          <SelectTrigger className="w-[180px] bg-background border-input">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-background border-border">
-            {cycleOptions.map((option) => (
-              <SelectItem 
-                key={option.value} 
-                value={option.value}
-                className="focus:bg-accent focus:text-accent-foreground"
-              >
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
+    <div className="space-y-4">
+      <Card className="bg-gradient-card shadow-medium" id="metric-breakdown-starter-container">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Análise Consolidada de Custos por Métrica</CardTitle>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            </div>
+            
+            <Select value={selectedCycleFilter} onValueChange={setSelectedCycleFilter}>
+              <SelectTrigger className="w-[180px] bg-background border-input">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                {cycleOptions.map((option) => {
+                  const isDisabled = option.value !== 'all' && 
+                                    !isNaN(parseInt(option.value)) && 
+                                    parseInt(option.value) > availableCycles.length;
+                  
+                  return (
+                    <SelectItem 
+                      key={option.value} 
+                      value={option.value}
+                      disabled={isDisabled}
+                      className="focus:bg-accent focus:text-accent-foreground"
+                    >
+                      {option.label}
+                      {isDisabled && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (Indisponível)
+                        </span>
+                      )}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
 
-      <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pie Chart */}
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ percentage }) => `${percentage.toFixed(1)}%`}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+            {!selectedOrg && (
+              <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Organizações</SelectItem>
+                  {organizations.map(org => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
                   ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+                </SelectContent>
+              </Select>
+            )}
 
-          {/* Metrics List */}
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {data.slice(0, 6).map((metric, index) => (
-              <div key={`${metric.meter_name}-${metric.metric_category}`} 
-                   className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: colors[index % colors.length] }}
-                  />
-                  <div>
-                    <div className="text-sm font-medium">{metric.meter_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {metric.metric_category}
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart */}
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={120}
+                    dataKey="value"
+                    label={({ percentage }) => `${percentage.toFixed(1)}%`}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Metrics List */}
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {data.slice(0, 10).map((metric, index) => (
+                <div key={`${metric.meter_name}-${metric.metric_category}`} 
+                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: colors[index % colors.length] }}
+                    />
+                    <div>
+                      <div className="font-medium">{metric.meter_name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {metric.metric_category}
+                      </div>
                     </div>
                   </div>
+                  
+                  <div className="text-right">
+                    <div className="text-sm font-medium">{formatIPU(metric.total_consumption)} IPUs</div>
+                    <Badge variant="outline" className="text-xs mt-1">
+                      {metric.percentage.toFixed(1)}%
+                    </Badge>
+                  </div>                  
                 </div>
-                
-                <div className="text-right">
-                  <div className="text-sm font-medium">{formatIPU(metric.total_consumption)} IPUs</div>
-                  <Badge variant="outline" className="text-xs">
-                    {metric.percentage.toFixed(1)}%
-                  </Badge>
-                </div>                  
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
