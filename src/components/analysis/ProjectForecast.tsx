@@ -71,7 +71,6 @@ export function ProjectForecast() {
           .neq('project_name', '');
 
         if (error) {
-          console.error('Erro ao buscar projetos:', error);
           return;
         }
 
@@ -91,7 +90,6 @@ export function ProjectForecast() {
 
         setAvailableProjects(projects);
       } catch (error) {
-        console.error('Erro ao buscar projetos:', error);
         setAvailableProjects([{ id: 'all', name: 'Todos os Projetos' }]);
       }
     };
@@ -137,8 +135,6 @@ export function ProjectForecast() {
   // Nova função para buscar dados multi-série usando edge function para projetos
   const getMultiSeriesChartData = async (cycleLimit: string, selectedProjectsList: string[]) => {
     try {
-      console.log('🚀 Calling edge function for project multi-series data');
-      
       const { data: response, error } = await supabase.functions.invoke('get-multi-series-data', {
         body: {
           cycleLimit: parseInt(cycleLimit),
@@ -150,14 +146,11 @@ export function ProjectForecast() {
       });
 
       if (error) {
-        console.error('❌ Edge function error:', error);
         throw error;
       }
 
-      console.log('✅ Edge function response:', response);
       return response.data || [];
     } catch (error) {
-      console.error('❌ Error calling edge function:', error);
       return [];
     }
   };
@@ -457,7 +450,7 @@ export function ProjectForecast() {
             {label}
             {data.isForecast && (
               <Badge variant="outline" className="text-xs">
-                Previsão ({(data.confidence * 100).toFixed(0)}% confiança)
+                Análise Preditiva ({(data.confidence * 100).toFixed(0)}% confiança)
               </Badge>
             )}
           </p>
@@ -478,7 +471,7 @@ export function ProjectForecast() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Previsão Total
+              Análise Preditiva Total
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -486,8 +479,8 @@ export function ProjectForecast() {
               {selectedMetric === 'cost' ? formatCurrency(summary.totalForecast) : `${formatIPU(summary.totalForecast)} IPUs`}
             </div>
             <div className="text-sm text-muted-foreground">
-              Para {forecastPeriod === '1month' ? 'o próximo mês' : 
-                   forecastPeriod.replace('months', ' meses').replace('12months', '12 meses')}
+              Para os {forecastPeriod === '1month' ? 'o próximo mês' : 
+                   forecastPeriod.replace('months', ' próximos meses').replace('12months', ' próximos 12 meses')}
             </div>
           </CardContent>
         </Card>
@@ -538,7 +531,7 @@ export function ProjectForecast() {
               {(summary.avgConfidence * 100).toFixed(0)}%
             </div>
             <div className="text-sm text-muted-foreground">
-              Precisão da previsão
+              Precisão da Análise Preditiva
             </div>
           </CardContent>
         </Card>
@@ -547,32 +540,33 @@ export function ProjectForecast() {
       {/* Chart Section */}
       <Card className="bg-card/50 backdrop-blur shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <CardTitle className="text-base font-medium">Previsão de Projetos</CardTitle>
+          <CardTitle className="text-base font-medium">Análise Preditiva de Projetos</CardTitle>
           <div className="flex items-center gap-4">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[230px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="6">6 ciclos</SelectItem>
-                  <SelectItem value="12">12 ciclos</SelectItem>
-                  <SelectItem value="18">18 ciclos</SelectItem>
-                  <SelectItem value="24">24 ciclos</SelectItem>
+                  <SelectItem value="2">Últimos 2 Ciclos Completos</SelectItem>
+                  <SelectItem value="3">Últimos 3 Ciclos Completos</SelectItem>
+                  <SelectItem value="6">Últimos 6 Ciclos Completos</SelectItem>
+                  <SelectItem value="9">Últimos 9 Ciclos Completos</SelectItem>
+                  <SelectItem value="12">Últimos 12 Ciclos Completos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-3">
               <Select value={forecastPeriod} onValueChange={setForecastPeriod}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1month">1 mês</SelectItem>
-                  <SelectItem value="3months">3 meses</SelectItem>
-                  <SelectItem value="6months">6 meses</SelectItem>
-                  <SelectItem value="12months">12 meses</SelectItem>
+                  <SelectItem value="1month">Próximo mês</SelectItem>
+                  <SelectItem value="3months">Próximos 3 meses</SelectItem>
+                  <SelectItem value="6months">Próximos 6 meses</SelectItem>
+                  <SelectItem value="12months">Próximos 12 meses</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -619,13 +613,9 @@ export function ProjectForecast() {
               </Popover>
             </div>
 
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={handleDownload}
-              title="Exportar gráfico como PNG"
-            >
-              <Download className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
             </Button>
           </div>
         </CardHeader>
@@ -643,17 +633,17 @@ export function ProjectForecast() {
             ) : (
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={combinedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <LineChart data={combinedData} margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="period" 
                       stroke="hsl(var(--foreground))"
-                      fontSize={10}
-                      angle={-45}
+                      fontSize={12}
+                      angle={-35}
                       textAnchor="end"
                       height={100}
                       interval={0}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 12 }}
                     />
                     <YAxis 
                       stroke="hsl(var(--foreground))"
@@ -661,7 +651,6 @@ export function ProjectForecast() {
                       tickFormatter={selectedMetric === 'cost' ? formatCurrency : formatIPU}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend />
                     
                     {/* Linha total pontilhada */}
                     <Line

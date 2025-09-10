@@ -70,7 +70,6 @@ export function ProjectTrendAnalysis() {
           .neq('project_name', '');
 
         if (error) {
-          console.error('Erro ao buscar projetos:', error);
           return;
         }
 
@@ -92,7 +91,6 @@ export function ProjectTrendAnalysis() {
 
         setAvailableProjects(projects);
       } catch (error) {
-        console.error('Erro ao buscar projetos:', error);
         setAvailableProjects([{ id: 'all', name: 'Todos os Projetos' }]);
       }
     };
@@ -129,8 +127,6 @@ export function ProjectTrendAnalysis() {
   // Nova função para buscar dados multi-série usando edge function para projetos
   const getMultiSeriesChartData = async (cycleLimit: string, selectedProjectsList: string[]) => {
     try {
-      console.log('🚀 Calling edge function for project multi-series data');
-      
       const { data: response, error } = await supabase.functions.invoke('get-multi-series-data', {
         body: {
           cycleLimit: parseInt(cycleLimit),
@@ -142,14 +138,11 @@ export function ProjectTrendAnalysis() {
       });
 
       if (error) {
-        console.error('❌ Edge function error:', error);
         throw error;
       }
 
-      console.log('✅ Edge function response:', response);
       return response.data || [];
     } catch (error) {
-      console.error('❌ Error calling edge function:', error);
       return [];
     }
   };
@@ -393,8 +386,8 @@ export function ProjectTrendAnalysis() {
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="text-sm text-muted-foreground">Status</div>
               <div className="text-lg font-semibold">
-                {trend.percentage < 5 ? "Estável" : 
-                 trend.percentage < 15 ? "Moderado" : "Significativo"}
+                {trend.percentage < 5 ? "Normal" : 
+                 trend.percentage < 15 ? "Intermediário" : "Elevado"}
               </div>
             </div>
           </div>
@@ -406,7 +399,7 @@ export function ProjectTrendAnalysis() {
           <div>
             <CardTitle className="flex items-center gap-2">
               Análise de Tendências por Projeto
-              <Badge variant={trend.isStable ? "secondary" : trend.isPositive ? "destructive" : "default"}>
+              <Badge variant={trend.isStable ? "outline" : trend.isPositive ? "destructive" : "default"}>
                 {trend.isStable ? (
                   <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
                 ) : trend.isPositive ? (
@@ -496,15 +489,16 @@ export function ProjectTrendAnalysis() {
           ) : (
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 60, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="period" 
                     stroke="hsl(var(--foreground))"
                     fontSize={12}
-                    angle={-45}
+                    angle={-35}
                     textAnchor="end"
                     height={80}
+                    interval={0}
                   />
                   <YAxis 
                     stroke="hsl(var(--foreground))"
@@ -512,7 +506,6 @@ export function ProjectTrendAnalysis() {
                     tickFormatter={selectedMetric === 'cost' ? formatCurrency : formatIPU}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend />
                   
                   {/* Linha total (pontilhada) */}
                   <Line

@@ -413,7 +413,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
                 <XAxis 
                   dataKey="period" 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={10}
+                  fontSize={12}
                   angle={-35}
                   textAnchor="end"
                   height={50}

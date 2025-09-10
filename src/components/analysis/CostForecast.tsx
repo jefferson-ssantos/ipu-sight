@@ -22,7 +22,7 @@ export function CostForecast() {
   const [availableMeters, setAvailableMeters] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [forecastData, setForecastData] = useState<any[]>([]);
-  const [forecastPeriod, setForecastPeriod] = useState("6months");
+  const [forecastPeriod, setForecastPeriod] = useState("3months");
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Cores personalizadas fornecidas pelo usuário
@@ -71,7 +71,6 @@ export function CostForecast() {
           .neq('meter_name', 'Metadata Record Consumption');
 
         if (error) {
-          console.error('Erro ao buscar métricas:', error);
           return;
         }
 
@@ -91,7 +90,6 @@ export function CostForecast() {
 
         setAvailableMeters(meters);
       } catch (error) {
-        console.error('Erro ao buscar métricas:', error);
         setAvailableMeters([{ id: 'all', name: 'Todas as Métricas' }]);
       }
     };
@@ -137,8 +135,6 @@ export function CostForecast() {
   // Nova função para buscar dados multi-série usando edge function
   const getMultiSeriesChartData = async (cycleLimit: string, selectedMetersList: string[]) => {
     try {
-      console.log('🚀 Calling edge function for multi-series data');
-      
       const { data: response, error } = await supabase.functions.invoke('get-multi-series-data', {
         body: {
           cycleLimit: parseInt(cycleLimit),
@@ -148,14 +144,11 @@ export function CostForecast() {
       });
 
       if (error) {
-        console.error('❌ Edge function error:', error);
         throw error;
       }
 
-      console.log('✅ Edge function response:', response);
       return response.data || [];
     } catch (error) {
-      console.error('❌ Error calling edge function:', error);
       return [];
     }
   };
@@ -451,7 +444,7 @@ export function CostForecast() {
             {label}
             {data.isForecast && (
               <Badge variant="outline" className="text-xs">
-                Previsão ({(data.confidence * 100).toFixed(0)}% confiança)
+                Análise Preditiva ({(data.confidence * 100).toFixed(0)}% confiança)
               </Badge>
             )}
           </p>
@@ -472,7 +465,7 @@ export function CostForecast() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Previsão Total
+              Análise Preditiva Total
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -480,8 +473,8 @@ export function CostForecast() {
               {selectedMetric === 'cost' ? formatCurrency(summary.totalForecast) : `${formatIPU(summary.totalForecast)} IPUs`}
             </div>
             <div className="text-sm text-muted-foreground">
-              Para {forecastPeriod === '1month' ? 'o próximo mês' : 
-                   forecastPeriod.replace('months', ' meses').replace('12months', '12 meses')}
+              Para os {forecastPeriod === '1month' ? 'o próximo mês' : 
+                   forecastPeriod.replace('months', ' próximos meses').replace('12months', ' próximos 12 meses')}
             </div>
           </CardContent>
         </Card>
@@ -532,7 +525,7 @@ export function CostForecast() {
               {(summary.avgConfidence * 100).toFixed(0)}%
             </div>
             <div className="text-sm text-muted-foreground">
-              Precisão da previsão
+              Precisão da Análise Preditiva
             </div>
           </CardContent>
         </Card>
@@ -541,32 +534,33 @@ export function CostForecast() {
       {/* Chart Section */}
       <Card className="bg-card/50 backdrop-blur shadow-medium">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <CardTitle className="text-base font-medium">Previsão de Custos</CardTitle>
+          <CardTitle className="text-base font-medium">Análise Preditiva de Custos</CardTitle>
           <div className="flex items-center gap-4">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[230px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="6">6 ciclos</SelectItem>
-                  <SelectItem value="12">12 ciclos</SelectItem>
-                  <SelectItem value="18">18 ciclos</SelectItem>
-                  <SelectItem value="24">24 ciclos</SelectItem>
+                  <SelectItem value="2">Últimos 2 Ciclos Completos</SelectItem>
+                  <SelectItem value="3">Últimos 3 Ciclos Completos</SelectItem>
+                  <SelectItem value="6">Últimos 6 Ciclos Completos</SelectItem>
+                  <SelectItem value="9">Últimos 9 Ciclos Completos</SelectItem>
+                  <SelectItem value="12">Últimos 12 Ciclos Completos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-3">
               <Select value={forecastPeriod} onValueChange={setForecastPeriod}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1month">1 mês</SelectItem>
-                  <SelectItem value="3months">3 meses</SelectItem>
-                  <SelectItem value="6months">6 meses</SelectItem>
-                  <SelectItem value="12months">12 meses</SelectItem>
+                  <SelectItem value="1month">Próximo mês</SelectItem>
+                  <SelectItem value="3months">Próximos 3 meses</SelectItem>
+                  <SelectItem value="6months">Próximos 6 meses</SelectItem>
+                  <SelectItem value="12months">Próximos 12 meses</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -639,17 +633,17 @@ export function CostForecast() {
             ) : (
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={combinedData} margin={{ left: 60, right: 20, top: 20, bottom: 100 }}>
+                  <LineChart data={combinedData} margin={{ left: 60, right: 20, top: 20, bottom: -5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="period"
                       stroke="hsl(var(--muted-foreground))"
-                      fontSize={10}
-                      angle={-45}
+                      fontSize={12}
+                      angle={-35}
                       textAnchor="end"
-                      height={100}
+                      height={120}
                       interval={0}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 12 }}
                     />
                     <YAxis 
                       tick={{ fontSize: 12 }}
@@ -657,7 +651,6 @@ export function CostForecast() {
                       tickFormatter={selectedMetric === 'cost' ? formatCurrency : formatIPU}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend verticalAlign="top" />
                     
                     {/* Linha total pontilhada */}
                     <Line 

@@ -153,7 +153,6 @@ export function OrganizationComparison({
 
         setChartData(processedData);
       } catch (error) {
-        console.error('Error fetching cycle data:', error);
         setChartData([]);
       } finally {
         setChartLoading(false);
@@ -350,17 +349,17 @@ const colors = [
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={chartData} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 55 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 25 }}
                 onClick={handleBarClick}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="cycle" 
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 12 }}
                   tickLine={false}
                   angle={-35}
                   textAnchor="end"
-                  height={50}
+                  height={70}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}

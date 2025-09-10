@@ -409,14 +409,14 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={chartDataWithDisplayTotal} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 55 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
                 onClick={handleBarClick}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="period" 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={10}
+                  fontSize={12}
                   angle={-35}
                   textAnchor="end"
                   height={50}

@@ -70,7 +70,6 @@ export function CostTrendAnalysis() {
           .neq('meter_name', 'Metadata Record Consumption');
 
         if (error) {
-          console.error('Erro ao buscar métricas:', error);
           return;
         }
 
@@ -92,7 +91,6 @@ export function CostTrendAnalysis() {
 
         setAvailableMeters(meters);
       } catch (error) {
-        console.error('Erro ao buscar métricas:', error);
         setAvailableMeters([{ id: 'all', name: 'Todas as Métricas' }]);
       }
     };
@@ -129,8 +127,6 @@ export function CostTrendAnalysis() {
   // Nova função para buscar dados multi-série usando edge function
   const getMultiSeriesChartData = async (cycleLimit: string, selectedMetersList: string[]) => {
     try {
-      console.log('🚀 Calling edge function for multi-series data');
-      
       const { data: response, error } = await supabase.functions.invoke('get-multi-series-data', {
         body: {
           cycleLimit: parseInt(cycleLimit),
@@ -140,14 +136,11 @@ export function CostTrendAnalysis() {
       });
 
       if (error) {
-        console.error('❌ Edge function error:', error);
         throw error;
       }
 
-      console.log('✅ Edge function response:', response);
       return response.data || [];
     } catch (error) {
-      console.error('❌ Error calling edge function:', error);
       return [];
     }
   };
@@ -385,8 +378,8 @@ export function CostTrendAnalysis() {
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="text-sm text-muted-foreground">Status</div>
               <div className="text-lg font-semibold">
-                {trend.percentage < 5 ? "Estável" : 
-                 trend.percentage < 15 ? "Moderado" : "Significativo"}
+                {trend.percentage < 5 ? "Normal" : 
+                 trend.percentage < 15 ? "Intermediário" : "Elevado"}
               </div>
             </div>
           </div>
@@ -397,8 +390,8 @@ export function CostTrendAnalysis() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              Análise de Tendências
-              <Badge variant={trend.isStable ? "secondary" : trend.isPositive ? "destructive" : "default"}>
+              Análise de Tendências por Métrica
+              <Badge variant={trend.isStable ? "outline" : trend.isPositive ? "destructive" : "default"}>
                 {trend.isStable ? (
                   <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
                 ) : trend.isPositive ? (
@@ -490,15 +483,16 @@ export function CostTrendAnalysis() {
           ) : (
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 80 }}>
+                <LineChart data={chartData} margin={{ left: 60, right: 20, top: 20, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="period"
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
-                    angle={-45}
+                    angle={-35}
                     textAnchor="end"
-                    height={60}
+                    height={80}
+                    interval={0}
                   />
                   <YAxis 
                     tick={{ fontSize: 12 }}
@@ -506,7 +500,6 @@ export function CostTrendAnalysis() {
                     tickFormatter={getValueFormatter()}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend verticalAlign="top" />
                   
                   {/* Linha total pontilhada */}
                   <Line 
