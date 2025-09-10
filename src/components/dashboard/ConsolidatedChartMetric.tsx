@@ -13,7 +13,7 @@ import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 
 // Custom cycle options for starter dashboard
 const STARTER_CYCLE_OPTIONS = [
-  { value: "1", label: "Último Ciclo" },
+  { value: "1", label: "Ciclo Atual" },
   { value: "2", label: "Últimos 2 Ciclos" },
   { value: "3", label: "Últimos 3 Ciclos" }
 ];
@@ -307,10 +307,10 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg font-heading font-bold">
-              Análise Consolidada de Custos por Métrica
+              Análise Consolidada por Métrica
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
-              Custos por métrica ao longo dos ciclos
+              IPUs por métrica ao longo dos últimos ciclos
             </div>
           </div>
           <Button
