@@ -681,19 +681,9 @@ export function ProjectForecast() {
                       dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
                       stroke="hsl(var(--primary))"
                       strokeWidth={3}
+                      strokeDasharray="8 4"
                       name={getMetricLabel()}
-                      dot={(props: any) => {
-                        const { payload } = props;
-                        if (payload?.isForecast) {
-                          return (
-                            <g>
-                              <circle {...props} fill="hsl(var(--primary))" strokeWidth={2} r={4} />
-                              <line x1={props.cx - 6} y1={props.cy - 10} x2={props.cx + 6} y2={props.cy - 10} stroke="#ef4444" strokeWidth={2} strokeDasharray="2 2" />
-                            </g>
-                          );
-                        }
-                        return <circle {...props} fill="hsl(var(--primary))" strokeWidth={2} r={4} />;
-                      }}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
                       connectNulls={true}
                     />
                     
@@ -719,20 +709,39 @@ export function ProjectForecast() {
                             stroke={color}
                             strokeWidth={2}
                             name={project.name}
-                            dot={(props: any) => {
-                              const { payload } = props;
-                              if (payload?.isForecast) {
-                                return (
-                                  <g>
-                                    <circle {...props} fill={color} strokeWidth={2} r={3} />
-                                    <line x1={props.cx - 4} y1={props.cy - 8} x2={props.cx + 4} y2={props.cy - 8} stroke="#ef4444" strokeWidth={1} strokeDasharray="2 2" />
-                                  </g>
-                                );
-                              }
-                              return <circle {...props} fill={color} strokeWidth={2} r={3} />;
-                            }}
+                            dot={{ fill: color, strokeWidth: 2, r: 3 }}
+                            strokeDasharray="0"
                             activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
                             connectNulls={true}
+                          />
+                        );
+                      })
+                    }
+
+                    {/* Linhas pontilhadas vermelhas para previsão - sobrepondo as outras linhas */}
+                    {availableProjects
+                      .filter(project => {
+                        if (project.id === 'all') return false;
+                        if (selectedProjects.includes('all')) return true;
+                        return selectedProjects.includes(project.id);
+                      })
+                      .map((project, index) => {
+                        const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+                        const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+                        
+                        return (
+                          <Line
+                            key={`forecast-${project.id}`}
+                            type="monotone"
+                            dataKey={dataKey}
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            strokeDasharray="4 4"
+                            name=""
+                            dot={false}
+                            activeDot={false}
+                            connectNulls={true}
+                            legendType="none"
                           />
                         );
                       })
