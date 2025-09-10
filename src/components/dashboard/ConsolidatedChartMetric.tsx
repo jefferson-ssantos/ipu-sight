@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 
+// Limited cycle options for starter dashboard (max 3 cycles)
+const STARTER_CYCLE_OPTIONS = CYCLE_FILTER_OPTIONS.slice(0, 3);
+
 interface ConsolidatedChartMetricProps {
   selectedOrg?: string;
   availableOrgs: Array<{value: string, label: string}>;
@@ -45,7 +48,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
   const [period, setPeriod] = useState("12");
   const [selectedMetric, setSelectedMetric] = useState<string>("all");
-  const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
+  const [valueType, setValueType] = useState<"cost" | "ipu">("ipu");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
@@ -337,12 +340,12 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
             </SelectContent>
           </Select>
 
-          <Select value={period} onValueChange={setPeriod}>
+            <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-auto min-w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CYCLE_FILTER_OPTIONS.map(option => (
+              {STARTER_CYCLE_OPTIONS.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -366,15 +369,6 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
             </SelectContent>
           </Select>
 
-          <Select value={valueType} onValueChange={(value: "cost" | "ipu") => setValueType(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ipu">IPUs</SelectItem>
-              <SelectItem value="cost">Custo</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Active Filters */}
