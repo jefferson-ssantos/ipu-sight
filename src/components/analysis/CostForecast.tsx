@@ -634,6 +634,22 @@ export function CostForecast() {
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={combinedData} margin={{ left: 60, right: 20, top: 20, bottom: -5 }}>
+                    <defs>
+                      <pattern id="forecastBackground" patternUnits="userSpaceOnUse" width="100%" height="100%">
+                        <rect width="100%" height="100%" fill="hsl(var(--primary) / 0.05)" />
+                      </pattern>
+                    </defs>
+
+                    {/* Background highlight for forecast periods */}
+                    {forecastData.length > 0 && (
+                      <rect 
+                        x={`${((chartData.length + 0.8) / combinedData.length) * 100}%`}
+                        y="0%" 
+                        width={`${((forecastData.length) / combinedData.length) * 100}%`}
+                        height="100%" 
+                        fill="hsl(var(--primary) / 0.04)"
+                      />
+                    )}
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="period"
@@ -684,15 +700,37 @@ export function CostForecast() {
                             stroke={color}
                             strokeWidth={2}
                             name={meterItem.name}
-                            dot={(props: any) => {
-                              if (props.payload?.isForecast) {
-                                return <circle {...props} fill="hsl(0 70% 50%)" strokeWidth={2} r={3} />;
-                              }
-                              return <circle {...props} fill={color} strokeWidth={2} r={3} />;
-                            }}
-                            strokeDasharray="0"
+                            dot={{ fill: color, strokeWidth: 2, r: 3 }}
                             activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
                             connectNulls={true}
+                          />
+                        );
+                      });
+                    })()}
+
+                    {/* Linhas pontilhadas vermelhas para previsão - sobrepondo as outras linhas */}
+                    {(() => {
+                      const metricsToShow = selectedMeters.includes('all') ? 
+                        availableMeters.filter(m => m.id !== 'all') : 
+                        availableMeters.filter(m => selectedMeters.includes(m.id));
+                      
+                      return metricsToShow.map((meterItem) => {
+                        const metricKey = meterItem.id.replace(/[^a-zA-Z0-9]/g, '_');
+                        const dataKey = selectedMetric === 'cost' ? `${metricKey}_cost` : `${metricKey}_ipu`;
+                        
+                        return (
+                          <Line
+                            key={`forecast-${meterItem.id}`}
+                            type="monotone"
+                            dataKey={(entry) => entry.isForecast ? entry[dataKey] : null}
+                            stroke="hsl(var(--destructive))" 
+                            strokeWidth={3}
+                            strokeDasharray="8 4"
+                            name=""
+                            dot={{ fill: "hsl(var(--destructive))", strokeWidth: 2, r: 3 }}
+                            activeDot={{ r: 5, stroke: "hsl(var(--destructive))", strokeWidth: 2 }}
+                            connectNulls={true}
+                            legendType="none"
                           />
                         );
                       });
