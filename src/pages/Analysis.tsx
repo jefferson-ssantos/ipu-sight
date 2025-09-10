@@ -7,7 +7,8 @@ import { CostForecast } from "@/components/analysis/CostForecast";
 import { TrendingUp, BarChart3, Activity, FolderOpen } from "lucide-react";
 
 export default function Analysis() {
-  const [selectedTab, setSelectedTab] = useState("trends");
+  const [selectedMainTab, setSelectedMainTab] = useState("trends");
+  const [selectedSubTab, setSelectedSubTab] = useState("metrics");
 
   return (
     <div className="p-6 space-y-6">
@@ -21,74 +22,68 @@ export default function Analysis() {
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="bg-gradient-card shadow-medium">
-          <TabsTrigger 
-            value="trends" 
-            className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md"
+      {/* Tabs lado a lado */}
+      <div className="flex items-center gap-4">
+        {/* Primeiro seletor: Tendências/Análise Preditiva */}
+        <div className="flex bg-gradient-card shadow-medium rounded-lg p-1">
+          <button
+            onClick={() => setSelectedMainTab("trends")}
+            className={`flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 rounded-md ${
+              selectedMainTab === "trends"
+                ? "bg-background text-foreground shadow-sm border border-border"
+                : "hover:bg-background/50 text-muted-foreground"
+            }`}
           >
             <Activity className="h-4 w-4" />
             Tendências
-          </TabsTrigger>
-          <TabsTrigger 
-            value="forecast" 
-            className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md"
+          </button>
+          <button
+            onClick={() => setSelectedMainTab("forecast")}
+            className={`flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 rounded-md ${
+              selectedMainTab === "forecast"
+                ? "bg-background text-foreground shadow-sm border border-border"
+                : "hover:bg-background/50 text-muted-foreground"
+            }`}
           >
             <TrendingUp className="h-4 w-4" />
             Análise Preditiva
-          </TabsTrigger>
-        </TabsList>
+          </button>
+        </div>
 
-        <TabsContent value="trends" className="space-y-6">
-          <Tabs defaultValue="metrics" className="space-y-6">
-            <TabsList className="bg-gradient-card shadow-medium">
-              <TabsTrigger 
-                value="metrics" 
-                className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md">
-                <BarChart3 className="h-4 w-4" />
-                Por Métrica
-              </TabsTrigger>
-              <TabsTrigger 
-                value="projects" 
-                className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md">
-                <FolderOpen className="h-4 w-4" />
-                Por Projeto
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="metrics">
-              <CostTrendAnalysis />
-            </TabsContent>
-            
-            <TabsContent value="projects">
-              <ProjectTrendAnalysis />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
+        {/* Segundo seletor: Por Métrica/Por Projeto */}
+        <div className="flex bg-gradient-card shadow-medium rounded-lg p-1">
+          <button
+            onClick={() => setSelectedSubTab("metrics")}
+            className={`flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 rounded-md ${
+              selectedSubTab === "metrics"
+                ? "bg-background text-foreground shadow-sm border border-border"
+                : "hover:bg-background/50 text-muted-foreground"
+            }`}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Por Métrica
+          </button>
+          <button
+            onClick={() => setSelectedSubTab("projects")}
+            className={`flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 rounded-md ${
+              selectedSubTab === "projects"
+                ? "bg-background text-foreground shadow-sm border border-border"
+                : "hover:bg-background/50 text-muted-foreground"
+            }`}
+          >
+            <FolderOpen className="h-4 w-4" />
+            Por Projeto
+          </button>
+        </div>
+      </div>
 
-        <TabsContent value="forecast" className="space-y-4">
-          <Tabs defaultValue="metrics" className="space-y-4">
-            <TabsList className="bg-gradient-card shadow-medium">
-              <TabsTrigger value="metrics" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Por Métrica
-              </TabsTrigger>
-              <TabsTrigger value="projects" className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Por Projeto
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="metrics">
-              <CostForecast />
-            </TabsContent>
-            
-            <TabsContent value="projects">
-              <ProjectForecast />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-      </Tabs>
+      {/* Conteúdo baseado nas seleções */}
+      <div>
+        {selectedMainTab === "trends" && selectedSubTab === "metrics" && <CostTrendAnalysis />}
+        {selectedMainTab === "trends" && selectedSubTab === "projects" && <ProjectTrendAnalysis />}
+        {selectedMainTab === "forecast" && selectedSubTab === "metrics" && <CostForecast />}
+        {selectedMainTab === "forecast" && selectedSubTab === "projects" && <ProjectForecast />}
+      </div>
     </div>
   );
 }
