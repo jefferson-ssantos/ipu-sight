@@ -443,7 +443,9 @@ export function ProjectForecast() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       // Filter out forecast lines (they have empty names)
-      const filteredPayload = payload.filter((entry: any) => entry.name && entry.name.trim() !== "");
+      const filteredPayload = payload.filter((entry: any) => 
+        entry.name && typeof entry.name === 'string' && entry.name.trim() !== ""
+      );
       
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
