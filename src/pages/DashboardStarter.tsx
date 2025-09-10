@@ -173,15 +173,17 @@ export default function DashboardStarter() {
           </CardContent>
         </Card>
 
-        <ConsolidatedChartStarter 
-          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
-          availableOrgs={availableOrgs} 
-        />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <ConsolidatedChartStarter 
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+            availableOrgs={availableOrgs} 
+          />
 
-        <ConsolidatedChartMetric 
-          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
-          availableOrgs={availableOrgs} 
-        />
+          <ConsolidatedChartMetric 
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+            availableOrgs={availableOrgs} 
+          />
+        </div>
 
       </div>
     </div>
