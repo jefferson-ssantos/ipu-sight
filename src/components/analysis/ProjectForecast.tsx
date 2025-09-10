@@ -24,6 +24,7 @@ export function ProjectForecast() {
   const [forecastData, setForecastData] = useState<any[]>([]);
   const [forecastPeriod, setForecastPeriod] = useState("3months");
   const chartRef = useRef<HTMLDivElement>(null);
+  const [pinnedTooltip, setPinnedTooltip] = useState<any>(null);
 
   // Cores personalizadas fornecidas pelo usuário
   const colors = [
@@ -443,10 +444,15 @@ export function ProjectForecast() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const value = payload[0].value;
+      
+      // Get all projects being shown
+      const projectsToShow = selectedProjects.includes('all') ? 
+        availableProjects.filter(p => p.id !== 'all') : 
+        availableProjects.filter(p => selectedProjects.includes(p.id));
+      
       return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium flex items-center gap-2">
+        <div className="bg-background border border-border rounded-lg p-3 shadow-lg max-w-xs">
+          <p className="font-medium flex items-center gap-2 mb-2">
             {label}
             {data.isForecast && (
               <Badge variant="outline" className="text-xs">
@@ -454,13 +460,120 @@ export function ProjectForecast() {
               </Badge>
             )}
           </p>
-          <p className="text-primary">
-            {selectedMetric === 'cost' ? formatCurrency(value) : `${formatIPU(value)} IPUs`}
-          </p>
+          
+          {/* Total value */}
+          <div className="mb-2 p-2 bg-muted rounded">
+            <p className="text-sm font-medium">Total</p>
+            <p className="text-primary font-bold">
+              {selectedMetric === 'cost' ? 
+                formatCurrency(data[selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'] || 0) : 
+                `${formatIPU(data[selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'] || 0)} IPUs`
+              }
+            </p>
+          </div>
+          
+          {/* Individual project values */}
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {projectsToShow.map((project, index) => {
+              const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+              const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+              const value = data[dataKey] || 0;
+              const color = colors[index % colors.length];
+              
+              if (value === 0) return null;
+              
+              return (
+                <div key={project.id} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="truncate max-w-24">{project.name}</span>
+                  </div>
+                  <span className="font-medium">
+                    {selectedMetric === 'cost' ? formatCurrency(value) : `${formatIPU(value)}`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       );
     }
     return null;
+  };
+
+  const PinnedTooltip = () => {
+    if (!pinnedTooltip) return null;
+    
+    const { data, position } = pinnedTooltip;
+    
+    // Get all projects being shown
+    const projectsToShow = selectedProjects.includes('all') ? 
+      availableProjects.filter(p => p.id !== 'all') : 
+      availableProjects.filter(p => selectedProjects.includes(p.id));
+    
+    return (
+      <div 
+        className="fixed bg-background border border-border rounded-lg p-3 shadow-lg max-w-xs z-50"
+        style={{ 
+          left: Math.min(position.x, window.innerWidth - 320), 
+          top: Math.min(position.y, window.innerHeight - 200) 
+        }}
+      >
+        <p className="font-medium flex items-center gap-2 mb-2">
+          {data.period}
+          {data.isForecast && (
+            <Badge variant="outline" className="text-xs">
+              Análise Preditiva ({(data.confidence * 100).toFixed(0)}% confiança)
+            </Badge>
+          )}
+        </p>
+        
+        {/* Total value */}
+        <div className="mb-2 p-2 bg-muted rounded">
+          <p className="text-sm font-medium">Total</p>
+          <p className="text-primary font-bold">
+            {selectedMetric === 'cost' ? 
+              formatCurrency(data[selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'] || 0) : 
+              `${formatIPU(data[selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'] || 0)} IPUs`
+            }
+          </p>
+        </div>
+        
+        {/* Individual project values */}
+        <div className="space-y-1 max-h-32 overflow-y-auto">
+          {projectsToShow.map((project, index) => {
+            const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+            const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+            const value = data[dataKey] || 0;
+            const color = colors[index % colors.length];
+            
+            if (value === 0) return null;
+            
+            return (
+              <div key={project.id} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="truncate max-w-24">{project.name}</span>
+                </div>
+                <span className="font-medium">
+                  {selectedMetric === 'cost' ? formatCurrency(value) : `${formatIPU(value)}`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="mt-2 pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground">Clique fora para fechar</p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -638,7 +751,19 @@ export function ProjectForecast() {
             ) : (
               <div className="h-96 relative">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={combinedData} margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
+                  <LineChart 
+                    data={combinedData} 
+                    margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
+                    onClick={(event) => {
+                      if (event && event.activePayload && event.activePayload.length > 0) {
+                        const data = event.activePayload[0].payload;
+                        setPinnedTooltip({
+                          data,
+                          position: { x: event.chartX || 0, y: event.chartY || 0 }
+                        });
+                      }
+                    }}
+                  >
                     <defs>
                       <pattern id="forecastBackground" patternUnits="userSpaceOnUse" width="100%" height="100%">
                         <rect width="100%" height="100%" fill="hsl(var(--primary) / 0.05)" />
@@ -754,6 +879,17 @@ export function ProjectForecast() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Pinned Tooltip */}
+      <PinnedTooltip />
+      
+      {/* Click outside to close pinned tooltip */}
+      {pinnedTooltip && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setPinnedTooltip(null)}
+        />
+      )}
     </div>
   );
 }
