@@ -650,9 +650,9 @@ export function ProjectForecast() {
                     {/* Background highlight for forecast periods */}
                     {forecastData.length > 0 && (
                       <rect 
-                        x={`${((chartData.length - 0.5) / combinedData.length) * 100}%`}
+                        x={`${((chartData.length / combinedData.length) * 100)}%`}
                         y="0%" 
-                        width={`${((forecastData.length + 0.5) / combinedData.length) * 100}%`}
+                        width={`${((forecastData.length / combinedData.length) * 100)}%`}
                         height="100%" 
                         fill="hsl(var(--primary) / 0.04)"
                       />
@@ -736,7 +736,7 @@ export function ProjectForecast() {
                             type="monotone"
                             dataKey={(entry) => entry.isForecast ? entry[dataKey] : null}
                             stroke="hsl(var(--destructive))" 
-                            strokeWidth={4}
+                            strokeWidth={3}
                             strokeDasharray="8 4"
                             name=""
                             dot={{ fill: "hsl(var(--destructive))", strokeWidth: 2, r: 3 }}
