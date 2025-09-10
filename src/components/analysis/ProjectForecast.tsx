@@ -650,7 +650,7 @@ export function ProjectForecast() {
                     {/* Background highlight for forecast periods */}
                     {forecastData.length > 0 && (
                       <rect 
-                        x={`${((chartData.length - 0.5) / combinedData.length) * 100}%`}
+                        x={`${((chartData.length + 0.5) / combinedData.length) * 100}%`}
                         y="0%" 
                         width={`${((forecastData.length + 0.5) / combinedData.length) * 100}%`}
                         height="100%" 
