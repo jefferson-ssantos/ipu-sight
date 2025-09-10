@@ -17,7 +17,7 @@ export default function Analysis() {
         <div>
           <h1 className="text-3xl font-bold">Análise de Custos</h1>
           <p className="text-muted-foreground">
-            Têndencias e Previsões sobre seus custos do IDMC
+            Têndencias e Análise Preditiva sobre seus custos do IDMC
           </p>
         </div>
       </div>
@@ -36,7 +36,7 @@ export default function Analysis() {
             className="flex items-center gap-2 h-9 px-4 text-sm font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border rounded-md"
           >
             <TrendingUp className="h-4 w-4" />
-            Previsão
+            Análise Preditiva
           </TabsTrigger>
         </TabsList>
 
