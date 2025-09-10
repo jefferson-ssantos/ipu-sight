@@ -11,8 +11,12 @@ import { toast } from "sonner";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 
-// Limited cycle options for starter dashboard (max 3 cycles)
-const STARTER_CYCLE_OPTIONS = CYCLE_FILTER_OPTIONS.slice(0, 3);
+// Custom cycle options for starter dashboard
+const STARTER_CYCLE_OPTIONS = [
+  { value: "1", label: "Último Ciclo" },
+  { value: "2", label: "Últimos 2 Ciclos" },
+  { value: "3", label: "Últimos 3 Ciclos" }
+];
 
 interface ConsolidatedChartMetricProps {
   selectedOrg?: string;
@@ -46,7 +50,7 @@ const colors = [
 
 export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: ConsolidatedChartMetricProps) {
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
-  const [period, setPeriod] = useState("12");
+  const [period, setPeriod] = useState("3");
   const [selectedMetric, setSelectedMetric] = useState<string>("all");
   const [valueType, setValueType] = useState<"cost" | "ipu">("ipu");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
