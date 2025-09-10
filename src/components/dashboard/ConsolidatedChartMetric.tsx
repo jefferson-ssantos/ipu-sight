@@ -9,7 +9,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 
 // Custom cycle options for starter dashboard
 const STARTER_CYCLE_OPTIONS = [
@@ -539,10 +538,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
                             </div>
                             <div className="text-right flex-shrink-0">
                               <div className="font-semibold text-lg">
-                                {valueType === 'cost' ? formatCurrency(metric.value) : formatIPU(metric.value)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {formatIPU(valueType === 'cost' ? metric.value / pricePerIpu : metric.value)} IPUs
+                                {valueType === 'cost' ? formatCurrency(metric.value) : formatIPU(metric.value)} IPUs
                               </div>
                             </div>
                           </div>

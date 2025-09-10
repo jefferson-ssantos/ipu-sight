@@ -130,7 +130,7 @@ export default function DashboardStarter() {
                       </Badge>
                     )}
                     <Badge variant="secondary" className="text-primary-foreground">
-                      Visão Básica
+                      Visão Starter
                     </Badge>
                   </div>
                 </div>
