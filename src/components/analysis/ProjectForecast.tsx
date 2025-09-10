@@ -510,7 +510,12 @@ export function ProjectForecast() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className={`text-2xl font-bold ${
+              summary.expectedChange > 10 ? 'text-red-500' :
+              summary.expectedChange > 5 ? 'text-yellow-500' :
+              summary.expectedChange > 0 ? 'text-green-500' :
+              'text-muted-foreground'
+            }`}>
               {summary.expectedChange.toFixed(1)}%
             </div>
             <div className="text-sm text-muted-foreground">
@@ -631,10 +636,28 @@ export function ProjectForecast() {
                 <div className="text-muted-foreground">Nenhum dado disponível para o período selecionado</div>
               </div>
             ) : (
-              <div className="h-96">
+              <div className="h-96 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={combinedData} margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
+                    <defs>
+                      <pattern id="forecastBackground" patternUnits="userSpaceOnUse" width="100%" height="100%">
+                        <rect width="100%" height="100%" fill="hsl(var(--primary) / 0.05)" />
+                      </pattern>
+                    </defs>
+                    
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    
+                    {/* Background highlight for forecast periods */}
+                    {forecastData.length > 0 && (
+                      <rect 
+                        x={`${((chartData.length / combinedData.length) * 100)}%`}
+                        y="0%" 
+                        width={`${((forecastData.length / combinedData.length) * 100)}%`}
+                        height="100%" 
+                        fill="hsl(var(--primary) / 0.05)"
+                      />
+                    )}
+                    
                     <XAxis 
                       dataKey="period" 
                       stroke="hsl(var(--foreground))"
@@ -652,15 +675,25 @@ export function ProjectForecast() {
                     />
                     <Tooltip content={<CustomTooltip />} />
                     
-                    {/* Linha total pontilhada */}
+                    {/* Linha total */}
                     <Line
                       type="monotone"
                       dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
                       stroke="hsl(var(--primary))"
                       strokeWidth={3}
-                      strokeDasharray="8 4"
                       name={getMetricLabel()}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      dot={(props: any) => {
+                        const { payload } = props;
+                        if (payload?.isForecast) {
+                          return (
+                            <g>
+                              <circle {...props} fill="hsl(var(--primary))" strokeWidth={2} r={4} />
+                              <line x1={props.cx - 6} y1={props.cy - 10} x2={props.cx + 6} y2={props.cy - 10} stroke="#ef4444" strokeWidth={2} strokeDasharray="2 2" />
+                            </g>
+                          );
+                        }
+                        return <circle {...props} fill="hsl(var(--primary))" strokeWidth={2} r={4} />;
+                      }}
                       connectNulls={true}
                     />
                     
@@ -687,12 +720,17 @@ export function ProjectForecast() {
                             strokeWidth={2}
                             name={project.name}
                             dot={(props: any) => {
-                              if (props.payload?.isForecast) {
-                                return <circle {...props} fill="hsl(0 70% 50%)" strokeWidth={2} r={3} />;
+                              const { payload } = props;
+                              if (payload?.isForecast) {
+                                return (
+                                  <g>
+                                    <circle {...props} fill={color} strokeWidth={2} r={3} />
+                                    <line x1={props.cx - 4} y1={props.cy - 8} x2={props.cx + 4} y2={props.cy - 8} stroke="#ef4444" strokeWidth={1} strokeDasharray="2 2" />
+                                  </g>
+                                );
                               }
                               return <circle {...props} fill={color} strokeWidth={2} r={3} />;
                             }}
-                            strokeDasharray="0"
                             activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
                             connectNulls={true}
                           />
