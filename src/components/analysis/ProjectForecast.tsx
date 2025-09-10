@@ -22,7 +22,7 @@ export function ProjectForecast() {
   const [availableProjects, setAvailableProjects] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [forecastData, setForecastData] = useState<any[]>([]);
-  const [forecastPeriod, setForecastPeriod] = useState("6months");
+  const [forecastPeriod, setForecastPeriod] = useState("3months");
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Cores personalizadas fornecidas pelo usuário
