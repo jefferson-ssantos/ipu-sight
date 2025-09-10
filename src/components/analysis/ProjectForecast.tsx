@@ -442,10 +442,18 @@ export function ProjectForecast() {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // Filtrar apenas valores que não são de previsão (forecast)
+      const filteredPayload = payload.filter((entry: any) => {
+        const data = entry.payload;
+        return !data.isForecast;
+      });
+
+      if (filteredPayload.length === 0) return null;
+
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {filteredPayload.map((entry: any, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {selectedMetric === 'cost' ? formatCurrency(entry.value) : `${formatIPU(entry.value)} IPUs`}
             </p>
