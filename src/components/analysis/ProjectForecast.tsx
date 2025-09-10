@@ -675,22 +675,17 @@ export function ProjectForecast() {
                     />
                     <Tooltip content={<CustomTooltip />} />
                     
-                     {/* Linha total */}
-                     <Line
-                       type="monotone"
-                       dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                       stroke="hsl(var(--primary))"
-                       strokeWidth={3}
-                       strokeDasharray="8 4"
-                       name={getMetricLabel()}
-                       dot={(props: any) => {
-                         if (props.payload?.isForecast) {
-                           return <circle {...props} fill="hsl(var(--primary))" strokeWidth={2} r={4} />;
-                         }
-                         return <circle {...props} fill="hsl(var(--primary))" strokeWidth={2} r={4} />;
-                       }}
-                       connectNulls={true}
-                     />
+                    {/* Linha total */}
+                    <Line
+                      type="monotone"
+                      dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      strokeDasharray="8 4"
+                      name={getMetricLabel()}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      connectNulls={true}
+                    />
                     
                     {/* Linhas individuais para cada projeto */}
                     {availableProjects
@@ -707,139 +702,52 @@ export function ProjectForecast() {
                         const color = colors[index % colors.length];
                         
                         return (
-                           <Line
-                             key={project.id}
-                             type="monotone"
-                             dataKey={dataKey}
-                             stroke={color}
-                             strokeWidth={2}
-                             name={project.name}
-                             dot={(props: any) => {
-                               if (props.payload?.isForecast) {
-                                 return <circle {...props} fill={color} strokeWidth={2} r={3} />;
-                               }
-                               return <circle {...props} fill={color} strokeWidth={2} r={3} />;
-                             }}
-                             activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
-                             connectNulls={true}
-                           />
-                         );
-                       })
-                     }
+                          <Line
+                            key={project.id}
+                            type="monotone"
+                            dataKey={dataKey}
+                            stroke={color}
+                            strokeWidth={2}
+                            name={project.name}
+                            dot={{ fill: color, strokeWidth: 2, r: 3 }}
+                            strokeDasharray="0"
+                            activeDot={{ r: 5, stroke: color, strokeWidth: 2 }}
+                            connectNulls={true}
+                          />
+                        );
+                      })
+                    }
 
-                     {/* Linha total de previsão - pontilhada vermelha mais grossa - só nos períodos de previsão */}
-                     {forecastData.length > 0 && (
-                       <Line
-                         type="monotone"
-                         dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                         stroke="#ef4444"
-                         strokeWidth={4}
-                         strokeDasharray="6 4"
-                         name=""
-                         dot={false}
-                         connectNulls={true}
-                         legendType="none"
-                         data={forecastData.map(item => ({
-                           ...item,
-                           period: item.period
-                         }))}
-                       />
-                     )}
-                     
-                     {/* Linhas individuais de previsão - pontilhadas vermelhas mais grossas - só nos períodos de previsão */}
-                     {forecastData.length > 0 && availableProjects
-                       .filter(project => {
-                         if (project.id === 'all') return false;
-                         if (selectedProjects.includes('all')) return true;
-                         return selectedProjects.includes(project.id);
-                       })
-                       .map((project, index) => {
-                         const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
-                         const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
-                         
-                         return (
-                           <Line
-                             key={`forecast-${project.id}`}
-                             type="monotone"
-                             dataKey={dataKey}
-                             stroke="#ef4444"
-                             strokeWidth={3}
-                             strokeDasharray="4 3"
-                             name=""
-                             dot={false}
-                             connectNulls={true}
-                             legendType="none"
-                             data={forecastData.map(item => ({
-                               ...item,
-                               period: item.period
-                             }))}
-                           />
-                         );
-                       })
-                     }
+                    {/* Linhas pontilhadas vermelhas para previsão - sobrepondo as outras linhas */}
+                    {availableProjects
+                      .filter(project => {
+                        if (project.id === 'all') return false;
+                        if (selectedProjects.includes('all')) return true;
+                        return selectedProjects.includes(project.id);
+                      })
+                      .map((project, index) => {
+                        const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
+                        const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
+                        
+                        return (
+                          <Line
+                            key={`forecast-${project.id}`}
+                            type="monotone"
+                            dataKey={dataKey}
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            strokeDasharray="4 4"
+                            name=""
+                            dot={false}
+                            activeDot={false}
+                            connectNulls={true}
+                            legendType="none"
+                          />
+                        );
+                      })
+                    }
                   </LineChart>
                 </ResponsiveContainer>
-
-                {/* Gráfico sobreposto para linhas pontilhadas de previsão */}
-                {forecastData.length > 0 && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={forecastData} margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
-                        <XAxis 
-                          dataKey="period" 
-                          axisLine={false}
-                          tickLine={false}
-                          tick={false}
-                        />
-                        <YAxis 
-                          axisLine={false}
-                          tickLine={false}
-                          tick={false}
-                          domain={['dataMin', 'dataMax']}
-                        />
-                        
-                        {/* Linha total de previsão pontilhada */}
-                        <Line
-                          type="monotone"
-                          dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                          stroke="#ef4444"
-                          strokeWidth={4}
-                          strokeDasharray="6 4"
-                          dot={false}
-                          activeDot={false}
-                          connectNulls={true}
-                        />
-                        
-                        {/* Linhas individuais de previsão pontilhadas */}
-                        {availableProjects
-                          .filter(project => {
-                            if (project.id === 'all') return false;
-                            if (selectedProjects.includes('all')) return true;
-                            return selectedProjects.includes(project.id);
-                          })
-                          .map((project, index) => {
-                            const projectKey = project.id.replace(/[^a-zA-Z0-9]/g, '_');
-                            const dataKey = selectedMetric === 'cost' ? `${projectKey}_cost` : `${projectKey}_ipu`;
-                            
-                            return (
-                              <Line
-                                key={`forecast-${project.id}`}
-                                type="monotone"
-                                dataKey={dataKey}
-                                stroke="#ef4444"
-                                strokeWidth={3}
-                                strokeDasharray="4 3"
-                                dot={false}
-                                activeDot={false}
-                                connectNulls={true}
-                              />
-                            );
-                          })
-                        }
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
               </div>
             )}
           </div>
