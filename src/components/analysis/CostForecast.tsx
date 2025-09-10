@@ -436,10 +436,13 @@ export function CostForecast() {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // Filter out forecast lines (they have empty names)
+      const filteredPayload = payload.filter((entry: any) => entry.name && entry.name.trim() !== "");
+      
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {filteredPayload.map((entry: any, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {selectedMetric === 'cost' ? formatCurrency(entry.value) : `${formatIPU(entry.value)} IPUs`}
             </p>
