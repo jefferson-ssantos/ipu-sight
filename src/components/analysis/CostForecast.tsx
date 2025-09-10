@@ -23,6 +23,7 @@ export function CostForecast() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [forecastData, setForecastData] = useState<any[]>([]);
   const [forecastPeriod, setForecastPeriod] = useState("3months");
+  const [pinnedTooltip, setPinnedTooltip] = useState<any>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Cores personalizadas fornecidas pelo usuário
@@ -435,20 +436,34 @@ export function CostForecast() {
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if ((active && payload && payload.length) || pinnedTooltip) {
+      const currentPayload = pinnedTooltip || payload;
+      const currentLabel = pinnedTooltip ? pinnedTooltip.label : label;
+      
       // Filter out forecast lines (they have empty names)
-      const filteredPayload = payload.filter((entry: any) => 
+      const filteredPayload = currentPayload.filter((entry: any) => 
         entry.name && typeof entry.name === 'string' && entry.name.trim() !== ""
       );
       
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium mb-2">{label}</p>
+          <p className="font-medium mb-2">{currentLabel}</p>
           {filteredPayload.map((entry: any, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {selectedMetric === 'cost' ? formatCurrency(entry.value) : `${formatIPU(entry.value)} IPUs`}
             </p>
           ))}
+          {pinnedTooltip && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setPinnedTooltip(null);
+              }}
+              className="text-xs text-muted-foreground mt-2 hover:text-foreground"
+            >
+              Clique para fechar
+            </button>
+          )}
         </div>
       );
     }
@@ -456,7 +471,13 @@ export function CostForecast() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onClick={(e) => {
+      // Se clicar fora do tooltip, remove o pinned tooltip
+      const target = e.target as Element;
+      if (!target.closest('.recharts-tooltip-wrapper') && !target.closest('button')) {
+        setPinnedTooltip(null);
+      }
+    }}>
       {/* KPIs Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-card shadow-medium">
