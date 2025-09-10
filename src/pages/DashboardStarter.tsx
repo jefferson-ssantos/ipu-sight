@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChartStarter } from "@/components/dashboard/ConsolidatedChartStarter";
-import { MetricBreakdownStarter } from "@/components/dashboard/MetricBreakdownStarter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -173,17 +172,11 @@ export default function DashboardStarter() {
           </CardContent>
         </Card>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <ConsolidatedChartStarter 
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
-            availableOrgs={availableOrgs} 
-          />
-          
-          <MetricBreakdownStarter 
-            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
-          />
-        </div>
+        {/* Simplified Chart Section */}
+        <ConsolidatedChartStarter 
+          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+          availableOrgs={availableOrgs} 
+        />
       </div>
     </div>
   );
