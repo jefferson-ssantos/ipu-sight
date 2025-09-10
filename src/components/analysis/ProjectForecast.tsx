@@ -654,7 +654,7 @@ export function ProjectForecast() {
                         y="0%" 
                         width={`${((forecastData.length / combinedData.length) * 100)}%`}
                         height="100%" 
-                        fill="hsl(var(--primary) / 0.05)"
+                        fill="hsl(var(--primary) / 0.04)"
                       />
                     )}
                     
@@ -683,7 +683,8 @@ export function ProjectForecast() {
                       strokeWidth={3}
                       strokeDasharray="8 4"
                       name={getMetricLabel()}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 1, r: 3 }}
+                      activeDot={{ r: 5, stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
                       connectNulls={true}
                     />
                     
@@ -733,13 +734,13 @@ export function ProjectForecast() {
                           <Line
                             key={`forecast-${project.id}`}
                             type="monotone"
-                            dataKey={dataKey}
-                            stroke="#ef4444"
-                            strokeWidth={2}
-                            strokeDasharray="4 4"
+                            dataKey={(entry) => entry.isForecast ? entry[dataKey] : null}
+                            stroke="hsl(var(--destructive))" 
+                            strokeWidth={3}
+                            strokeDasharray="8 4"
                             name=""
-                            dot={false}
-                            activeDot={false}
+                            dot={{ fill: "hsl(var(--destructive))", strokeWidth: 2, r: 3 }}
+                            activeDot={{ r: 5, stroke: "hsl(var(--destructive))", strokeWidth: 2 }}
                             connectNulls={true}
                             legendType="none"
                           />
