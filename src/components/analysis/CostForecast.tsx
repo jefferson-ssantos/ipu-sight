@@ -471,14 +471,15 @@ export function CostForecast() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Indicadores Estatísticos */}
-      <Card className="bg-card/50 backdrop-blur shadow-medium">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Indicadores Estatísticos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-4" onClick={(e) => {
+      // Se clicar fora do tooltip, remove o pinned tooltip
+      const target = e.target as Element;
+      if (!target.closest('.recharts-tooltip-wrapper') && !target.closest('button')) {
+        setPinnedTooltip(null);
+      }
+    }}>
+      {/* KPIs Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -552,9 +553,7 @@ export function CostForecast() {
             </div>
           </CardContent>
         </Card>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Chart Section */}
       <Card className="bg-card/50 backdrop-blur shadow-medium" onClick={(e) => {
