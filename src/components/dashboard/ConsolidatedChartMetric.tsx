@@ -406,7 +406,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={chartDataWithDisplayTotal} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 55 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 25 }}
                 onClick={handleBarClick}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />

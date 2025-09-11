@@ -139,7 +139,7 @@ export default function DashboardEssential() {
               <div className="flex items-center gap-4">
                 <div>
                   <CardTitle className="text-xl font-heading font-bold text-foreground">
-                    Dashboard Essential
+                    Indicadores
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-2">
                     {dashboardData?.periodStart && dashboardData?.periodEnd && (
@@ -149,7 +149,7 @@ export default function DashboardEssential() {
                       </Badge>
                     )}
                     <Badge variant="secondary" className="text-primary-foreground">
-                      Visão Essencial
+                      Versão Essential
                     </Badge>
                   </div>
                 </div>
@@ -203,20 +203,22 @@ export default function DashboardEssential() {
           </CardContent>
         </Card>
 
-        {/* Organization Comparison Section */}
-        <OrganizationComparison 
-          selectedOrg={selectedOrg}
-          selectedCycleFilter={selectedCycleFilter}
-          availableOrgs={availableOrgs}
-          onOrgChange={setSelectedOrg}
-          onCycleFilterChange={setSelectedCycleFilter}
-        />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Organization Comparison Section */}
+          <OrganizationComparison 
+            selectedOrg={selectedOrg}
+            selectedCycleFilter={selectedCycleFilter}
+            availableOrgs={availableOrgs}
+            onOrgChange={setSelectedOrg}
+            onCycleFilterChange={setSelectedCycleFilter}
+          />
 
-        {/* Consolidated Chart Section */}
-        <ConsolidatedChart 
-          selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
-          availableOrgs={availableOrgs} 
-        />
+          {/* Consolidated Chart Section */}
+          <ConsolidatedChart 
+            selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
+            availableOrgs={availableOrgs} 
+          />
+        </div>
 
         {/* Project Chart Section */}
         <ProjectChart 

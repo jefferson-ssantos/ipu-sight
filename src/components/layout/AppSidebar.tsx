@@ -57,10 +57,10 @@ export function AppSidebar() {
     
     if (permissions?.canAccessDashboardStarter) {
       items.push({
-        title: "Dashboard Starter",
+        title: "Dashboard",
         url: "/dashboard-starter",
         icon: BarChart3, 
-        description: "Dashboard inicial"
+        description: "Visão geral dos custos e consumo"
       });
     }
     
@@ -78,7 +78,7 @@ export function AppSidebar() {
         title: "Análise de Custos",
         url: "/analysis", 
         icon: TrendingUp,
-        description: "Análise detalhada de tendências"
+        description: "Análise preditivas e tendências"
       });
     }
     
@@ -91,10 +91,10 @@ export function AppSidebar() {
     
     return [
       {
-        title: "Conexões",
+        title: "Configurações",
         url: "/config/connections",
         icon: Cable,
-        description: "Configurações de conexão IDMC"
+        description: "Configurações gerais"
       }
     ];
   };
@@ -107,7 +107,7 @@ export function AppSidebar() {
         title: "Detalhamento",
         url: "/detalhamento",
         icon: PieChart,
-        description: "Detalhamento por métrica"
+        description: "Detalhamento por Asset"
       }
     ];
   };

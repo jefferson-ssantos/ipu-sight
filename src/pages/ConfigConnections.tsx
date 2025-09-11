@@ -21,7 +21,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Database, Plus, Pencil, Trash2, Building } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, Building, Cable } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -165,9 +165,9 @@ export default function ConfigConnections() {
         <div className="flex items-center gap-3">
           <Database className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">Conexões</h1>
+            <h1 className="text-3xl font-bold">Configurações IDMC</h1>
             <p className="text-muted-foreground">
-              Gerencie suas configurações IDMC
+              Gerencie suas configurações de conexão com o IDMC
             </p>
           </div>
         </div>
@@ -175,8 +175,8 @@ export default function ConfigConnections() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Configurações IDMC
+              <Cable className="h-5 w-5" />
+              Conexões IDMC
             </CardTitle>
             <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
               <DialogTrigger asChild>

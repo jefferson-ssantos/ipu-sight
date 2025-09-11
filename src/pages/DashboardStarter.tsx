@@ -120,7 +120,7 @@ export default function DashboardStarter() {
               <div className="flex items-center gap-4">
                 <div>
                   <CardTitle className="text-xl font-heading font-bold text-foreground">
-                    Dashboard Starter
+                    Indicadores
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-2">
                     {dashboardData?.periodStart && dashboardData?.periodEnd && (
@@ -130,7 +130,7 @@ export default function DashboardStarter() {
                       </Badge>
                     )}
                     <Badge variant="secondary" className="text-primary-foreground">
-                      Visão Inicial
+                      Versão Starter
                     </Badge>
                   </div>
                 </div>
