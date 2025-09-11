@@ -161,9 +161,9 @@ export default function ConfigConnections() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Database className="h-8 w-8" />
+      <div className="p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <Database className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold">Conexões</h1>
             <p className="text-muted-foreground">
