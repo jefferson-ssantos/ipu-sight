@@ -185,7 +185,7 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
           </div>
           
           <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
-            <SelectTrigger className="w-auto min-w-44 max-w-64">
+            <SelectTrigger className="w-auto min-w-[180px] max-w-[200px]">
               <SelectValue placeholder="Organização" />
             </SelectTrigger>
             <SelectContent>
@@ -198,7 +198,7 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
           </Select>
 
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-auto min-w-48">
+            <SelectTrigger className="w-auto min-w-[160px] max-w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

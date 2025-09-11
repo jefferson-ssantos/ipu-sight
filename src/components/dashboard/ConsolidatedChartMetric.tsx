@@ -331,7 +331,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
           </div>
           
           <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
-            <SelectTrigger className="w-auto min-w-44 max-w-64">
+            <SelectTrigger className="w-auto min-w-[180px] max-w-[200px]">
               <SelectValue placeholder="Organização" />
             </SelectTrigger>
             <SelectContent>
@@ -343,8 +343,8 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
             </SelectContent>
           </Select>
 
-            <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-auto min-w-48">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-auto min-w-[160px] max-w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -357,7 +357,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
           </Select>
 
           <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-auto min-w-[160px] max-w-[200px]">
               <SelectValue placeholder="Métricas" />
             </SelectTrigger>
             <SelectContent>
