@@ -25,6 +25,8 @@ interface AssetData {
   runtime_environment: string | null;
   org_id: string | null;
   org_name: string | null;
+  trend?: 'up' | 'down' | 'stable';
+  trendPercentage?: number;
 }
 
 interface AssetDetailProps {
@@ -55,12 +57,46 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
       const filtered = assets.filter(asset =>
         asset.asset_name?.toLowerCase().includes(search.toLowerCase()) ||
         asset.meter_name?.toLowerCase().includes(search.toLowerCase()) ||
-        asset.asset_type?.toLowerCase().includes(search.toLowerCase()) ||
         asset.project_name?.toLowerCase().includes(search.toLowerCase())
       );
       setFilteredAssets(filtered);
     }
   }, [search, assets]);
+
+  const calculateTrend = (asset: any, allAssets: any[]): { trend: 'up' | 'down' | 'stable', percentage: number } => {
+    // Find previous records for the same asset, project, and organization
+    const sameAssetRecords = allAssets
+      .filter(a => 
+        a.asset_name === asset.asset_name &&
+        a.project_name === asset.project_name &&
+        a.org_id === asset.org_id &&
+        a.consumption_date !== asset.consumption_date &&
+        new Date(a.consumption_date) < new Date(asset.consumption_date)
+      )
+      .sort((a, b) => new Date(b.consumption_date).getTime() - new Date(a.consumption_date).getTime())
+      .slice(0, 5);
+
+    if (sameAssetRecords.length === 0) {
+      return { trend: 'stable', percentage: 0 };
+    }
+
+    const currentConsumption = asset.consumption_ipu || 0;
+    const avgPreviousConsumption = sameAssetRecords.reduce((sum, record) => sum + (record.consumption_ipu || 0), 0) / sameAssetRecords.length;
+
+    if (avgPreviousConsumption === 0) {
+      return { trend: 'stable', percentage: 0 };
+    }
+
+    const percentageChange = ((currentConsumption - avgPreviousConsumption) / avgPreviousConsumption) * 100;
+
+    if (percentageChange > 5) {
+      return { trend: 'up', percentage: Math.abs(percentageChange) };
+    } else if (percentageChange < -5) {
+      return { trend: 'down', percentage: Math.abs(percentageChange) };
+    } else {
+      return { trend: 'stable', percentage: Math.abs(percentageChange) };
+    }
+  };
 
   const fetchAssetData = async () => {
     try {
@@ -122,11 +158,16 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         return;
       }
 
-      const processedData = data?.map(asset => ({
-        ...asset,
-        cost: (asset.consumption_ipu || 0) * Number(clientPricing.preco_por_ipu),
-        org_name: orgNameMap.get(asset.org_id) || null
-      })) || [];
+      const processedData = data?.map(asset => {
+        const { trend, percentage } = calculateTrend(asset, data);
+        return {
+          ...asset,
+          cost: (asset.consumption_ipu || 0) * Number(clientPricing.preco_por_ipu),
+          org_name: orgNameMap.get(asset.org_id) || null,
+          trend,
+          trendPercentage: percentage
+        };
+      }) || [];
 
       setAssets(processedData);
     } catch (error) {
@@ -152,18 +193,47 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
     return value.toLocaleString('pt-BR');
   };
 
+  const getTrendBadge = (trend: 'up' | 'down' | 'stable', percentage: number) => {
+    const formattedPercentage = percentage.toFixed(1);
+    
+    switch (trend) {
+      case 'up':
+        return (
+          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+            ↗ +{formattedPercentage}%
+          </Badge>
+        );
+      case 'down':
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+            ↘ -{formattedPercentage}%
+          </Badge>
+        );
+      case 'stable':
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+            → ±{formattedPercentage}%
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">N/A</Badge>
+        );
+    }
+  };
+
   const exportData = () => {
     const csvContent = [
-      ['Asset', 'Tipo', 'IPU', 'Custo', 'Data', 'Projeto', 'Ambiente', 'Organização'].join(','),
+      ['Asset', 'IPU', 'Custo', 'Data', 'Projeto', 'Ambiente', 'Organização', 'Tendência'].join(','),
       ...filteredAssets.map(asset => [
         asset.asset_name || asset.meter_name || '',
-        asset.asset_type || '',
         formatIPU(asset.consumption_ipu || 0),
         formatCurrency(asset.cost),
         asset.consumption_date || '',
         asset.project_name || '',
         asset.runtime_environment || '',
-        asset.org_name || asset.org_id || ''
+        asset.org_name || asset.org_id || '',
+        asset.trend ? `${asset.trend === 'up' ? '+' : asset.trend === 'down' ? '-' : '±'}${asset.trendPercentage?.toFixed(1)}%` : 'N/A'
       ].join(','))
     ].join('\n');
 
@@ -221,7 +291,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Buscar por asset, tipo ou projeto..."
+              placeholder="Buscar por asset ou projeto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
@@ -246,18 +316,18 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
                     <TableHead>Asset</TableHead>
-                    <TableHead>Tipo</TableHead>
                     <TableHead>Projeto</TableHead>
                     <TableHead>Organização</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>IPU</TableHead>
                     <TableHead>Custo</TableHead>
+                    <TableHead>Tendência</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAssets.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         {search ? 'Nenhum asset encontrado com os critérios de busca' : 'Nenhum asset encontrado'}
                       </TableCell>
                     </TableRow>
@@ -266,9 +336,6 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                       <TableRow key={asset.id}>
                         <TableCell className="font-medium">
                           {asset.asset_name || asset.meter_name || 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{asset.asset_type || 'N/A'}</Badge>
                         </TableCell>
                         <TableCell>{asset.project_name || 'N/A'}</TableCell>
                         <TableCell className="font-medium">{asset.org_name || asset.org_id || 'N/A'}</TableCell>
@@ -280,6 +347,12 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                           {formatCurrency(asset.cost) && (
                             <Badge variant="secondary">{formatCurrency(asset.cost)}</Badge>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          {asset.trend && asset.trendPercentage !== undefined 
+                            ? getTrendBadge(asset.trend, asset.trendPercentage)
+                            : <Badge variant="outline">N/A</Badge>
+                          }
                         </TableCell>
                       </TableRow>
                     ))
