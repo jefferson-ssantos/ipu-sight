@@ -64,47 +64,63 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
   }, [search, assets]);
 
   const calculateTrend = (asset: any, allAssets: any[]): { trend: 'up' | 'down' | 'stable', percentage: number } => {
-    // Find previous records for the same asset, project, and organization
+    // Helper to safely convert values to number
+    const toNumber = (v: any): number => {
+      if (v === null || v === undefined) return 0;
+      const n = typeof v === 'number' ? v : Number(v);
+      return isNaN(n) ? 0 : n;
+    };
+
+    // Find previous records for the same asset, project, and organization (strictly earlier dates)
     const sameAssetRecords = allAssets
-      .filter(a => 
+      .filter((a) =>
         a.asset_name === asset.asset_name &&
         a.project_name === asset.project_name &&
         a.org_id === asset.org_id &&
         a.consumption_date !== asset.consumption_date &&
         new Date(a.consumption_date) < new Date(asset.consumption_date)
       )
-      .sort((a, b) => new Date(b.consumption_date).getTime() - new Date(a.consumption_date).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.consumption_date).getTime() - new Date(a.consumption_date).getTime()
+      )
       .slice(0, 5);
 
     if (sameAssetRecords.length === 0) {
       return { trend: 'stable', percentage: 0 };
     }
 
-    const currentConsumption = asset.consumption_ipu || 0;
-    
-    // Check if all previous records have the same consumption value
-    const previousConsumptions = sameAssetRecords.map(record => record.consumption_ipu || 0);
-    const allSameValue = previousConsumptions.every(value => value === previousConsumptions[0]);
-    
-    if (allSameValue && currentConsumption === previousConsumptions[0]) {
-      return { trend: 'stable', percentage: 0 };
-    }
-    
-    const avgPreviousConsumption = previousConsumptions.reduce((sum, value) => sum + value, 0) / previousConsumptions.length;
+    const currentConsumption = toNumber(asset.consumption_ipu);
 
-    if (avgPreviousConsumption === 0 && currentConsumption === 0) {
+    const previousConsumptions = sameAssetRecords.map((record) =>
+      toNumber(record.consumption_ipu)
+    );
+
+    // If all previous values are equal and equal to current, trend is stable 0%
+    const epsilon = 1e-9;
+    const allPrevEqual = previousConsumptions.every(
+      (value) => Math.abs(value - previousConsumptions[0]) < epsilon
+    );
+
+    if (allPrevEqual && Math.abs(currentConsumption - previousConsumptions[0]) < epsilon) {
       return { trend: 'stable', percentage: 0 };
     }
-    
+
+    const avgPreviousConsumption =
+      previousConsumptions.reduce((sum, value) => sum + value, 0) /
+      previousConsumptions.length;
+
     if (avgPreviousConsumption === 0) {
+      if (currentConsumption === 0) return { trend: 'stable', percentage: 0 };
       return { trend: 'up', percentage: 100 };
     }
 
-    const percentageChange = ((currentConsumption - avgPreviousConsumption) / avgPreviousConsumption) * 100;
+    const percentageChange =
+      ((currentConsumption - avgPreviousConsumption) / avgPreviousConsumption) * 100;
 
-    if (Math.abs(percentageChange) <= 1) {
-      return { trend: 'stable', percentage: Math.abs(percentageChange) };
-    } else if (percentageChange > 1) {
+    if (Math.abs(percentageChange) < 1e-6) {
+      return { trend: 'stable', percentage: 0 };
+    } else if (percentageChange > 0) {
       return { trend: 'up', percentage: Math.abs(percentageChange) };
     } else {
       return { trend: 'down', percentage: Math.abs(percentageChange) };
