@@ -265,14 +265,16 @@ export function ProjectForecast() {
     const lastDate = new Date(lastPeriod.split(' - ')[1].split('/').reverse().join('-'));
     
     for (let i = 1; i <= periods; i++) {
-      // Calculate future dates properly
-      const currentStartDate = new Date(lastDate);
-      currentStartDate.setMonth(currentStartDate.getMonth() + i);
+      // Calculate future dates following the rule:
+      // 1) Start of cycle: next day after the end date of last cycle
+      // 2) End of cycle: same day as the end date of last cycle, but in the next month
       
-      // Calculate end date properly
-      const currentEndDate = new Date(currentStartDate);
-      currentEndDate.setMonth(currentEndDate.getMonth() + 1);
-      currentEndDate.setDate(currentEndDate.getDate() - 1); // End the day before next month starts
+      const currentStartDate = new Date(lastDate);
+      currentStartDate.setDate(currentStartDate.getDate() + 1); // Day after last cycle end
+      currentStartDate.setMonth(currentStartDate.getMonth() + (i - 1)); // Add months from the new start
+      
+      const currentEndDate = new Date(lastDate);
+      currentEndDate.setMonth(currentEndDate.getMonth() + i); // Same day as original end, but in future month
       
       // Calculate total forecast
       const totalLinearValue = totalLinearForecast[i - 1];
