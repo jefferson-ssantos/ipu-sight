@@ -91,11 +91,29 @@ export function JobExecutionDetail({ selectedOrg, selectedCycleFilter }: JobExec
         query = query.eq('org_id', selectedOrg);
       }
 
-      const { data, error } = await query;
+      // Paginate to fetch all records, bypassing Supabase's 1000-row limit
+      const BATCH_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) {
-        return;
+      while(hasMore) {
+        const { data: batch, error } = await query.range(from, from + BATCH_SIZE - 1);
+
+        if (error) {
+          console.error("Supabase fetch error in JobExecutionDetail:", error);
+          throw error;
+        }
+
+        if (batch && batch.length > 0) {
+          allData = allData.concat(batch);
+          from += BATCH_SIZE;
+          hasMore = batch.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
       }
+      const data = allData;
 
       const processedData = data?.map(job => ({
         ...job,

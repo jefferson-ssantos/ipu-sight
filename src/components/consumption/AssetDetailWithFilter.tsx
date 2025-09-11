@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Search, Download, FileText, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { CYCLE_FILTER_OPTIONS } from '@/lib/cycleFilterOptions';
 import { AssetDetail } from './AssetDetail';
 
 export function AssetDetailWithFilter() {

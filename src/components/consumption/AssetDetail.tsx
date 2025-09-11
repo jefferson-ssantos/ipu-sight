@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download, FileText, Filter } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Download, FileText, Filter, ArrowUp, ArrowDown } from 'lucide-react';
 import { CYCLE_FILTER_OPTIONS } from '@/lib/cycleFilterOptions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AssetData {
-  id: number;
+  id: number | string;
   asset_name: string | null;
   asset_type: string | null;
   consumption_ipu: number | null;
@@ -40,9 +42,14 @@ interface AssetDetailProps {
 export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = [], onOrgChange, onCycleChange }: AssetDetailProps) {
   const { user } = useAuth();
   const [assets, setAssets] = useState<AssetData[]>([]);
-  const [filteredAssets, setFilteredAssets] = useState<AssetData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof AssetData; direction: 'ascending' | 'descending' } | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageInput, setPageInput] = useState(String(currentPage));
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   useEffect(() => {
     if (user) {
@@ -51,72 +58,131 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
   }, [user, selectedOrg, selectedCycleFilter]);
 
   useEffect(() => {
-    if (search.trim() === '') {
-      setFilteredAssets(assets);
-    } else {
-      const filtered = assets.filter(asset =>
-        asset.asset_name?.toLowerCase().includes(search.toLowerCase()) ||
-        asset.meter_name?.toLowerCase().includes(search.toLowerCase()) ||
-        asset.project_name?.toLowerCase().includes(search.toLowerCase())
-      );
-      setFilteredAssets(filtered);
-    }
-  }, [search, assets]);
+    setPageInput(String(currentPage));
+  }, [currentPage]);
 
-  const calculateTrend = (asset: any, allAssets: any[]): { trend: 'up' | 'down' | 'stable', percentage: number } => {
+  const uniqueFilterValues = useMemo(() => {
+    const getUnique = (key: keyof AssetData, formatter?: (val: any) => string) => {
+      const values = assets.map(a => {
+        const val = a[key];
+        return val ? (formatter ? formatter(val) : String(val)) : null;
+      });
+      return [...new Set(values.filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+    };
+
+    const assetDisplayNames = [...new Set(assets.map(a => a.asset_name || a.meter_name).filter(Boolean) as string[])].sort();
+
+    return {
+      display_asset_name: assetDisplayNames,
+      project_name: getUnique('project_name'),
+      org_name: getUnique('org_name'),
+      consumption_date: getUnique('consumption_date', (val) => new Date(val).toLocaleDateString('pt-BR')),
+    };
+  }, [assets]);
+
+  const finalAssets = useMemo(() => {
+    let tempAssets = [...assets];
+
+    // Aplicar busca global
+    if (search.trim() !== '') {
+      const lowercasedSearch = search.toLowerCase();
+      tempAssets = tempAssets.filter(asset =>
+        (asset.asset_name || asset.meter_name)?.toLowerCase().includes(lowercasedSearch) ||
+        asset.project_name?.toLowerCase().includes(lowercasedSearch)
+      );
+    }
+
+    // Aplicar filtros de coluna
+    Object.entries(activeFilters).forEach(([key, values]) => {
+      if (values && values.length > 0) {
+        tempAssets = tempAssets.filter(asset => {
+          let assetValue: string | null = null;
+          if (key === 'display_asset_name') {
+            assetValue = asset.asset_name || asset.meter_name;
+          } else if (key === 'consumption_date' && asset.consumption_date) {
+            assetValue = new Date(asset.consumption_date).toLocaleDateString('pt-BR');
+          } else {
+            assetValue = asset[key as keyof AssetData] as string | null;
+          }
+          return assetValue ? values.includes(assetValue) : false;
+        });
+      }
+    });
+
+    // Aplicar ordenação
+    if (sortConfig !== null) {
+      tempAssets.sort((a, b) => {
+        const key = sortConfig.key;
+        let aVal: any = a[key];
+        let bVal: any = b[key];
+
+        // Lógica especial para colunas compostas ou que precisam de tratamento
+        if (key === 'asset_name') {
+          aVal = a.asset_name || a.meter_name;
+          bVal = b.asset_name || b.meter_name;
+        } else if (key === 'trendPercentage') {
+          aVal = a.trendPercentage ?? -1;
+          bVal = b.trendPercentage ?? -1;
+        }
+
+        const dir = sortConfig.direction === 'ascending' ? 1 : -1;
+
+        if (aVal === null || aVal === undefined) return 1 * dir;
+        if (bVal === null || bVal === undefined) return -1 * dir;
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return (aVal - bVal) * dir;
+        }
+
+        if (key === 'consumption_date') {
+          const dateA = new Date(aVal as string).getTime();
+          const dateB = new Date(bVal as string).getTime();
+          return (dateA - dateB) * dir;
+        }
+
+        return String(aVal).localeCompare(String(bVal), 'pt-BR', { numeric: true }) * dir;
+      });
+    }
+
+    return tempAssets;
+  }, [assets, search, activeFilters, sortConfig]);
+
+  useEffect(() => {
+    // Resetar para a primeira página sempre que os filtros mudarem
+    setCurrentPage(1);
+  }, [search, activeFilters, rowsPerPage]);
+
+  const calculateTrend = (asset: any, previousRecords: any[]): { trend: 'up' | 'down' | 'stable'; percentage: number } => {
     // Helper to safely convert values to number
     const toNumber = (v: any): number => {
       if (v === null || v === undefined) return 0;
       const n = typeof v === 'number' ? v : Number(v);
       return isNaN(n) ? 0 : n;
     };
-
-    // Find previous records for the same asset, project, and organization (strictly earlier dates)
-    const sameAssetRecords = allAssets
-      .filter((a) =>
-        a.asset_name === asset.asset_name &&
-        a.project_name === asset.project_name &&
-        a.org_id === asset.org_id &&
-        a.consumption_date !== asset.consumption_date &&
-        new Date(a.consumption_date) < new Date(asset.consumption_date)
-      )
-      .sort(
-        (a, b) =>
-          new Date(b.consumption_date).getTime() - new Date(a.consumption_date).getTime()
-      )
-      .slice(0, 5);
-
-    if (sameAssetRecords.length === 0) {
+    if (previousRecords.length === 0) {
       return { trend: 'stable', percentage: 0 };
     }
 
     const currentConsumption = toNumber(asset.consumption_ipu);
-
-    const previousConsumptions = sameAssetRecords.map((record) =>
+    const previousConsumptions = previousRecords.map((record) =>
       toNumber(record.consumption_ipu)
     );
 
-    // If all previous values are equal and equal to current, trend is stable 0%
-    const epsilon = 1e-9;
-    const allPrevEqual = previousConsumptions.every(
-      (value) => Math.abs(value - previousConsumptions[0]) < epsilon
-    );
-
-    if (allPrevEqual && Math.abs(currentConsumption - previousConsumptions[0]) < epsilon) {
-      return { trend: 'stable', percentage: 0 };
-    }
-
-    const avgPreviousConsumption =
-      previousConsumptions.reduce((sum, value) => sum + value, 0) /
-      previousConsumptions.length;
-
-    if (avgPreviousConsumption === 0) {
+    // Per user request: compare the current value with the average of the last 6 values (current + 5 previous).
+    // "a soma dos valores das 6 linhas, dividido por 6, e comparado com a linha atual"
+    const allConsumptions = [currentConsumption, ...previousConsumptions];
+    const sumOfConsumptions = allConsumptions.reduce((sum, value) => sum + value, 0);
+    const avgConsumption =
+      sumOfConsumptions / allConsumptions.length;
+    
+    if (avgConsumption === 0) {
       if (currentConsumption === 0) return { trend: 'stable', percentage: 0 };
+      // If average is 0 and current is not, it's a significant increase.
       return { trend: 'up', percentage: 100 };
     }
 
     const percentageChange =
-      ((currentConsumption - avgPreviousConsumption) / avgPreviousConsumption) * 100;
+      ((currentConsumption - avgConsumption) / avgConsumption) * 100;
 
     if (Math.abs(percentageChange) < 1e-6) {
       return { trend: 'stable', percentage: 0 };
@@ -181,23 +247,97 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         query = query.eq('org_id', selectedOrg);
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        return;
+      if (selectedCycleFilter) {
+        const today = new Date();
+        const monthsToSubtract = parseInt(selectedCycleFilter, 10);
+        // Volta N meses a partir de hoje
+        today.setMonth(today.getMonth() - monthsToSubtract);
+        const startDate = today.toISOString().split('T')[0];
+        query = query.gte('consumption_date', startDate);
       }
 
-      const processedData = data?.map(asset => {
-        const { trend, percentage } = calculateTrend(asset, data);
+      // Paginate to fetch all records, bypassing Supabase's 1000-row limit
+      const BATCH_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
+
+      while(hasMore) {
+        const { data: batch, error } = await query.range(from, from + BATCH_SIZE - 1);
+
+        if (error) {
+          console.error("Supabase fetch error in AssetDetail:", error);
+          throw error;
+        }
+
+        if (batch && batch.length > 0) {
+          allData = allData.concat(batch);
+          from += BATCH_SIZE;
+          hasMore = batch.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+      const data = allData;
+
+      // Agrupar os dados conforme solicitado
+      const groupedAssets = new Map<string, AssetData>();
+      data?.forEach(asset => {
+        const assetKeyName = asset.asset_name ?? asset.meter_name;
+        // Chave de agrupamento: Asset, Projeto, Organização e Data
+        const key = `${assetKeyName}|${asset.project_name}|${asset.org_id}|${asset.consumption_date}`;
+
+        const existing = groupedAssets.get(key);
+        const assetCost = (asset.consumption_ipu || 0) * Number(clientPricing.preco_por_ipu);
+
+        if (existing) {
+          // Se o grupo já existe, somar os valores
+          existing.consumption_ipu = (existing.consumption_ipu || 0) + (asset.consumption_ipu || 0);
+          existing.cost += assetCost;
+        } else {
+          // Se não existe, criar um novo grupo
+          groupedAssets.set(key, {
+            ...asset,
+            id: key, // Usar a chave única como ID
+            cost: assetCost,
+            org_name: orgNameMap.get(asset.org_id) || null,
+          });
+        }
+      });
+
+      // Converter o mapa para um array e ordenar
+      const aggregatedData = Array.from(groupedAssets.values()).sort((a, b) => {
+        if (a.consumption_date === b.consumption_date) {
+          return (b.consumption_ipu || 0) - (a.consumption_ipu || 0);
+        }
+        return new Date(b.consumption_date!).getTime() - new Date(a.consumption_date!).getTime();
+      });
+
+      // Otimização: Pré-agrupar dados históricos para evitar N^2 no cálculo de tendência.
+      const assetHistoryMap = new Map<string, AssetData[]>();
+      aggregatedData.forEach(asset => {
+        const assetKeyName = asset.asset_name ?? asset.meter_name;
+        const historyKey = `${asset.meter_id}|${assetKeyName}|${asset.org_id}`;
+        if (!assetHistoryMap.has(historyKey)) {
+          assetHistoryMap.set(historyKey, []);
+        }
+        assetHistoryMap.get(historyKey)!.push(asset);
+      });
+
+      const processedData = aggregatedData.map(asset => {
+        const assetKeyName = asset.asset_name ?? asset.meter_name;
+        const historyKey = `${asset.meter_id}|${assetKeyName}|${asset.org_id}`;
+        const history = assetHistoryMap.get(historyKey) || [];
+        const currentIndex = history.findIndex(h => h.id === asset.id);
+        const previousRecords = history.slice(currentIndex + 1, currentIndex + 1 + 5);
+
+        const { trend, percentage } = calculateTrend(asset, previousRecords);
         return {
           ...asset,
-          cost: (asset.consumption_ipu || 0) * Number(clientPricing.preco_por_ipu),
-          org_name: orgNameMap.get(asset.org_id) || null,
           trend,
           trendPercentage: percentage
         };
-      }) || [];
-
+      });
       setAssets(processedData);
     } catch (error) {
     } finally {
@@ -254,7 +394,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
   const exportData = () => {
     const csvContent = [
       ['Asset', 'IPU', 'Custo', 'Data', 'Projeto', 'Ambiente', 'Organização', 'Tendência'].join(','),
-      ...filteredAssets.map(asset => [
+      ...finalAssets.map(asset => [
         asset.asset_name || asset.meter_name || '',
         formatIPU(asset.consumption_ipu || 0),
         formatCurrency(asset.cost),
@@ -275,11 +415,113 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
     window.URL.revokeObjectURL(url);
   };
 
+  const handlePageInputSubmit = () => {
+    const page = parseInt(pageInput, 10);
+    const total = totalPages > 0 ? totalPages : 1;
+    if (!isNaN(page) && page >= 1 && page <= total) {
+        setCurrentPage(page);
+    } else {
+        // Reverte para a página atual se o valor for inválido
+        setPageInput(String(currentPage));
+    }
+  };
+
+  const totalPages = Math.ceil(finalAssets.length / rowsPerPage);
+  const paginatedAssets = finalAssets.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // Componente de Cabeçalho com Filtro e Ordenação
+  const SortableFilterHeader = ({
+    title,
+    sortKey,
+    filterKey,
+    filterOptions,
+  }: {
+    title: string;
+    sortKey: keyof AssetData;
+    filterKey?: string;
+    filterOptions?: string[];
+  }) => {
+    const isFilterable = !!(filterOptions && filterOptions.length > 0);
+    const effectiveFilterKey = filterKey || String(sortKey);
+    const currentFilter = activeFilters[effectiveFilterKey] || [];
+
+    const [popoverOpen, setPopoverOpen] = useState(false);
+    const [localSelected, setLocalSelected] = useState<string[]>(currentFilter);
+
+    useEffect(() => {
+      setLocalSelected(activeFilters[effectiveFilterKey] || []);
+    }, [activeFilters, effectiveFilterKey]);
+
+    const handleSort = () => {
+      let direction: 'ascending' | 'descending' = 'ascending';
+      if (sortConfig?.key === sortKey && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+      }
+      setSortConfig({ key: sortKey, direction });
+    };
+
+    const applyFilter = () => {
+      setActiveFilters(prev => ({ ...prev, [effectiveFilterKey]: localSelected }));
+      setPopoverOpen(false);
+    };
+
+    const clearFilter = () => {
+      setLocalSelected([]);
+      const newFilters = { ...activeFilters };
+      delete newFilters[effectiveFilterKey];
+      setActiveFilters(newFilters);
+      setPopoverOpen(false);
+    };
+
+    return (
+      <TableHead className="group">
+        <div className="flex items-center justify-between gap-1">
+          <div onClick={handleSort} className="flex-1 cursor-pointer flex items-center gap-1 hover:text-foreground py-2">
+            {title}
+            {sortConfig?.key === sortKey && (
+              sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+            )}
+          </div>
+          {isFilterable && (
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${currentFilter.length > 0 ? 'opacity-100' : ''}`}>
+                  <Filter className={`h-3 w-3 ${currentFilter.length > 0 ? 'text-primary' : ''}`} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0" align="start">
+                <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                  <div className="flex items-center space-x-2 p-1">
+                    <Checkbox id={`select-all-${effectiveFilterKey}`} checked={localSelected.length === filterOptions.length} onCheckedChange={(checked) => setLocalSelected(checked ? filterOptions : [])} />
+                    <label htmlFor={`select-all-${effectiveFilterKey}`} className="text-sm font-medium">Selecionar Tudo</label>
+                  </div>
+                  {filterOptions.map(option => (
+                    <div key={option} className="flex items-center space-x-2 p-1">
+                      <Checkbox id={`${effectiveFilterKey}-${option}`} checked={localSelected.includes(option)} onCheckedChange={(checked) => setLocalSelected(prev => checked ? [...prev, option] : prev.filter(item => item !== option))} />
+                      <label htmlFor={`${effectiveFilterKey}-${option}`} className="text-sm">{option}</label>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 p-2 border-t">
+                  <Button variant="outline" size="sm" onClick={clearFilter}>Limpar</Button>
+                  <Button size="sm" onClick={applyFilter}>Aplicar</Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+      </TableHead>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between mb-4">
-          <CardTitle>Detalhamento por Asset</CardTitle>
+          <CardTitle>Análise detalhada do consumo por asset</CardTitle>
           {availableOrgs.length > 0 && onOrgChange && onCycleChange && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -318,11 +560,20 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         
         <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+              onClick={() => setSearch(inputValue)}
+              aria-label="Buscar"
+            />
             <Input
               placeholder="Buscar por asset ou projeto..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearch(inputValue);
+                }
+              }}
               className="pl-10"
             />
           </div>
@@ -344,24 +595,24 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
-                    <TableHead>Asset</TableHead>
-                    <TableHead>Projeto</TableHead>
-                    <TableHead>Organização</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>IPU</TableHead>
-                    <TableHead>Custo</TableHead>
-                    <TableHead>Tendência</TableHead>
+                    <SortableFilterHeader title="Asset" sortKey="asset_name" filterKey="display_asset_name" filterOptions={uniqueFilterValues.display_asset_name} />
+                    <SortableFilterHeader title="Projeto" sortKey="project_name" filterOptions={uniqueFilterValues.project_name} />
+                    <SortableFilterHeader title="Organização" sortKey="org_name" filterOptions={uniqueFilterValues.org_name} />
+                    <SortableFilterHeader title="Data" sortKey="consumption_date" filterOptions={uniqueFilterValues.consumption_date} />
+                    <SortableFilterHeader title="IPU" sortKey="consumption_ipu" />
+                    <SortableFilterHeader title="Custo" sortKey="cost" />
+                    <SortableFilterHeader title="Tendência" sortKey="trendPercentage" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAssets.length === 0 ? (
+                  {paginatedAssets.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         {search ? 'Nenhum asset encontrado com os critérios de busca' : 'Nenhum asset encontrado'}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredAssets.map((asset) => (
+                    paginatedAssets.map((asset) => (
                       <TableRow key={asset.id}>
                         <TableCell className="font-medium">
                           {asset.asset_name || asset.meter_name || 'N/A'}
@@ -388,6 +639,67 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                   )}
                 </TableBody>
               </Table>
+            </div>
+            <div className="flex items-center justify-between p-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                    {finalAssets.length > 0 ? 
+                        `Mostrando ${Math.min((currentPage - 1) * rowsPerPage + 1, finalAssets.length)} a ${Math.min(currentPage * rowsPerPage, finalAssets.length)} de ${finalAssets.length} registros.`
+                        : 'Nenhum registro encontrado.'
+                    }
+                </div>
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm">Linhas por página:</span>
+                        <Select value={String(rowsPerPage)} onValueChange={(value) => { setRowsPerPage(Number(value)); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-24">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[25, 50, 100].map(size => (
+                                    <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                        <span>Página</span>
+                        <Input
+                            type="text"
+                            className="w-16 h-8 text-center"
+                            value={pageInput}
+                            onChange={(e) => setPageInput(e.target.value)}
+                            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                if (e.key === 'Enter') {
+                                    handlePageInputSubmit();
+                                    e.currentTarget.blur();
+                                }
+                            }}
+                            onBlur={handlePageInputSubmit}
+                            aria-label="Ir para a página"
+                        />
+                        <span className="text-muted-foreground">
+                            de {totalPages > 0 ? totalPages : 1}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Anterior
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                        >
+                            Próxima
+                        </Button>
+                    </div>
+                </div>
             </div>
           </div>
         )}
