@@ -114,7 +114,7 @@ export default function DashboardStarter() {
     <div className="flex flex-col min-h-screen bg-background">
       <div className="flex-1 p-6 space-y-6">
         {/* KPI Section - Simplified for Starter */}
-        <Card className="border bg-gradient-card shadow-medium">
+        <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
