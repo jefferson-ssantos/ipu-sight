@@ -563,22 +563,23 @@ export function CostForecast() {
           setPinnedTooltip(null);
         }
       }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-            <CardTitle className="flex items-center gap-2 text-base font-medium">
-              Gráfico Preditivo
-              <Badge variant={summary.trend === "estável" ? "outline" : summary.trend === "crescimento" ? "destructive" : "default"}>
-                {summary.trend === "estável" ? (
-                  <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
-                ) : summary.trend === "crescimento" ? (
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                )}
-                {summary.expectedChange.toFixed(1)}%
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <div className="flex items-center gap-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            Gráfico Preditivo
+            <Badge variant={summary.trend === "estável" ? "outline" : summary.trend === "crescimento" ? "destructive" : "default"}>
+              {summary.trend === "estável" ? (
+                <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
+              ) : summary.trend === "crescimento" ? (
+                <TrendingUp className="h-3 w-3 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1" />
+              )}
+              {summary.expectedChange.toFixed(1)}%
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 mb-6">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger className="w-[230px]">
@@ -658,8 +659,6 @@ export function CostForecast() {
               Exportar
             </Button>
           </div>
-        
-        <CardContent>
           <div id="cost-forecast-container">
             {loading ? (
               <div className="h-96 flex items-center justify-center">
