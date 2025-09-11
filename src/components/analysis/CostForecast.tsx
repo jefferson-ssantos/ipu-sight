@@ -471,15 +471,11 @@ export function CostForecast() {
   };
 
   return (
-    <div className="space-y-4" onClick={(e) => {
-      // Se clicar fora do tooltip, remove o pinned tooltip
-      const target = e.target as Element;
-      if (!target.closest('.recharts-tooltip-wrapper') && !target.closest('button')) {
-        setPinnedTooltip(null);
-      }
-    }}>
-      {/* KPIs Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="space-y-6">
+      {/* Indicadores Estatísticos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Indicadores Estatísticos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -555,8 +551,16 @@ export function CostForecast() {
         </Card>
       </div>
 
-        {/* Chart Section */}
-        <Card className="bg-card/50 backdrop-blur shadow-medium">
+      {/* Chart Section */}
+      <Card className="bg-card/50 backdrop-blur shadow-medium" onClick={(e) => {
+      {/* Chart Section */}
+      <Card className="bg-card/50 backdrop-blur shadow-medium" onClick={(e) => {
+        // Se clicar fora do tooltip, remove o pinned tooltip
+        const target = e.target as Element;
+        if (!target.closest('.recharts-tooltip-wrapper') && !target.closest('button')) {
+          setPinnedTooltip(null);
+        }
+      }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
             <CardTitle className="flex items-center gap-2 text-base font-medium">
               Gráfico Preditivo
@@ -571,6 +575,7 @@ export function CostForecast() {
                 {summary.expectedChange.toFixed(1)}%
               </Badge>
             </CardTitle>
+          </CardHeader>
           <div className="flex items-center gap-4">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
@@ -777,8 +782,7 @@ export function CostForecast() {
             )}
           </div>
         </CardContent>
-        </Card>
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

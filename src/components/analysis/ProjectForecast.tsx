@@ -561,8 +561,8 @@ export function ProjectForecast() {
         </Card>
       </div>
 
-        {/* Chart Section */}
-        <Card className="bg-card/50 backdrop-blur shadow-medium">
+      {/* Chart Section */}
+      <Card className="bg-card/50 backdrop-blur shadow-medium">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
             <CardTitle className="flex items-center gap-2 text-base font-medium">
               Gráfico Preditivo
@@ -577,6 +577,7 @@ export function ProjectForecast() {
                 {summary.expectedChange.toFixed(1)}%
               </Badge>
             </CardTitle>
+          </CardHeader>
           <div className="flex items-center gap-4">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
@@ -798,8 +799,7 @@ export function ProjectForecast() {
             )}
           </div>
         </CardContent>
-        </Card>
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
