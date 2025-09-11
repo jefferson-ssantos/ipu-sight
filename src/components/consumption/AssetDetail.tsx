@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Download, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Download, FileText, Filter } from 'lucide-react';
+import { CYCLE_FILTER_OPTIONS } from '@/lib/cycleFilterOptions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -28,9 +30,12 @@ interface AssetData {
 interface AssetDetailProps {
   selectedOrg?: string;
   selectedCycleFilter?: string;
+  availableOrgs?: Array<{value: string, label: string}>;
+  onOrgChange?: (value: string) => void;
+  onCycleChange?: (value: string) => void;
 }
 
-export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailProps) {
+export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = [], onOrgChange, onCycleChange }: AssetDetailProps) {
   const { user } = useAuth();
   const [assets, setAssets] = useState<AssetData[]>([]);
   const [filteredAssets, setFilteredAssets] = useState<AssetData[]>([]);
@@ -174,6 +179,44 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter }: AssetDetailPro
   return (
     <Card>
       <CardHeader>
+        <div className="flex items-center justify-between mb-4">
+          <CardTitle>Detalhamento por Asset</CardTitle>
+          {availableOrgs.length > 0 && onOrgChange && onCycleChange && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filtros:</span>
+              </div>
+              
+              <Select value={selectedCycleFilter || "1"} onValueChange={onCycleChange}>
+                <SelectTrigger className="w-auto min-w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CYCLE_FILTER_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedOrg ? selectedOrg : "all"} onValueChange={onOrgChange}>
+                <SelectTrigger className="w-auto min-w-44 max-w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableOrgs.map(org => (
+                    <SelectItem key={org.value} value={org.value}>
+                      {org.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        
         <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />

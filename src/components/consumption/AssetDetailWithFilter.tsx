@@ -63,53 +63,12 @@ export function AssetDetailWithFilter() {
   }, [user]);
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Detalhamento por Asset</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Filtros:</span>
-              </div>
-              
-              <Select value={selectedCycleFilter} onValueChange={setSelectedCycleFilter}>
-                <SelectTrigger className="w-auto min-w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CYCLE_FILTER_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedOrg} onValueChange={setSelectedOrg}>
-                <SelectTrigger className="w-auto min-w-44 max-w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableOrgs.map(org => (
-                    <SelectItem key={org.value} value={org.value}>
-                      {org.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Asset Detail Component */}
-      <AssetDetail 
-        selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
-        selectedCycleFilter={selectedCycleFilter}
-      />
-    </div>
+    <AssetDetail 
+      selectedOrg={selectedOrg === "all" ? undefined : selectedOrg}
+      selectedCycleFilter={selectedCycleFilter}
+      availableOrgs={availableOrgs}
+      onOrgChange={setSelectedOrg}
+      onCycleChange={setSelectedCycleFilter}
+    />
   );
 }
