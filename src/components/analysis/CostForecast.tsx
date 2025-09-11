@@ -473,9 +473,12 @@ export function CostForecast() {
   return (
     <div className="space-y-6">
       {/* Indicadores Estatísticos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Indicadores Estatísticos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card className="bg-card/50 backdrop-blur shadow-medium">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Indicadores Estatísticos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -549,10 +552,10 @@ export function CostForecast() {
             </div>
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Chart Section */}
-      <Card className="bg-card/50 backdrop-blur shadow-medium" onClick={(e) => {
       {/* Chart Section */}
       <Card className="bg-card/50 backdrop-blur shadow-medium" onClick={(e) => {
         // Se clicar fora do tooltip, remove o pinned tooltip
@@ -656,8 +659,7 @@ export function CostForecast() {
               Exportar
             </Button>
           </div>
-        </CardHeader>
-
+        
         <CardContent>
           <div id="cost-forecast-container">
             {loading ? (
