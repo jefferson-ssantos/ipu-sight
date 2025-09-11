@@ -523,7 +523,12 @@ export function CostForecast() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className={`text-2xl font-bold ${
+              summary.expectedChange > 10 ? 'text-red-500' :
+              summary.expectedChange > 5 ? 'text-yellow-500' :
+              summary.expectedChange > 0 ? 'text-green-500' :
+              'text-muted-foreground'
+            }`}>
               {summary.expectedChange.toFixed(1)}%
             </div>
             <div className="text-sm text-muted-foreground">
