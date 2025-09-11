@@ -81,20 +81,33 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
     }
 
     const currentConsumption = asset.consumption_ipu || 0;
-    const avgPreviousConsumption = sameAssetRecords.reduce((sum, record) => sum + (record.consumption_ipu || 0), 0) / sameAssetRecords.length;
-
-    if (avgPreviousConsumption === 0) {
+    
+    // Check if all previous records have the same consumption value
+    const previousConsumptions = sameAssetRecords.map(record => record.consumption_ipu || 0);
+    const allSameValue = previousConsumptions.every(value => value === previousConsumptions[0]);
+    
+    if (allSameValue && currentConsumption === previousConsumptions[0]) {
       return { trend: 'stable', percentage: 0 };
+    }
+    
+    const avgPreviousConsumption = previousConsumptions.reduce((sum, value) => sum + value, 0) / previousConsumptions.length;
+
+    if (avgPreviousConsumption === 0 && currentConsumption === 0) {
+      return { trend: 'stable', percentage: 0 };
+    }
+    
+    if (avgPreviousConsumption === 0) {
+      return { trend: 'up', percentage: 100 };
     }
 
     const percentageChange = ((currentConsumption - avgPreviousConsumption) / avgPreviousConsumption) * 100;
 
-    if (percentageChange > 5) {
-      return { trend: 'up', percentage: Math.abs(percentageChange) };
-    } else if (percentageChange < -5) {
-      return { trend: 'down', percentage: Math.abs(percentageChange) };
-    } else {
+    if (Math.abs(percentageChange) <= 1) {
       return { trend: 'stable', percentage: Math.abs(percentageChange) };
+    } else if (percentageChange > 1) {
+      return { trend: 'up', percentage: Math.abs(percentageChange) };
+    } else {
+      return { trend: 'down', percentage: Math.abs(percentageChange) };
     }
   };
 
