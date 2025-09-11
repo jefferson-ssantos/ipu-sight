@@ -555,22 +555,22 @@ export function CostForecast() {
         </Card>
       </div>
 
-      {/* Chart Section */}
-      <Card className="bg-card/50 backdrop-blur shadow-medium">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <CardTitle className="flex items-center gap-2">
-            Análise Preditiva de Custos
-            <Badge variant={summary.trend === "estável" ? "outline" : summary.trend === "crescimento" ? "destructive" : "default"}>
-              {summary.trend === "estável" ? (
-                <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
-              ) : summary.trend === "crescimento" ? (
-                <TrendingUp className="h-3 w-3 mr-1" />
-              ) : (
-                <TrendingDown className="h-3 w-3 mr-1" />
-              )}
-              {summary.expectedChange.toFixed(1)}%
-            </Badge>
-          </CardTitle>
+        {/* Chart Section */}
+        <Card className="bg-card/50 backdrop-blur shadow-medium">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+            <CardTitle className="flex items-center gap-2 text-base font-medium">
+              Gráfico Preditivo
+              <Badge variant={summary.trend === "estável" ? "outline" : summary.trend === "crescimento" ? "destructive" : "default"}>
+                {summary.trend === "estável" ? (
+                  <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
+                ) : summary.trend === "crescimento" ? (
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                )}
+                {summary.expectedChange.toFixed(1)}%
+              </Badge>
+            </CardTitle>
           <div className="flex items-center gap-4">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
@@ -777,7 +777,8 @@ export function CostForecast() {
             )}
           </div>
         </CardContent>
-      </Card>
-    </div>
+        </Card>
+      </CardContent>
+    </Card>
   );
 }

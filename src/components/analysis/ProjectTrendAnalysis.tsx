@@ -346,53 +346,53 @@ export function ProjectTrendAnalysis() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Insights Card */}
-      <Card className="bg-gradient-card shadow-medium">
-        <CardHeader>
-          <CardTitle>Insights da Análise - {getSelectedProjectsLabels()}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">Tendência Atual</div>
-              <div className="text-lg font-semibold flex items-center gap-2">
-                {trend.isStable ? (
-                  <>
-                    <div className="h-4 w-4 bg-blue-500 rounded-full" />
-                    <span className="text-blue-600">Estável</span>
-                  </>
-                ) : trend.isPositive ? (
-                  <>
-                    <TrendingUp className="h-4 w-4 text-destructive" />
-                    <span className="text-destructive">Crescimento</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600">Redução</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">Variação Mensal</div>
-              <div className="text-lg font-semibold">
-                {trend.percentage.toFixed(1)}%
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-sm text-muted-foreground">Status</div>
-              <div className="text-lg font-semibold">
-                {trend.percentage < 5 ? "Normal" : 
-                 trend.percentage < 15 ? "Intermediário" : "Elevado"}
-              </div>
+    <Card className="bg-card/50 backdrop-blur shadow-medium">
+      <CardHeader>
+        <CardTitle>Análise de Tendências por Projeto</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Indicadores Estatísticos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
+            <div className="text-sm text-muted-foreground mb-2">Tendência Atual</div>
+            <div className="flex items-center gap-2">
+              {trend.isStable ? (
+                <>
+                  <div className="h-5 w-5 bg-blue-500 rounded-full" />
+                  <span className="text-base font-medium text-blue-600">Estável</span>
+                </>
+              ) : trend.isPositive ? (
+                <>
+                  <TrendingUp className="h-5 w-5 text-red-500" />
+                  <span className="text-base font-medium text-red-500">Crescimento</span>
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="h-5 w-5 text-green-500" />
+                  <span className="text-base font-medium text-green-500">Redução</span>
+                </>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
+            <div className="text-sm text-muted-foreground mb-2">Variação Esperada</div>
+            <div className={`text-lg font-semibold ${
+              trend.isStable ? "text-blue-600" : 
+              trend.isPositive ? "text-red-500" : "text-green-500"
+            }`}>
+              {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
+            <div className="text-sm text-muted-foreground mb-2">Status</div>
+            <div className="text-base font-medium">
+              {trend.percentage < 5 ? "Normal" : 
+               trend.percentage < 15 ? "Intermediário" : "Elevado"}
+            </div>
+          </div>
+        </div>
 
       <Card className="bg-gradient-card shadow-medium" id="project-trend-container">
         <CardHeader className="flex flex-row items-center justify-between">
@@ -549,7 +549,8 @@ export function ProjectTrendAnalysis() {
             </div>
           )}
         </CardContent>
-      </Card>
-    </div>
+        </Card>
+      </CardContent>
+    </Card>
   );
 }
