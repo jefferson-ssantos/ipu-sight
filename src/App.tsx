@@ -12,11 +12,6 @@ import DashboardDetailed from "./pages/DashboardDetailed";
 import DashboardStarter from "./pages/DashboardStarter";
 import Analysis from "./pages/Analysis";
 import Detalhamento from "./pages/Detalhamento";
-import ConsumptionAssets from "./pages/ConsumptionAssets";
-import ConsumptionProjects from "./pages/ConsumptionProjects";
-import ConsumptionOrganizations from "./pages/ConsumptionOrganizations";
-import ConsumptionJobs from "./pages/ConsumptionJobs";
-import ConsumptionOverview from "./pages/ConsumptionOverview";
 
 import Configuration from "./pages/Configuration";
 import ConfigConnections from "./pages/ConfigConnections";
@@ -151,41 +146,6 @@ const App = () => (
                 <AppLayout>
                   <Detalhamento />
                 </AppLayout>
-              </PermissionRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/consumption" element={
-            <ProtectedRoute>
-              <PermissionRoute permission="canAccessConsumption">
-                <ConsumptionOverview />
-              </PermissionRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/consumption/assets" element={
-            <ProtectedRoute>
-              <PermissionRoute permission="canAccessConsumption">
-                <ConsumptionAssets />
-              </PermissionRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/consumption/projects" element={
-            <ProtectedRoute>
-              <PermissionRoute permission="canAccessConsumption">
-                <ConsumptionProjects />
-              </PermissionRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/consumption/organizations" element={
-            <ProtectedRoute>
-              <PermissionRoute permission="canAccessConsumption">
-                <ConsumptionOrganizations />
-              </PermissionRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/consumption/jobs" element={
-            <ProtectedRoute>
-              <PermissionRoute permission="canAccessConsumption">
-                <ConsumptionJobs />
               </PermissionRoute>
             </ProtectedRoute>
           } />

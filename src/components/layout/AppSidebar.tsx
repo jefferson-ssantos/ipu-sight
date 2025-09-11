@@ -4,20 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   BarChart3,
-  Folder,
-  FileText,
-  Database,
-  Play,
   PieChart,
   Settings,
   TrendingUp,
-  Building,
-  Tags,
   LogOut,
-  ChevronDown,
-  Activity,
-  FolderOpen,
-  Building2,
   Cable
 } from "lucide-react";
 import orysLogo from "@/assets/logo-laranja.png";
@@ -36,11 +26,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 export function AppSidebar() {
   const { signOut } = useAuth();
@@ -50,15 +35,6 @@ export function AppSidebar() {
   const currentPath = location.pathname;
 
   // Move all hooks to the top - before any conditional returns
-  const [isConsumptionOpen, setIsConsumptionOpen] = useState(false);
-
-  // Update the state when consumptionItems change (after loading)
-  React.useEffect(() => {
-    if (!loading && permissions?.canAccessConsumption) {
-      const consumptionUrls = ["/consumption", "/consumption/assets", "/consumption/projects", "/consumption/organizations", "/consumption/jobs"];
-      setIsConsumptionOpen(consumptionUrls.includes(currentPath));
-    }
-  }, [loading, permissions, currentPath]);
 
   if (loading) {
     return (
@@ -109,42 +85,6 @@ export function AppSidebar() {
     return items;
   };
 
-  const getConsumptionItems = () => {
-    if (!permissions?.canAccessConsumption) return [];
-    
-    return [
-      {
-        title: "Por Métrica",
-        url: "/consumption",
-        icon: Activity,
-        description: "Consumo detalhado por métrica"
-      },
-      {
-        title: "Por Asset",
-        url: "/consumption/assets",
-        icon: Database,
-        description: "Análise por asset específico"
-      },
-      {
-        title: "Por Projeto",
-        url: "/consumption/projects", 
-        icon: FolderOpen,
-        description: "Agrupamento por projeto"
-      },
-      {
-        title: "Por Organização",
-        url: "/consumption/organizations",
-        icon: Building2,
-        description: "Visão organizacional"
-      },
-      {
-        title: "Execuções de Job",
-        url: "/consumption/jobs",
-        icon: Play,
-        description: "Histórico de execuções"
-      }
-    ];
-  };
 
   const getConfigItems = () => {
     if (!permissions?.canAccessConfiguration) return [];
@@ -173,7 +113,6 @@ export function AppSidebar() {
   };
 
   const mainNavItems = getMainNavItems();
-  const consumptionItems = getConsumptionItems();
   const configItems = getConfigItems();
   const detailItems = getDetailItems();
 
@@ -273,60 +212,6 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Consumption Details */}
-        {consumptionItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <Collapsible open={isConsumptionOpen} onOpenChange={setIsConsumptionOpen}>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="h-12">
-                      <NavLink
-                        to="/consumption"
-                        className={getNavClasses("/consumption")}
-                        title={!open ? "Detalhamento - Visões específicas" : undefined}
-                        onClick={() => setIsConsumptionOpen(!isConsumptionOpen)}
-                      >
-                        <Activity className="h-5 w-5 flex-shrink-0" />
-                        {open && (
-                          <div className="flex flex-col items-start flex-1">
-                            <span className="font-medium">Consumo</span>
-                            <span className="text-xs text-muted-foreground">Visões específicas</span>
-                          </div>
-                        )}
-                        {open && (
-                          <ChevronDown className={`h-4 w-4 transition-transform ${
-                            isConsumptionOpen ? "rotate-180" : ""
-                          }`} />
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  
-                  {open && (
-                    <CollapsibleContent className="space-y-1">
-                      {consumptionItems.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild className="h-10 pl-8">
-                            <NavLink
-                              to={item.url}
-                              className={getNavClasses(item.url)}
-                            >
-                              <item.icon className="h-4 w-4 flex-shrink-0" />
-                              <div className="flex flex-col items-start">
-                                <span className="text-sm">{item.title}</span>
-                              </div>
-                            </NavLink>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </CollapsibleContent>
-                  )}
-                </Collapsible>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         {/* Configuration */}
         {configItems.length > 0 && (
