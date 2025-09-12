@@ -305,13 +305,22 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         }
       });
 
-      // Converter o mapa para um array e ordenar
-      const aggregatedData = Array.from(groupedAssets.values()).sort((a, b) => {
-        if (a.consumption_date === b.consumption_date) {
-          return (b.consumption_ipu || 0) - (a.consumption_ipu || 0);
-        }
-        return new Date(b.consumption_date!).getTime() - new Date(a.consumption_date!).getTime();
-      });
+      // Converter o mapa para um array, filtrar e ordenar
+      const aggregatedData = Array.from(groupedAssets.values())
+        .filter(asset => {
+          // Filtrar "Metadata Record Consumption" com 0 IPUs
+          const assetName = asset.asset_name || asset.meter_name || '';
+          if (assetName === 'Metadata Record Consumption' && (asset.consumption_ipu || 0) === 0) {
+            return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          if (a.consumption_date === b.consumption_date) {
+            return (b.consumption_ipu || 0) - (a.consumption_ipu || 0);
+          }
+          return new Date(b.consumption_date!).getTime() - new Date(a.consumption_date!).getTime();
+        });
 
       // Otimização: Pré-agrupar dados históricos para evitar N^2 no cálculo de tendência.
       const assetHistoryMap = new Map<string, AssetData[]>();
