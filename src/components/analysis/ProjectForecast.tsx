@@ -539,8 +539,15 @@ export function ProjectForecast() {
             }`}>
               {summary.expectedChange.toFixed(1)}%
             </div>
-            <div className="text-sm text-muted-foreground">
-              Tendência: {summary.trend}
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              Tendência: 
+              <Badge variant={
+                summary.trend === "crescimento" ? "destructive" : 
+                summary.trend === "redução" ? "default" : 
+                "outline"
+              }>
+                {summary.trend}
+              </Badge>
             </div>
           </CardContent>
         </Card>
