@@ -507,7 +507,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                 </div>
                 <div className="flex justify-end gap-2 p-2 border-t">
                   <Button variant="outline" size="sm" onClick={clearFilter}>Limpar</Button>
-                  <Button size="sm" onClick={applyFilter}>Aplicar</Button>
+                  <Button size="sm" onClick={applyFilter}>Filtrar</Button>
                 </div>
               </PopoverContent>
             </Popover>
