@@ -8,7 +8,9 @@ import {
   Settings,
   TrendingUp,
   LogOut,
-  Cable
+  Cable,
+  Activity,
+  Target
 } from "lucide-react";
 import orysLogo from "@/assets/logo-laranja.png";
 import orysLogoCollapsed from "@/assets/orys-logo.png";
@@ -33,6 +35,7 @@ export function AppSidebar() {
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const [analysisExpanded, setAnalysisExpanded] = useState(currentPath.startsWith('/analysis'));
 
   // Move all hooks to the top - before any conditional returns
 
@@ -73,14 +76,7 @@ export function AppSidebar() {
       });
     }
     
-    if (permissions?.canAccessAnalysis) {
-      items.push({
-        title: "Análise de Custos",
-        url: "/analysis", 
-        icon: TrendingUp,
-        description: "Análise preditivas e tendências"
-      });
-    }
+    // Análise de Custos will be handled separately with submenu
     
     return items;
   };
@@ -112,15 +108,45 @@ export function AppSidebar() {
     ];
   };
 
+  const getAnalysisItems = () => {
+    if (!permissions?.canAccessAnalysis) return [];
+    
+    return [
+      {
+        title: "Tendências",
+        url: "/analysis",
+        icon: Activity,
+        description: "Análise de tendências de custos"
+      },
+      {
+        title: "Análise Preditiva",
+        url: "/analysis/forecast",
+        icon: Target,
+        description: "Previsões e análises preditivas"
+      }
+    ];
+  };
+
   const mainNavItems = getMainNavItems();
   const configItems = getConfigItems();
   const detailItems = getDetailItems();
+  const analysisItems = getAnalysisItems();
 
   const isActive = (path: string) => currentPath === path;
+  const isAnalysisActive = currentPath.startsWith('/analysis');
   
   const getNavClasses = (path: string) => {
     const isItemActive = isActive(path);
     return `group transition-all duration-200 ${
+      isItemActive
+        ? "bg-primary/10 text-primary border-r-2 border-primary shadow-soft"
+        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+    }`;
+  };
+
+  const getSubNavClasses = (path: string) => {
+    const isItemActive = isActive(path);
+    return `group transition-all duration-200 pl-6 ${
       isItemActive
         ? "bg-primary/10 text-primary border-r-2 border-primary shadow-soft"
         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -171,6 +197,67 @@ export function AppSidebar() {
                             <span className="text-xs opacity-70">{item.description}</span>
                           </div>
                         )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Analysis Section */}
+        {analysisItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={!open ? "sr-only" : ""}>
+              Análise
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {/* Parent Analysis Item */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="h-12"
+                    onClick={() => setAnalysisExpanded(!analysisExpanded)}
+                  >
+                    <div
+                      className={`group transition-all duration-200 cursor-pointer ${
+                        isAnalysisActive
+                          ? "bg-primary/10 text-primary border-r-2 border-primary shadow-soft"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                      title={!open ? "Análise de Custos" : undefined}
+                    >
+                      <TrendingUp className="h-5 w-5 flex-shrink-0" />
+                      {open && (
+                        <div className="flex flex-col items-start flex-1">
+                          <span className="font-medium">Análise de Custos</span>
+                          <span className="text-xs opacity-70">Análise preditivas e tendências</span>
+                        </div>
+                      )}
+                      {open && (
+                        <div className={`transition-transform duration-200 ${analysisExpanded ? 'rotate-90' : ''}`}>
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                {/* Submenu Items */}
+                {analysisExpanded && open && analysisItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild className="h-10">
+                      <NavLink
+                        to={item.url}
+                        className={getSubNavClasses(item.url)}
+                        title={item.description}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-normal text-sm">{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
