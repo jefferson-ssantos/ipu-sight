@@ -580,7 +580,7 @@ export function ProjectForecast() {
       }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
           <CardTitle className="flex items-center gap-2 text-base font-medium">
-            Gráfico Preditivo
+            Análise de Preditiva por Projeto
             <Badge variant={summary.trend === "estável" ? "outline" : summary.trend === "crescimento" ? "destructive" : "default"}>
               {summary.trend === "estável" ? (
                 <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
