@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download, ChevronDown, Check } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -388,9 +389,23 @@ export function ProjectTrendAnalysis() {
 
             <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
               <div className="text-sm text-muted-foreground mb-2">Status</div>
-              <div className="text-base font-medium">
+              <div className="text-base font-medium flex items-center gap-2">
                 {trend.percentage < 5 ? "Normal" : 
                  trend.percentage < 15 ? "Intermediário" : "Elevado"}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs p-3">
+                      <div className="space-y-2 text-sm">
+                        <div><strong>Normal:</strong> Este status indica uma variação pequena, que pode ser considerada estável ou dentro do esperado.</div>
+                        <div><strong>Intermediário:</strong> Este status aponta uma mudança que merece atenção, mas que ainda não é crítica. É um sinal de alerta moderado.</div>
+                        <div><strong>Elevado:</strong> Este é o status mais crítico, indicando uma mudança significativa que provavelmente requer análise ou ação.</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>
@@ -509,7 +524,7 @@ export function ProjectTrendAnalysis() {
                     fontSize={12}
                     tickFormatter={selectedMetric === 'cost' ? formatCurrency : formatIPU}
                   />
-                  <Tooltip content={<CustomTooltip />} />
+                  <RechartsTooltip content={<CustomTooltip />} />
                   
                   {/* Linha total (pontilhada) */}
                   <Line
