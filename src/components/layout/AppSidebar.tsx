@@ -73,16 +73,26 @@ export function AppSidebar() {
       });
     }
     
-    if (permissions?.canAccessAnalysis) {
-      items.push({
-        title: "Análise de Custos",
-        url: "/analysis", 
-        icon: TrendingUp,
-        description: "Análise preditivas e tendências"
-      });
-    }
-    
     return items;
+  };
+
+  const getAnalysisItems = () => {
+    if (!permissions?.canAccessAnalysis) return [];
+    
+    return [
+      {
+        title: "Tendências",
+        url: "/analysis",
+        icon: TrendingUp,
+        description: "Análise de tendências de custos"
+      },
+      {
+        title: "Análise Preditiva",
+        url: "/analysis/forecast",
+        icon: TrendingUp,
+        description: "Previsões e análises preditivas"
+      }
+    ];
   };
 
 
@@ -113,6 +123,7 @@ export function AppSidebar() {
   };
 
   const mainNavItems = getMainNavItems();
+  const analysisItems = getAnalysisItems();
   const configItems = getConfigItems();
   const detailItems = getDetailItems();
 
@@ -157,6 +168,38 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {mainNavItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild className="h-12">
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url)}
+                        title={!open ? item.description : undefined}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        {open && (
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{item.title}</span>
+                            <span className="text-xs opacity-70">{item.description}</span>
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Analysis Navigation */}
+        {analysisItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={!open ? "sr-only" : ""}>
+              Análise de Custos
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {analysisItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild className="h-12">
                       <NavLink
