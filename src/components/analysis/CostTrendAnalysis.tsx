@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Percent } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Percent, Info } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -338,70 +339,83 @@ export function CostTrendAnalysis() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Indicadores Estatísticos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-card shadow-medium">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Tendência Atual
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 mb-2">
-              {trend.isStable ? (
-                <>
-                  <div className="h-5 w-5 bg-blue-500 rounded-full" />
-                  <span className="text-2xl font-bold text-blue-600">Estável</span>
-                </>
-              ) : trend.isPositive ? (
-                <>
-                  <TrendingUp className="h-5 w-5 text-red-500" />
-                  <span className="text-2xl font-bold text-red-500">Crescimento</span>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="h-5 w-5 text-green-500" />
-                  <span className="text-2xl font-bold text-green-500">Redução</span>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Indicadores Estatísticos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Tendência Atual
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 mb-2">
+                {trend.isStable ? (
+                  <>
+                    <div className="h-4 w-4 bg-blue-500 rounded-full" />
+                    <span className="text-lg font-bold text-blue-600">Estável</span>
+                  </>
+                ) : trend.isPositive ? (
+                  <>
+                    <TrendingUp className="h-4 w-4 text-red-500" />
+                    <span className="text-lg font-bold text-red-500">Crescimento</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-4 w-4 text-green-500" />
+                    <span className="text-lg font-bold text-green-500">Redução</span>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-card shadow-medium">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Percent className="h-4 w-4" />
-              Variação Esperada
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${
-              trend.isStable ? "text-blue-600" : 
-              trend.isPositive ? "text-red-500" : "text-green-500"
-            }`}>
-              {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Variação Esperada
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-lg font-bold ${
+                trend.isStable ? "text-blue-600" : 
+                trend.isPositive ? "text-red-500" : "text-green-500"
+              }`}>
+                {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-card shadow-medium">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Badge className="h-4 w-4" />
-              Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {trend.percentage < 5 ? "Normal" : 
-               trend.percentage < 15 ? "Intermediário" : "Elevado"}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Status
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      Normal: Variação menor que 5%<br/>
+                      Intermediário: Variação entre 5% e 15%<br/>
+                      Elevado: Variação maior que 15%
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">
+                {trend.percentage < 5 ? "Normal" : 
+                 trend.percentage < 15 ? "Intermediário" : "Elevado"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Gráfico */}
       <Card className="bg-gradient-card shadow-medium" id="cost-trend-container">
@@ -517,7 +531,7 @@ export function CostTrendAnalysis() {
                     tickLine={false}
                     tickFormatter={getValueFormatter()}
                   />
-                  <Tooltip content={<CustomTooltip />} />
+                  <RechartsTooltip content={<CustomTooltip />} />
                   
                   {/* Linha total pontilhada */}
                   <Line 
@@ -559,9 +573,10 @@ export function CostTrendAnalysis() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 }
