@@ -16,7 +16,7 @@ export default function AnalysisOverview() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 max-w-4xl">
+      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {/* Card Análise de Tendências */}
         <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-2 hover:border-primary/20">
           <CardHeader className="pb-4">
@@ -93,7 +93,7 @@ export default function AnalysisOverview() {
       </div>
 
       {/* Seção adicional com informações */}
-      <div className="mt-8 p-6 bg-muted/30 rounded-lg border">
+      <div className="mt-8 p-6 bg-muted/30 rounded-lg border max-w-4xl mx-auto">
         <h3 className="text-lg font-semibold mb-2">Como escolher a análise adequada?</h3>
         <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
           <div>
