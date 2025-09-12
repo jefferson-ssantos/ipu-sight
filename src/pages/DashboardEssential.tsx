@@ -112,7 +112,7 @@ export default function DashboardEssential() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando dashboard essential...</p>
+          <p className="text-muted-foreground">Carregando dashboard...</p>
         </div>
       </div>
     );
@@ -148,9 +148,6 @@ export default function DashboardEssential() {
                         {dashboardData.periodStart} - {dashboardData.periodEnd}
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="text-primary-foreground">
-                      Versão Essential
-                    </Badge>
                   </div>
                 </div>
               </div>
