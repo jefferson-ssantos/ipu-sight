@@ -321,11 +321,10 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         <div className="flex flex-wrap gap-4 mt-4">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filtros:</span>
           </div>
           
           <Select value={selectedOrgLocal} onValueChange={setSelectedOrgLocal}>
-            <SelectTrigger className="w-auto min-w-44 max-w-64">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Organização" />
             </SelectTrigger>
             <SelectContent>
@@ -338,7 +337,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           </Select>
 
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-auto min-w-48">
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -351,7 +350,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           </Select>
 
           <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-50">
               <SelectValue placeholder="Métricas" />
             </SelectTrigger>
             <SelectContent>
@@ -367,7 +366,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           </Select>
 
           <Select value={valueType} onValueChange={(value: "cost" | "ipu") => setValueType(value)}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -412,18 +411,18 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                 margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
                 onClick={handleBarClick}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="period" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
                   angle={-35}
                   textAnchor="end"
-                  height={50}
+                  height={70}
                 />
-                 <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                 <YAxis
+                  tick={{ fontSize: 12 }} 
+                  tickLine={false}
                   tickFormatter={(value) => 
                     valueType === 'cost' ? formatCurrency(value) : formatIPU(value)
                   }

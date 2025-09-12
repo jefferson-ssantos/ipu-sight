@@ -284,7 +284,6 @@ const colors = [
         <div className="flex flex-wrap gap-4 mt-4">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filtros:</span>
           </div>
           
           {/* Organization Filter */}
@@ -316,7 +315,7 @@ const colors = [
           </Select>
 
           <Select value={metric} onValueChange={setMetric}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -341,9 +340,18 @@ const colors = [
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Carregando dados dos ciclos...</p>
+              <p className="text-muted-foreground">Carregando dados...</p>
             </div>
           </div>
+         ) : chartData.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">Nenhum dado encontrado</p>
+                <p className="text-sm text-muted-foreground">
+                  Tente ajustar os filtros ou o período selecionado
+                </p>
+              </div>
+            </div>
         ) : (
           <div ref={chartRef} className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -368,7 +376,6 @@ const colors = [
                   domain={[0, yAxisDomainMax]}
                 />
                 <Tooltip content={renderTooltip} />
-                <Legend verticalAlign="top" iconType="circle" />
                 
                  {/* Reference line for contracted value - always displayed when value exists */}
                  {contractedReferenceValue > 0 && (

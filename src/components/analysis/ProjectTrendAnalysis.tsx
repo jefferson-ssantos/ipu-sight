@@ -350,7 +350,7 @@ export function ProjectTrendAnalysis() {
       {/* Indicadores Estatísticos */}
       <Card className="bg-card/50 backdrop-blur shadow-medium">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Indicadores Estatísticos</CardTitle>
+          <CardTitle className="text-lg font-semibold">Insigths Estatísticos</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
