@@ -2,7 +2,7 @@ import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 
-export type PlanType = 'starter' | 'essential' | 'pro' | 'business';
+export type PlanType = 'starter' | 'essential' | 'pro';
 export type UserRole = 'user' | 'admin';
 
 interface UserProfile {
@@ -47,8 +47,12 @@ export function usePermissions() {
 
       if (error) throw error;
 
-      setProfile(data);
-      setPermissions(calculatePermissions(data.plan_type, data.user_role));
+      // Convert legacy 'business' plan to 'pro'
+      const planType = data.plan_type === 'business' ? 'pro' : data.plan_type as PlanType;
+      const profileData = { ...data, plan_type: planType };
+
+      setProfile(profileData);
+      setPermissions(calculatePermissions(planType, data.user_role));
     } catch (error) {
       // Default permissions in case of error
       setPermissions({
@@ -97,16 +101,6 @@ export function usePermissions() {
           ...basePermissions,
           canAccessDashboard: false,
           canAccessDashboardStarter: false,
-          canAccessDashboardEssential: true,
-          canAccessAnalysis: true,
-          canAccessDetalhamento: false,
-        };
-
-      case 'business':
-        return {
-          ...basePermissions,
-          canAccessDashboard: true,
-          canAccessDashboardStarter: true,
           canAccessDashboardEssential: true,
           canAccessAnalysis: true,
           canAccessDetalhamento: true,
