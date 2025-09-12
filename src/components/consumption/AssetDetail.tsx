@@ -251,9 +251,9 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         const today = new Date();
         const monthsToSubtract = parseInt(selectedCycleFilter, 10);
         // Volta N meses a partir de hoje
-        today.setMonth(today.getMonth() - monthsToSubtract);
-        const startDate = today.toISOString().split('T')[0];
-        query = query.gte('consumption_date', startDate);
+        const startDate = new Date(today.getFullYear(), today.getMonth() - monthsToSubtract, today.getDate());
+        const formattedStartDate = startDate.toISOString().split('T')[0];
+        query = query.gte('consumption_date', formattedStartDate);
       }
 
       // Paginate to fetch all records, bypassing Supabase's 1000-row limit
