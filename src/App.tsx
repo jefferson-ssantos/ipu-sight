@@ -11,6 +11,8 @@ import DashboardEssential from "./pages/DashboardEssential";
 import DashboardDetailed from "./pages/DashboardDetailed";
 import DashboardStarter from "./pages/DashboardStarter";
 import Analysis from "./pages/Analysis";
+import AnalysisTrends from "./pages/AnalysisTrends";
+import AnalysisForecast from "./pages/AnalysisForecast";
 import Detalhamento from "./pages/Detalhamento";
 
 import Configuration from "./pages/Configuration";
@@ -135,7 +137,16 @@ const App = () => (
             <ProtectedRoute>
               <PermissionRoute permission="canAccessAnalysis">
                 <AppLayout>
-                  <Analysis />
+                  <AnalysisTrends />
+                </AppLayout>
+              </PermissionRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/analysis/forecast" element={
+            <ProtectedRoute>
+              <PermissionRoute permission="canAccessAnalysis">
+                <AppLayout>
+                  <AnalysisForecast />
                 </AppLayout>
               </PermissionRoute>
             </ProtectedRoute>
