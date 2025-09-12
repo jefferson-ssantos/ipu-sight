@@ -214,18 +214,45 @@ export function CostForecast() {
     }
   };
 
+  const getValuesForSelectedItems = (data: any[]) => {
+    const metricType = selectedMetric === 'cost' ? 'cost' : 'ipu';
+
+    const allMetersSelected = selectedMeters.length === availableMeters.length - 1 && !selectedMeters.includes('all');
+
+    if (selectedMeters.includes('all') || allMetersSelected) {
+        const totalKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
+        return data.map(item => item[totalKey] || 0);
+    } else {
+        return data.map(item => {
+            let sum = 0;
+            for (const meterId of selectedMeters) {
+                const metricKey = meterId.replace(/[^a-zA-Z0-9]/g, '_');
+                const dataKey = `${metricKey}_${metricType}`;
+                sum += item[dataKey] || 0;
+            }
+            return sum;
+        });
+    }
+  };
+
   // Enhanced forecast generation with multiple methods and confidence scoring
   const generateForecast = (historicalData: any[], metric: string, forecastPeriod: string) => {
     if (historicalData.length < 3) return [];
 
     const periods = parseInt(forecastPeriod.replace(/\D/g, ''));
-    const metricKey = metric === 'cost' ? 'totalCost' : 'totalIPU';
     
-    // Generate forecast for total values
-    const totalValues = historicalData.map(item => item[metricKey] || 0);
+    // O forecast da linha de total deve ser sempre baseado no valor total, independente do filtro.
+    const totalKey = metric === 'cost' ? 'totalCost' : 'totalIPU';
+    const totalValues = historicalData.map(item => item[totalKey] || 0);
     const totalLinearForecast = generateLinearForecast(totalValues, periods);
     const totalMovingAvgForecast = generateMovingAverageForecast(totalValues, periods);
     const totalSeasonalForecast = generateSeasonalForecast(totalValues, periods);
+
+    // O cálculo de confiança (KPI) deve ser baseado nos filtros selecionados.
+    const filteredHistoricalValues = getValuesForSelectedItems(historicalData);
+    const filteredLinearForecast = generateLinearForecast(filteredHistoricalValues, periods);
+    const filteredMovingAvgForecast = generateMovingAverageForecast(filteredHistoricalValues, periods);
+    const filteredSeasonalForecast = generateSeasonalForecast(filteredHistoricalValues, periods);
 
     // Generate forecasts for individual metrics
     const individualForecasts: any = {};
@@ -278,10 +305,22 @@ export function CostForecast() {
       // Weighted combination for total
       const totalCombinedValue = (totalLinearValue * 0.4) + (totalMovingAvgValue * 0.3) + (totalSeasonalValue * 0.3);
       
-      // Calculate confidence based on historical variance
-      const variance = calculateVariance(totalValues);
-      const confidence = Math.max(0.6, Math.min(0.95, 1 - (variance / Math.abs(totalCombinedValue))));
+      // Weighted combination for filtered total (for confidence calculation)
+      const filteredLinearValue = filteredLinearForecast[i - 1];
+      const filteredMovingAvgValue = filteredMovingAvgForecast[i - 1];
+      const filteredSeasonalValue = filteredSeasonalForecast[i - 1];
+      const filteredCombinedValue = (filteredLinearValue * 0.4) + (filteredMovingAvgValue * 0.3) + (filteredSeasonalValue * 0.3);
+
+      // Calculate confidence based on filtered historical variance and filtered forecast value
+      const variance = calculateVariance(filteredHistoricalValues);
+      const stdDev = Math.sqrt(variance);
+      // A confiança é baseada na volatilidade histórica (desvio padrão) em relação ao valor previsto.
+      // Um desvio padrão baixo em comparação com a previsão resulta em maior confiança.
+      // Usamos o desvio padrão (sqrt(variância)) porque ele está na mesma unidade dos dados.
+      const confidence = Math.abs(filteredCombinedValue) > 0 ? Math.max(0.6, Math.min(0.95, 1 - (stdDev / Math.abs(filteredCombinedValue)))) : 0.6;
       
+      const metricKey = metric === 'cost' ? 'totalCost' : 'totalIPU';
+
       // Build forecast item with individual predictions
       const forecastItem: any = {
         period: `${currentStartDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })} - ${currentEndDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`,
@@ -371,15 +410,33 @@ export function CostForecast() {
       };
     }
     
-    const metricKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
-    const totalForecast = forecastData.reduce((sum, item) => sum + (item[metricKey] || 0), 0);
-    const averageForecast = totalForecast / forecastData.length;
+    // Os KPIs devem ser calculados com base nos filtros selecionados.
+    const totalForecast = forecastData.reduce((sum, item) => {
+      const allMetersSelected = selectedMeters.length === availableMeters.length - 1 && !selectedMeters.includes('all');
+
+      if (selectedMeters.includes('all') || allMetersSelected) {
+        const totalKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
+        return sum + (item[totalKey] || 0);
+      }
+      let periodSum = 0;
+      for (const meterId of selectedMeters) {
+        const meterKey = meterId.replace(/[^a-zA-Z0-9]/g, '_');
+        const dataKey = selectedMetric === 'cost' ? `${meterKey}_cost` : `${meterKey}_ipu`;
+        periodSum += item[dataKey] || 0;
+      }
+      return sum + periodSum;
+    }, 0);
+
+    const averageForecast = forecastData.length > 0 ? totalForecast / forecastData.length : 0;
     const avgConfidence = forecastData.reduce((sum, item) => sum + item.confidence, 0) / forecastData.length;
     
     // Compare with recent historical average
-    const recentHistorical = chartData.slice(-3);
-    const totalHistorical = recentHistorical.reduce((sum, item) => sum + (item[metricKey] || 0), 0);
-    const avgHistorical = recentHistorical.length > 0 ? totalHistorical / recentHistorical.length : 0;
+    // A base de comparação histórica deve ser dinâmica, igual ao período de previsão.
+    const periodsToCompare = parseInt(forecastPeriod.replace(/\D/g, ''));
+    const recentHistorical = chartData.slice(-periodsToCompare);
+    const historicalValues = getValuesForSelectedItems(recentHistorical);
+    const totalHistorical = historicalValues.reduce((sum, value) => sum + value, 0);
+    const avgHistorical = historicalValues.length > 0 ? totalHistorical / historicalValues.length : 0;
     
     let growthRate = 0;
     let expectedChange = 0;
@@ -521,17 +578,16 @@ export function CostForecast() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               {summary.trend === "crescimento" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-              Variação Esperada
+              Crescimento Esperado
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${
-              summary.expectedChange > 10 ? 'text-red-500' :
-              summary.expectedChange > 5 ? 'text-yellow-500' :
-              summary.expectedChange > 0 ? 'text-green-500' :
-              'text-muted-foreground'
+              summary.trend === 'crescimento' ? 'text-red-500' :
+              summary.trend === 'redução' ? 'text-green-500' :
+              'text-blue-600'
             }`}>
-              {summary.expectedChange.toFixed(1)}%
+              {summary.trend === 'crescimento' ? '+' : summary.trend === 'estável' ? '±' : ''}{summary.growthRate.toFixed(1)}%
             </div>
             <div className="text-sm text-muted-foreground flex items-center gap-2">
               Tendência: 
@@ -583,7 +639,7 @@ export function CostForecast() {
               ) : (
                 <TrendingDown className="h-3 w-3 mr-1" />
               )}
-              {summary.expectedChange.toFixed(1)}%
+              {summary.growthRate.toFixed(1)}%
             </Badge>
           </CardTitle>
         </CardHeader>

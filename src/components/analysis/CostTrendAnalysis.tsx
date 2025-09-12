@@ -229,30 +229,28 @@ export function CostTrendAnalysis() {
   };
 
   const calculateTrend = () => {
-    if (chartData.length < 2) return { percentage: 0, isPositive: false, isStable: true };
+    if (chartData.length < 2) return { growthRate: 0, isPositive: false, isStable: true };
     
     const currentPeriodData = chartData[chartData.length - 1];
     const previousPeriodData = chartData[chartData.length - 2];
     
     if (!currentPeriodData || !previousPeriodData) return { percentage: 0, isPositive: false, isStable: true };
     
-    // Calcular valores com base nas métricas selecionadas
+    // O cálculo da tendência (KPIs) deve ser baseado nos filtros selecionados.
     let currentValue = 0;
     let previousValue = 0;
-    
-    if (selectedMeters.includes('all')) {
-      // Se "todas as métricas" estiver selecionado, usar linha total
-      const currentKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
-      currentValue = currentPeriodData[currentKey] || 0;
-      previousValue = previousPeriodData[currentKey] || 0;
+
+    const allMetersSelected = selectedMeters.length === availableMeters.length - 1 && !selectedMeters.includes('all');
+
+    if (selectedMeters.includes('all') || allMetersSelected) {
+      const totalKey = selectedMetric === 'cost' ? 'totalCost' : 'totalIPU';
+      currentValue = currentPeriodData[totalKey] || 0;
+      previousValue = previousPeriodData[totalKey] || 0;
     } else {
-      // Somar apenas as métricas selecionadas
       const metricsToSum = availableMeters.filter(m => selectedMeters.includes(m.id));
-      
       for (const metric of metricsToSum) {
         const metricKey = metric.id.replace(/[^a-zA-Z0-9]/g, '_');
         const dataKey = selectedMetric === 'cost' ? `${metricKey}_cost` : `${metricKey}_ipu`;
-        
         currentValue += currentPeriodData[dataKey] || 0;
         previousValue += previousPeriodData[dataKey] || 0;
       }
@@ -274,15 +272,15 @@ export function CostTrendAnalysis() {
       }
     }
     
-    const percentage = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
-    const absolutePercentage = Math.abs(percentage);
+    const growthRate = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
+    const absoluteGrowthRate = Math.abs(growthRate);
     
     // Considerar estável se variação for menor que 2%
-    const isStable = absolutePercentage < 2;
+    const isStable = absoluteGrowthRate < 2;
     
     return {
-      percentage: absolutePercentage,
-      isPositive: percentage > 0,
+      growthRate: absoluteGrowthRate,
+      isPositive: growthRate > 0,
       isStable
     };
   };
@@ -379,15 +377,15 @@ export function CostTrendAnalysis() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Percent className="h-4 w-4" />
-                Variação Esperada
+                Crescimento Esperado
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${
                 trend.isStable ? "text-blue-600" : 
-                trend.isPositive ? "text-red-500" : "text-green-500"
+                trend.isPositive ? "text-red-500" : "text-green-500" 
               }`}>
-                {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
+                {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.growthRate.toFixed(1)}%
               </div>
               <div className="text-sm text-muted-foreground">
                 Comparando com período anterior
@@ -416,8 +414,8 @@ export function CostTrendAnalysis() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {trend.percentage < 5 ? "Normal" : 
-                 trend.percentage < 15 ? "Intermediário" : "Elevado"}
+                {trend.growthRate < 5 ? "Normal" : 
+                 trend.growthRate < 15 ? "Intermediário" : "Elevado"}
               </div>
               <div className="text-sm text-muted-foreground">
                 Nível de Alerta
@@ -458,7 +456,7 @@ export function CostTrendAnalysis() {
                 ) : (
                   <TrendingDown className="h-3 w-3 mr-1" />
                 )}
-                {trend.percentage.toFixed(1)}%
+                {trend.growthRate.toFixed(1)}%
               </Badge>
             </CardTitle>
           </div>

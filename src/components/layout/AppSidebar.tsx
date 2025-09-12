@@ -157,7 +157,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {mainNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild className="h-12">
                       <NavLink
                         to={item.url}
@@ -189,7 +189,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {detailItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild className="h-12">
                       <NavLink
                         to={item.url}
@@ -222,7 +222,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {configItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild className="h-12">
                       <NavLink
                         to={item.url}
