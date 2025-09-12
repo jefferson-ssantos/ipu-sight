@@ -268,6 +268,25 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+
+                {/* Sub-items when collapsed */}
+                {!open && analysisItems.map((item) => (
+                  <SidebarMenuItem key={`collapsed-${item.url}`}>
+                    <SidebarMenuButton asChild className="h-10">
+                      <NavLink
+                        to={item.url}
+                        className={`group transition-all duration-200 flex items-center justify-center ${
+                          isActive(item.url)
+                            ? "bg-primary/10 text-primary border-r-2 border-primary shadow-soft"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        }`}
+                        title={item.description}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
