@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download, ChevronDown, Check } from "lucide-react";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Percent } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -340,54 +340,68 @@ export function CostTrendAnalysis() {
   return (
     <div className="space-y-6">
       {/* Indicadores Estatísticos */}
-      <Card className="bg-card/50 backdrop-blur shadow-medium">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Insights Estatísticos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
-              <div className="text-sm text-muted-foreground mb-2">Tendência Atual</div>
-              <div className="flex items-center gap-2">
-                {trend.isStable ? (
-                  <>
-                    <div className="h-5 w-5 bg-blue-500 rounded-full" />
-                    <span className="text-base font-medium text-blue-600">Estável</span>
-                  </>
-                ) : trend.isPositive ? (
-                  <>
-                    <TrendingUp className="h-5 w-5 text-red-500" />
-                    <span className="text-base font-medium text-red-500">Crescimento</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-5 w-5 text-green-500" />
-                    <span className="text-base font-medium text-green-500">Redução</span>
-                  </>
-                )}
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-gradient-card shadow-medium">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Tendência Atual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 mb-2">
+              {trend.isStable ? (
+                <>
+                  <div className="h-5 w-5 bg-blue-500 rounded-full" />
+                  <span className="text-2xl font-bold text-blue-600">Estável</span>
+                </>
+              ) : trend.isPositive ? (
+                <>
+                  <TrendingUp className="h-5 w-5 text-red-500" />
+                  <span className="text-2xl font-bold text-red-500">Crescimento</span>
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="h-5 w-5 text-green-500" />
+                  <span className="text-2xl font-bold text-green-500">Redução</span>
+                </>
+              )}
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
-              <div className="text-sm text-muted-foreground mb-2">Variação Esperada</div>
-              <div className={`text-lg font-semibold ${
-                trend.isStable ? "text-blue-600" : 
-                trend.isPositive ? "text-red-500" : "text-green-500"
-              }`}>
-                {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
-              </div>
+        <Card className="bg-gradient-card shadow-medium">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Percent className="h-4 w-4" />
+              Variação Esperada
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${
+              trend.isStable ? "text-blue-600" : 
+              trend.isPositive ? "text-red-500" : "text-green-500"
+            }`}>
+              {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
-              <div className="text-sm text-muted-foreground mb-2">Status</div>
-              <div className="text-base font-medium">
-                {trend.percentage < 5 ? "Normal" : 
-                 trend.percentage < 15 ? "Intermediário" : "Elevado"}
-              </div>
+        <Card className="bg-gradient-card shadow-medium">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Badge className="h-4 w-4" />
+              Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {trend.percentage < 5 ? "Normal" : 
+               trend.percentage < 15 ? "Intermediário" : "Elevado"}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Gráfico */}
       <Card className="bg-gradient-card shadow-medium" id="cost-trend-container">
