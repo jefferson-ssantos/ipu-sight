@@ -399,10 +399,10 @@ export function CostTrendAnalysis() {
                     <Info className="h-3 w-3 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-xs">
-                      Normal: Variação menor que 5%<br/>
-                      Intermediário: Variação entre 5% e 15%<br/>
-                      Elevado: Variação maior que 15%
+                    <p className="text-xs max-w-xs">
+                      <strong>Normal</strong> - Este status indica uma variação pequena, que pode ser considerada estável ou dentro do esperado.<br/><br/>
+                      <strong>Intermediário</strong> - Este status aponta uma mudança que merece atenção, mas que ainda não é crítica. É um sinal de alerta moderado.<br/><br/>
+                      <strong>Elevado</strong> - Este é o status mais crítico, indicando uma mudança significativa que provavelmente requer análise ou ação.
                     </p>
                   </TooltipContent>
                 </Tooltip>
