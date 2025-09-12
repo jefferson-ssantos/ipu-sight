@@ -114,7 +114,7 @@ export function AppSidebar() {
     return [
       {
         title: "Tendências",
-        url: "/analysis",
+        url: "/analysis/trends",
         icon: Activity,
         description: "Análise de tendências de custos"
       },
@@ -220,7 +220,8 @@ export function AppSidebar() {
                     className="h-12"
                     onClick={() => setAnalysisExpanded(!analysisExpanded)}
                   >
-                    <div
+                    <NavLink
+                      to="/analysis"
                       className={`group transition-all duration-200 cursor-pointer flex items-center w-full ${
                         isAnalysisActive
                           ? "bg-primary/10 text-primary border-r-2 border-primary shadow-soft"
@@ -236,13 +237,19 @@ export function AppSidebar() {
                         </div>
                       )}
                       {open && (
-                        <div className={`transition-transform duration-200 ${analysisExpanded ? 'rotate-90' : ''}`}>
+                        <div 
+                          className={`transition-transform duration-200 ${analysisExpanded ? 'rotate-90' : ''}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setAnalysisExpanded(!analysisExpanded);
+                          }}
+                        >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
                       )}
-                    </div>
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
