@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Bell, Search, User } from "lucide-react";
@@ -21,17 +21,7 @@ export function AppLayout({
         <div className="flex-1 flex flex-col">
           {/* Top Header */}
           <header className="h-16 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-            <div className="flex items-center justify-between h-full px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="h-9 w-9" />
-                
-                <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>FinOps</span>
-                  <span>/</span>
-                  <span className="text-foreground font-medium">Dashboard</span>
-                </div>
-              </div>
-
+            <div className="flex items-center justify-end h-full px-6">
               <div className="flex items-center gap-3">
                 {/* Search */}
                 <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => setSearchOpen(true)}>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Fragment } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -9,7 +9,9 @@ import {
   LogOut,
   Cable,
   Activity,
-  Target
+  Target,
+  PanelLeft,
+  Sparkles
 } from "lucide-react";
 import orysLogo from "@/assets/logo-laranja.png";
 import orysLogoCollapsed from "@/assets/orys-logo.png";
@@ -23,18 +25,26 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { UpgradePlanModal } from "./UpgradePlanModal";
 
 export function AppSidebar() {
   const { signOut } = useAuth();
   const { permissions, loading } = usePermissions();
-  const { open, setOpen } = useSidebar();
+  const { open, toggleSidebar } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const [analysisExpanded, setAnalysisExpanded] = useState(currentPath.startsWith('/analysis'));
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Move all hooks to the top - before any conditional returns
 
@@ -52,6 +62,19 @@ export function AppSidebar() {
       </Sidebar>
     );
   }
+
+  const getPlanInfo = () => {
+    if (permissions?.canAccessDashboardEssential) {
+      return { name: "Plano Essential", short: "E" };
+    }
+    if (permissions?.canAccessDashboardStarter) {
+      return { name: "Plano Starter", short: "S" };
+    }
+    return { name: "Não Aplicável", short: "N/A" };
+  };
+
+  const plan = getPlanInfo();
+  const showUpgradeButton = plan.name !== "Não Aplicável";
 
   // Navigation data structures - filtered by permissions
   const getMainNavItems = () => {
@@ -157,20 +180,47 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar
+    <Fragment>
+      <Sidebar
       className="transition-all duration-300 border-r border-border bg-card"
       collapsible="icon"
     >
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-center">
-          <img 
-            src={open ? orysLogo : orysLogoCollapsed} 
+      {open ? (
+        // Expanded state
+        <div className="flex items-center justify-between border-b border-border h-16 px-4">
+          <img
+            src={orysLogo}
             alt="Orys Logo" 
-            className={open ? "h-14 w-40" : "h-10 w-10 object-contain"}
+            className="h-14 w-40"
           />
+          <Button
+            onClick={toggleSidebar}
+            variant="ghost"
+            className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+            title="Recolher"
+          >
+            <PanelLeft className="h-5 w-5" />
+          </Button>
         </div>
-      </div>
+      ) : (
+        // Collapsed state
+        <div className="flex flex-col items-center gap-4 border-b border-border py-4">
+          <img
+            src={orysLogoCollapsed}
+            alt="Orys Logo"
+            className="h-10 w-10 object-contain"
+          />
+          <Button
+            onClick={toggleSidebar}
+            variant="ghost"
+            className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+            title="Expandir"
+          >
+            <PanelLeft className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
 
       <SidebarContent className="flex flex-col h-full">
         {/* Main Navigation */}
@@ -373,7 +423,34 @@ export function AppSidebar() {
         )}
 
         {/* Logout at bottom */}
-        <div className="mt-auto p-4 border-t border-border">
+        <div className="mt-auto p-4 border-t border-border space-y-2">
+          <div className={`flex w-full items-center gap-2 ${open ? 'justify-between' : 'justify-center flex-col'}`}>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary text-xs font-medium">
+                    {open ? plan.name : plan.short}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="flex flex-col items-start p-2">
+                  <span>{plan.name}</span>
+                  {plan.name === "Plano Starter" && <span className="text-xs text-muted-foreground">Clique para fazer upgrade</span>}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            {showUpgradeButton && (
+              <Button
+                variant="ghost"
+                onClick={() => setIsUpgradeModalOpen(true)}
+                title="Fazer Upgrade"
+                className={`h-9 text-secondary hover:bg-secondary/10 hover:text-secondary ${open ? 'px-2' : 'w-9 px-0'}`}
+              >
+                <Sparkles className="h-4 w-4 flex-shrink-0" />
+                {open && <span className="ml-1.5 text-sm font-semibold">Upgrade</span>}
+              </Button>
+            )}
+          </div>
+
           <Button
             onClick={handleLogout}
             variant="ghost"
@@ -388,5 +465,7 @@ export function AppSidebar() {
         </div>
       </SidebarContent>
     </Sidebar>
+    <UpgradePlanModal open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen} permissions={permissions} />
+    </Fragment>
   );
 }
