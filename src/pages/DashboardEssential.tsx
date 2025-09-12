@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,7 @@ import { OrganizationComparison } from "@/components/analysis/OrganizationCompar
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { usePageHeader } from "@/components/layout/AppLayout";
 import { DollarSign, Activity, Building2, Calendar, BarChart3 } from "lucide-react";
 
 export default function DashboardEssential() {
@@ -36,6 +37,19 @@ export default function DashboardEssential() {
     data: kpiData,
     loading: kpiLoading
   } = useDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter);
+
+  const pageTitle = useMemo(() => (
+    <>
+      <BarChart3 className="h-6 w-6 text-primary" />
+      <div>
+        <h1 className="text-lg font-semibold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          Análise de custos e consumo.
+        </p>
+      </div>
+    </>
+  ), []);
+  usePageHeader(pageTitle);
 
   // Fetch available organizations
   useEffect(() => {
@@ -132,16 +146,6 @@ export default function DashboardEssential() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="flex-1 p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Análise de custos e consumo.
-            </p>
-          </div>
-        </div>
-
         {/* KPI Section - Essential Level */}
         <Card className="border bg-gradient-card shadow-medium">
           <CardHeader className="pb-4">

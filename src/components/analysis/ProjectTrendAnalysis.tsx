@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info, Percent, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info, Percent, Target, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePageHeader } from "@/components/layout/AppLayout";
 
 export function ProjectTrendAnalysis() {
   const { data, loading, getChartData, availableCycles } = useDashboardData();
@@ -23,6 +24,19 @@ export function ProjectTrendAnalysis() {
   const [availableProjects, setAvailableProjects] = useState<{ id: string; name: string }[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  const pageTitle = useMemo(() => (
+    <>
+      <Activity className="h-6 w-6 text-primary" />
+      <div>
+        <h1 className="text-lg font-semibold">Análise de Tendências</h1>
+        <p className="text-sm text-muted-foreground">
+          Acompanhe a evolução dos seus custos por projeto.
+        </p>
+      </div>
+    </>
+  ), []);
+  usePageHeader(pageTitle);
 
   // Cores personalizadas fornecidas pelo usuário
   const colors = [
@@ -454,23 +468,7 @@ export function ProjectTrendAnalysis() {
 
       {/* Gráfico */}
       <Card className="bg-gradient-card shadow-medium" id="project-trend-container">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              Análise de Tendências por Projeto
-              <Badge variant={trend.isStable ? "outline" : trend.isPositive ? "destructive" : "default"}>
-                {trend.isStable ? (
-                  <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
-                ) : trend.isPositive ? (
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                )}
-                {trend.growthRate.toFixed(1)}%
-              </Badge>
-            </CardTitle>
-          </div>
-          
+        <CardHeader className="flex flex-row items-center justify-end">
           <div className="flex flex-wrap items-center gap-4">
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-60">

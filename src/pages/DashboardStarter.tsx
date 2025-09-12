@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +9,7 @@ import { ConsolidatedChartMetric } from "@/components/dashboard/ConsolidatedChar
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { usePageHeader } from "@/components/layout/AppLayout";
 import { DollarSign, Building2, Calendar, BarChart3 } from "lucide-react";
 
 export default function DashboardStarter() {
@@ -26,6 +27,19 @@ export default function DashboardStarter() {
     error,
     refetch,
   } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+
+  const pageTitle = useMemo(() => (
+    <>
+      <BarChart3 className="h-6 w-6 text-primary" />
+      <div>
+        <h1 className="text-lg font-semibold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          Visão geral de custos e consumo.
+        </p>
+      </div>
+    </>
+  ), []);
+  usePageHeader(pageTitle);
 
   // Fetch available organizations
   useEffect(() => {
@@ -113,16 +127,6 @@ export default function DashboardStarter() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="flex-1 p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Visão geral de custos e consumo.
-            </p>
-          </div>
-        </div>
-
         {/* KPI Section - Simplified for Starter */}
         <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-4">

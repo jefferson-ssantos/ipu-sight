@@ -305,22 +305,13 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         }
       });
 
-      // Converter o mapa para um array, filtrar e ordenar
-      const aggregatedData = Array.from(groupedAssets.values())
-        .filter(asset => {
-          // Filtrar "Metadata Record Consumption" com 0 IPUs
-          const assetName = asset.asset_name || asset.meter_name || '';
-          if (assetName === 'Metadata Record Consumption' && (asset.consumption_ipu || 0) === 0) {
-            return false;
-          }
-          return true;
-        })
-        .sort((a, b) => {
-          if (a.consumption_date === b.consumption_date) {
-            return (b.consumption_ipu || 0) - (a.consumption_ipu || 0);
-          }
-          return new Date(b.consumption_date!).getTime() - new Date(a.consumption_date!).getTime();
-        });
+      // Converter o mapa para um array e ordenar
+      const aggregatedData = Array.from(groupedAssets.values()).sort((a, b) => {
+        if (a.consumption_date === b.consumption_date) {
+          return (b.consumption_ipu || 0) - (a.consumption_ipu || 0);
+        }
+        return new Date(b.consumption_date!).getTime() - new Date(a.consumption_date!).getTime();
+      });
 
       // Otimização: Pré-agrupar dados históricos para evitar N^2 no cálculo de tendência.
       const assetHistoryMap = new Map<string, AssetData[]>();
@@ -349,6 +340,9 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
       });
       setAssets(processedData);
     } catch (error) {
+      console.error("Erro ao buscar dados dos assets:", error);
+      const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+      toast.error("Falha ao carregar detalhes dos assets.", { description: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -516,7 +510,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                 </div>
                 <div className="flex justify-end gap-2 p-2 border-t">
                   <Button variant="outline" size="sm" onClick={clearFilter}>Limpar</Button>
-                  <Button size="sm" onClick={applyFilter}>Filtrar</Button>
+                  <Button size="sm" onClick={applyFilter}>Aplicar</Button>
                 </div>
               </PopoverContent>
             </Popover>
@@ -568,29 +562,23 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         </div>
         
         <div className="flex gap-4 items-center justify-between">
-          <div className="flex gap-2 items-center flex-1">
-            <div className="relative flex-1">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
-                onClick={() => setSearch(inputValue)}
-                aria-label="Buscar"
-              />
-              <Input
-                placeholder="Buscar por asset ou projeto..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setSearch(inputValue);
-                  }
-                }}
-                className="pl-10"
-              />
-            </div>
-            <Button onClick={() => setSearch(inputValue)} variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtrar
-            </Button>
+          <div className="relative flex-1">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+              onClick={() => setSearch(inputValue)}
+              aria-label="Buscar"
+            />
+            <Input
+              placeholder="Buscar por asset ou projeto..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearch(inputValue);
+                }
+              }}
+              className="pl-10"
+            />
           </div>
           <Button onClick={exportData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
