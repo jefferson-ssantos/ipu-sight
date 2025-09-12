@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info, Percent } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -347,70 +347,83 @@ export function ProjectTrendAnalysis() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Indicadores Estatísticos */}
-      <Card className="bg-card/50 backdrop-blur shadow-medium">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Insights Estatísticos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
-              <div className="text-sm text-muted-foreground mb-2">Tendência Atual</div>
-              <div className="flex items-center gap-2">
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Indicadores Estatísticos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Tendência Atual
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 mb-2">
                 {trend.isStable ? (
                   <>
-                    <div className="h-5 w-5 bg-blue-500 rounded-full" />
-                    <span className="text-base font-medium text-blue-600">Estável</span>
+                    <div className="h-4 w-4 bg-blue-500 rounded-full" />
+                    <span className="text-lg font-bold text-blue-600">Estável</span>
                   </>
                 ) : trend.isPositive ? (
                   <>
-                    <TrendingUp className="h-5 w-5 text-red-500" />
-                    <span className="text-base font-medium text-red-500">Crescimento</span>
+                    <TrendingUp className="h-4 w-4 text-red-500" />
+                    <span className="text-lg font-bold text-red-500">Crescimento</span>
                   </>
                 ) : (
                   <>
-                    <TrendingDown className="h-5 w-5 text-green-500" />
-                    <span className="text-base font-medium text-green-500">Redução</span>
+                    <TrendingDown className="h-4 w-4 text-green-500" />
+                    <span className="text-lg font-bold text-green-500">Redução</span>
                   </>
                 )}
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
-              <div className="text-sm text-muted-foreground mb-2">Variação Esperada</div>
-              <div className={`text-lg font-semibold ${
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Variação Esperada
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-lg font-bold ${
                 trend.isStable ? "text-blue-600" : 
                 trend.isPositive ? "text-red-500" : "text-green-500"
               }`}>
                 {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex flex-col items-center p-4 rounded-lg bg-gradient-to-r from-muted/30 to-muted/60 border border-border/50">
-              <div className="text-sm text-muted-foreground mb-2">Status</div>
-              <div className="text-base font-medium flex items-center gap-2">
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Status
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-xs">
+                      <strong>Normal</strong> - Este status indica uma variação pequena, que pode ser considerada estável ou dentro do esperado.<br/><br/>
+                      <strong>Intermediário</strong> - Este status aponta uma mudança que merece atenção, mas que ainda não é crítica. É um sinal de alerta moderado.<br/><br/>
+                      <strong>Elevado</strong> - Este é o status mais crítico, indicando uma mudança significativa que provavelmente requer análise ou ação.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">
                 {trend.percentage < 5 ? "Normal" : 
                  trend.percentage < 15 ? "Intermediário" : "Elevado"}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs p-3">
-                      <div className="space-y-2 text-sm">
-                        <div><strong>Normal:</strong> Este status indica uma variação pequena, que pode ser considerada estável ou dentro do esperado.</div>
-                        <div><strong>Intermediário:</strong> Este status aponta uma mudança que merece atenção, mas que ainda não é crítica. É um sinal de alerta moderado.</div>
-                        <div><strong>Elevado:</strong> Este é o status mais crítico, indicando uma mudança significativa que provavelmente requer análise ou ação.</div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Gráfico */}
       <Card className="bg-gradient-card shadow-medium" id="project-trend-container">
@@ -570,5 +583,6 @@ export function ProjectTrendAnalysis() {
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   );
 }
