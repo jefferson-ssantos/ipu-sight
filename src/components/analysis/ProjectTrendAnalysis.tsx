@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info, Percent } from "lucide-react";
+import { TrendingUp, TrendingDown, Download, ChevronDown, Check, Info, Percent, Target } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -350,10 +350,10 @@ export function ProjectTrendAnalysis() {
     <TooltipProvider>
       <div className="space-y-6">
         {/* Indicadores Estatísticos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-gradient-card shadow-medium">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
+              <CardTitle className="text-base flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Tendência Atual
               </CardTitle>
@@ -363,43 +363,49 @@ export function ProjectTrendAnalysis() {
                 {trend.isStable ? (
                   <>
                     <div className="h-4 w-4 bg-blue-500 rounded-full" />
-                    <span className="text-lg font-bold text-blue-600">Estável</span>
+                    <span className="text-2xl font-bold text-blue-600">Estável</span>
                   </>
                 ) : trend.isPositive ? (
                   <>
                     <TrendingUp className="h-4 w-4 text-red-500" />
-                    <span className="text-lg font-bold text-red-500">Crescimento</span>
+                    <span className="text-2xl font-bold text-red-500">Crescimento</span>
                   </>
                 ) : (
                   <>
                     <TrendingDown className="h-4 w-4 text-green-500" />
-                    <span className="text-lg font-bold text-green-500">Redução</span>
+                    <span className="text-2xl font-bold text-green-500">Redução</span>
                   </>
                 )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Direção da Tendência
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-card shadow-medium">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
+              <CardTitle className="text-base flex items-center gap-2">
                 <Percent className="h-4 w-4" />
                 Variação Esperada
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-lg font-bold ${
+              <div className={`text-2xl font-bold ${
                 trend.isStable ? "text-blue-600" : 
                 trend.isPositive ? "text-red-500" : "text-green-500"
               }`}>
                 {trend.isPositive ? '+' : trend.isStable ? '±' : ''}{trend.percentage.toFixed(1)}%
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Comparando com período anterior
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-card shadow-medium">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
+              <CardTitle className="text-base flex items-center gap-2">
                 <Info className="h-4 w-4" />
                 Status
                 <Tooltip>
@@ -417,9 +423,30 @@ export function ProjectTrendAnalysis() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-lg font-bold">
+              <div className="text-2xl font-bold">
                 {trend.percentage < 5 ? "Normal" : 
                  trend.percentage < 15 ? "Intermediário" : "Elevado"}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Nível de Alerta
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card shadow-medium">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Confiança da Análise
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {chartData.length >= 6 ? "95%" : 
+                 chartData.length >= 3 ? "80%" : "65%"}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Baseado em {chartData.length} ciclos
               </div>
             </CardContent>
           </Card>
