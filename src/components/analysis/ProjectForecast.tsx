@@ -594,7 +594,7 @@ export function ProjectForecast() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4 mb-6 justify-end">
             <div className="space-y-3">
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger className="w-[230px]">
