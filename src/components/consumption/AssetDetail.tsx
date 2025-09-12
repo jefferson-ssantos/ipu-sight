@@ -568,23 +568,29 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
         </div>
         
         <div className="flex gap-4 items-center justify-between">
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
-              onClick={() => setSearch(inputValue)}
-              aria-label="Buscar"
-            />
-            <Input
-              placeholder="Buscar por asset ou projeto..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearch(inputValue);
-                }
-              }}
-              className="pl-10"
-            />
+          <div className="flex gap-2 items-center flex-1">
+            <div className="relative flex-1">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 cursor-pointer"
+                onClick={() => setSearch(inputValue)}
+                aria-label="Buscar"
+              />
+              <Input
+                placeholder="Buscar por asset ou projeto..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setSearch(inputValue);
+                  }
+                }}
+                className="pl-10"
+              />
+            </div>
+            <Button onClick={() => setSearch(inputValue)} variant="outline">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtrar
+            </Button>
           </div>
           <Button onClick={exportData} variant="outline">
             <Download className="h-4 w-4 mr-2" />
