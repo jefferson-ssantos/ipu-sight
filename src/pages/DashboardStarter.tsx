@@ -9,7 +9,7 @@ import { ConsolidatedChartMetric } from "@/components/dashboard/ConsolidatedChar
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, Activity, Building2, Calendar } from "lucide-react";
+import { DollarSign, Building2, Calendar, BarChart3 } from "lucide-react";
 
 export default function DashboardStarter() {
   const { user } = useAuth();
@@ -113,6 +113,16 @@ export default function DashboardStarter() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="flex-1 p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <BarChart3 className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Visão geral de custos e consumo.
+            </p>
+          </div>
+        </div>
+
         {/* KPI Section - Simplified for Starter */}
         <Card className="bg-gradient-card shadow-medium">
           <CardHeader className="pb-4">
