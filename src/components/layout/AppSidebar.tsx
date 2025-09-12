@@ -5,7 +5,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import {
   BarChart3,
   PieChart,
-  Settings,
   TrendingUp,
   LogOut,
   Cable,
@@ -176,7 +175,11 @@ export function AppSidebar() {
       <SidebarContent className="flex flex-col h-full">
         {/* Main Navigation */}
         {mainNavItems.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup
+            className={
+              !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
+            }
+          >
             <SidebarGroupLabel className={!open ? "sr-only" : ""}>
               Principal
             </SidebarGroupLabel>
@@ -208,7 +211,11 @@ export function AppSidebar() {
 
         {/* Analysis Section */}
         {analysisItems.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup
+            className={
+              !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
+            }
+          >
             <SidebarGroupLabel className={!open ? "sr-only" : ""}>
               Análise
             </SidebarGroupLabel>
@@ -217,12 +224,12 @@ export function AppSidebar() {
                 {/* Parent Analysis Item */}
                 <SidebarMenuItem>
                   <SidebarMenuButton 
+                    asChild
                     className="h-12"
-                    onClick={() => setAnalysisExpanded(!analysisExpanded)}
                   >
                     <NavLink
                       to="/analysis"
-                      className={`group transition-all duration-200 cursor-pointer flex items-center w-full rounded-md px-3 py-2 ${
+                      className={`group transition-all duration-200 ${
                         isAnalysisActive
                           ? "bg-primary/10 text-primary border-r-2 border-primary shadow-soft"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -233,7 +240,7 @@ export function AppSidebar() {
                       {open && (
                         <div className="flex flex-col items-start flex-1">
                           <span className="font-medium">Análise de Custos</span>
-                          <span className="text-xs opacity-70">Análise preditivas e tendências</span>
+                          <span className="text-xs opacity-70">Análise Preditivas e Tendências</span>
                         </div>
                       )}
                       {open && (
@@ -294,7 +301,11 @@ export function AppSidebar() {
 
         {/* Detail Items */}
         {detailItems.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup
+            className={
+              !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
+            }
+          >
             <SidebarGroupLabel className={!open ? "sr-only" : ""}>
               Detalhamento
             </SidebarGroupLabel>
@@ -327,7 +338,11 @@ export function AppSidebar() {
 
         {/* Configuration */}
         {configItems.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup
+            className={
+              !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
+            }
+          >
             <SidebarGroupLabel className={!open ? "sr-only" : ""}>
               Configuração
             </SidebarGroupLabel>
