@@ -89,6 +89,31 @@ async function validateSupabaseJWT(authHeader: string | null) {
   return user;
 }
 
+// Utility function to convert BigInt to Number in response data
+function convertBigIntsToNumbers(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (typeof obj === 'bigint') {
+    return Number(obj);
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(convertBigIntsToNumbers);
+  }
+  
+  if (typeof obj === 'object') {
+    const converted: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      converted[key] = convertBigIntsToNumbers(value);
+    }
+    return converted;
+  }
+  
+  return obj;
+}
+
 // Utility function to get user's client_id
 async function getUserClientId(user: any) {
   const postgres = PostgresConnection.getInstance();
@@ -128,7 +153,10 @@ serve(async (req) => {
       [start_date || null, end_date || null, org_filter || null, clientId]
     );
 
-    return new Response(JSON.stringify(result), {
+    // Convert BigInt values to Numbers before serialization
+    const convertedResult = convertBigIntsToNumbers(result);
+
+    return new Response(JSON.stringify(convertedResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
