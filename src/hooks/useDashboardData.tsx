@@ -136,20 +136,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       if (clientError) throw clientError;
       if (!client?.preco_por_ipu) throw new Error('Informações de preço não encontradas para o cliente');
 
-      // First get the configuration IDs for this client
-      const { data: configs, error: configError } = await supabase
-        .from('api_configuracaoidmc')
-        .select('id')
-        .eq('cliente_id', profile.cliente_id);
-
-      if (configError) throw configError;
-      if (!configs || configs.length === 0) throw new Error('Nenhuma configuração encontrada');
-
-      const configIds = configs.map(config => config.id);
-
-      // Get available billing cycles using optimized function
-      const { data: cyclesData, error: cyclesError } = await supabase
-        .rpc('get_available_cycles');
+      // Get available cycles using PostgreSQL Edge Function
+      const { data: cyclesData, error: cyclesError } = await supabase.functions.invoke('get-available-cycles', {
+        body: {}
+      });
 
       if (cyclesError) throw cyclesError;
       
@@ -157,7 +147,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       const cyclesMap = new Map();
       let cycleCounter = 1;
       const sortedCycles = cyclesData
-        ?.sort((a, b) => new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime()) || [];
+        ?.sort((a: any, b: any) => new Date(b.billing_period_end_date).getTime() - new Date(a.billing_period_end_date).getTime()) || [];
       
       const uniqueCycles: Array<{ 
         ciclo_id: number;
@@ -166,7 +156,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         configuracao_id: number;
       }> = [];
 
-      sortedCycles.forEach(item => {
+      sortedCycles.forEach((item: any) => {
         const key = `${item.billing_period_start_date}_${item.billing_period_end_date}`;
         if (!cyclesMap.has(key)) {
           cyclesMap.set(key, true);
@@ -174,7 +164,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
             ciclo_id: cycleCounter,
             billing_period_start_date: item.billing_period_start_date,
             billing_period_end_date: item.billing_period_end_date,
-            configuracao_id: configIds[0] || 0 // Use first config ID as reference
+            configuracao_id: 0 // Not used for PostgreSQL
           });
           cycleCounter++;
         }
@@ -185,22 +175,24 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       // KPIs always use current cycle (most recent)
       const currentCycle = uniqueCycles.length > 0 ? uniqueCycles[0] : null;
 
-      // Use optimized function for KPIs
-      const { data: kpiData, error: kpiError } = await supabase
-        .rpc('get_dashboard_kpis', {
+      // Use PostgreSQL Edge Function for KPIs
+      const { data: kpiData, error: kpiError } = await supabase.functions.invoke('get-dashboard-data', {
+        body: {
           start_date: currentCycle?.billing_period_start_date,
           end_date: currentCycle?.billing_period_end_date,
           org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
-        });
+        }
+      });
 
       if (kpiError) throw kpiError;
 
-      // Get organization details for hierarchical structure
-      const { data: orgData, error: orgError } = await supabase
-        .rpc('get_organization_details_data', {
+      // Get organization details for hierarchical structure using PostgreSQL
+      const { data: orgData, error: orgError } = await supabase.functions.invoke('get-organization-details', {
+        body: {
           start_date: currentCycle?.billing_period_start_date,
           end_date: currentCycle?.billing_period_end_date
-        });
+        }
+      });
 
       if (orgError) throw orgError;
 
@@ -237,7 +229,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       }
 
       // Calculate total IPU consumption for KPIs (already filtered by optimized functions)
-      const totalIPU = kpiConsumption.reduce((sum, item) => sum + (item.total_ipu || 0), 0);
+      const totalIPU = kpiConsumption.reduce((sum: number, item: any) => sum + (item.total_ipu || 0), 0);
       
       // Calculate total cost for KPIs
       const totalCost = totalIPU * client.preco_por_ipu;
@@ -259,19 +251,20 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         let totalHistoricalDays = 0;
 
         for (const cycle of historicalCycles) {
-          const { data: historicalKpiData, error: historicalKpiError } = await supabase
-            .rpc('get_dashboard_kpis', {
+          const { data: historicalKpiData, error: historicalKpiError } = await supabase.functions.invoke('get-dashboard-data', {
+            body: {
               start_date: cycle.billing_period_start_date,
               end_date: cycle.billing_period_end_date,
               org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
-            });
+            }
+          });
 
           if (historicalKpiError) {
             continue;
           }
 
           if (historicalKpiData && historicalKpiData.length > 0) {
-            const cycleTotalIPU = historicalKpiData.reduce((sum, item) => sum + (item.total_ipu || 0), 0);
+            const cycleTotalIPU = historicalKpiData.reduce((sum: number, item: any) => sum + (item.total_ipu || 0), 0);
             const cycleCost = cycleTotalIPU * client.preco_por_ipu;
             
             const cycleDays = Math.max(1, Math.ceil(
@@ -291,29 +284,31 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         }
       }
 
-      // Use distribution data function for hierarchical structure
-      const { data: distributionData, error: distError } = await supabase
-        .rpc('get_cost_distribution_data', {
+      // Use PostgreSQL Edge Function for distribution data for hierarchical structure
+      const { data: distributionData, error: distError } = await supabase.functions.invoke('get-cost-distribution', {
+        body: {
           start_date: currentCycle?.billing_period_start_date,
           end_date: currentCycle?.billing_period_end_date
-        });
+        }
+      });
 
       if (distError) {
+        console.error('Distribution data error:', distError);
       }
 
       const distributionConsumption = distributionData || [];
       
       // Calculate total IPU for organizations distribution data
-      const totalIPUForOrgs = distributionConsumption.reduce((sum, item) => sum + (item.consumption_ipu || 0), 0);
+      const totalIPUForOrgs = distributionConsumption.reduce((sum: number, item: any) => sum + (item.consumption_ipu || 0), 0);
 
       // Calculate costs and percentages for organizations using distribution data
-      let organizations = distributionConsumption.map(org => ({
+      let organizations = distributionConsumption.map((org: any) => ({
         org_id: org.org_id,
         org_name: org.org_name,
         consumption_ipu: org.consumption_ipu,
         cost: org.consumption_ipu * client.preco_por_ipu,
         percentage: totalIPUForOrgs > 0 ? Math.round((org.consumption_ipu / totalIPUForOrgs) * 100) : 0
-      })).sort((a, b) => b.consumption_ipu - a.consumption_ipu);
+      })).sort((a: any, b: any) => b.consumption_ipu - a.consumption_ipu);
 
       // Create hierarchical structure - first org is principal
       if (organizations.length > 1) {
