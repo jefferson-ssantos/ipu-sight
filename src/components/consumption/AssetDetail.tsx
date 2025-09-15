@@ -342,7 +342,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
     } catch (error) {
       console.error("Erro ao buscar dados dos assets:", error);
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
-      toast.error("Falha ao carregar detalhes dos assets.", { description: errorMessage });
+      console.error("Falha ao carregar detalhes dos assets:", errorMessage);
     } finally {
       setLoading(false);
     }
