@@ -48,8 +48,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           <AppSidebar />
           
           <div className="flex-1 flex flex-col">
-            {/* Top Header */}
-            <header className="h-16 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+            {/* Top Header - Fixed */}
+            <header className="sticky top-0 z-50 h-16 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
               <div className="flex items-center justify-between h-full px-6">
                 <div className="flex items-center gap-4">{headerContent}</div>
                 <div className="flex items-center gap-3">
