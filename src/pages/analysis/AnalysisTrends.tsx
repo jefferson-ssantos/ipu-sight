@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useMemo } from "react";
+import { usePageHeader } from "@/components/layout/AppLayout";
 import { CostTrendAnalysis } from "@/components/analysis/CostTrendAnalysis";
 import { ProjectTrendAnalysis } from "@/components/analysis/ProjectTrendAnalysis";
 import { Activity, BarChart3, FolderOpen } from "lucide-react";
@@ -6,18 +8,18 @@ import { Activity, BarChart3, FolderOpen } from "lucide-react";
 export default function AnalysisTrends() {
   const [selectedSubTab, setSelectedSubTab] = useState("metrics");
 
+  const pageTitle = useMemo(() => (
+    <div className="flex items-center gap-3">
+      <Activity className="h-8 w-8 text-primary" />
+      <div>
+        <h1 className="text-3xl font-bold">Análise de Tendências</h1>
+      </div>
+    </div>
+  ), []);
+  usePageHeader(pageTitle);
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Activity className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Análise de Tendências</h1>
-          <p className="text-muted-foreground">
-            Análise de tendências de custos do IDMC
-          </p>
-        </div>
-      </div>
-
       {/* Seletor: Por Métrica/Por Projeto */}
       <div className="flex items-center gap-4">
         <div className="flex bg-gradient-card shadow-medium rounded-lg p-1">

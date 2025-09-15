@@ -25,19 +25,6 @@ export function ProjectTrendAnalysis() {
   const [chartData, setChartData] = useState<any[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  const pageTitle = useMemo(() => (
-    <>
-      <Activity className="h-6 w-6 text-primary" />
-      <div>
-        <h1 className="text-lg font-semibold">Análise de Tendências</h1>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe a evolução dos seus custos por projeto.
-        </p>
-      </div>
-    </>
-  ), []);
-  usePageHeader(pageTitle);
-
   // Cores personalizadas fornecidas pelo usuário
   const colors = [
     'hsl(24 70% 60%)', // Orange
@@ -370,6 +357,14 @@ export function ProjectTrendAnalysis() {
               <CardTitle className="text-base flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Tendência Atual
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs text-sm">A tendência é calculada comparando o valor do ciclo atual com o ciclo anterior. Sempre utilizando ciclos completos.</p>
+                  </TooltipContent>
+                </Tooltip>
               </CardTitle>
             </CardHeader>
             <CardContent>

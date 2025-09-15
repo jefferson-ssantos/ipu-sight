@@ -64,13 +64,16 @@ export function AppSidebar() {
   }
 
   const getPlanInfo = () => {
+    if (permissions?.canAccessAnalysis && permissions?.canAccessDetalhamento) {
+      return { name: "Plano Pro", short: "P" };
+    }
     if (permissions?.canAccessDashboardEssential) {
       return { name: "Plano Essential", short: "E" };
     }
     if (permissions?.canAccessDashboardStarter) {
       return { name: "Plano Starter", short: "S" };
     }
-    return { name: "Não Aplicável", short: "N/A" };
+    return { name: "Não Aplicável", short: "N/A" }; // Fallback
   };
 
   const plan = getPlanInfo();
@@ -424,7 +427,7 @@ export function AppSidebar() {
 
         {/* Logout at bottom */}
         <div className="mt-auto p-4 border-t border-border space-y-2">
-          <div className={`flex w-full items-center gap-2 ${open ? 'justify-between' : 'justify-center flex-col'}`}>
+          <div className={`flex flex-col w-full gap-2 ${open ? 'items-start' : 'items-center'}`}>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
@@ -434,20 +437,22 @@ export function AppSidebar() {
                 </TooltipTrigger>
                 <TooltipContent side="right" className="flex flex-col items-start p-2">
                   <span>{plan.name}</span>
-                  {plan.name === "Plano Starter" && <span className="text-xs text-muted-foreground">Clique para fazer upgrade</span>}
+                  {showUpgradeButton && <span className="text-xs text-muted-foreground">Clique para fazer upgrade</span>}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
             {showUpgradeButton && (
-              <Button
-                variant="ghost"
-                onClick={() => setIsUpgradeModalOpen(true)}
-                title="Fazer Upgrade"
-                className={`h-9 text-secondary hover:bg-secondary/10 hover:text-secondary ${open ? 'px-2' : 'w-9 px-0'}`}
-              >
-                <Sparkles className="h-4 w-4 flex-shrink-0" />
-                {open && <span className="ml-1.5 text-sm font-semibold">Upgrade</span>}
-              </Button>
+              <div className="p-0.5 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 rounded-lg inline-block">
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsUpgradeModalOpen(true)}
+                  title="Fazer Upgrade"
+                  className={`h-9 bg-card text-secondary hover:bg-muted hover:text-secondary flex items-center ${open ? 'px-3' : 'w-9 justify-center px-0'}`}
+                >
+                  <Sparkles className="h-4 w-4 flex-shrink-0" />
+                  {open && <span className="ml-1.5 text-sm font-semibold">Upgrade</span>}
+                </Button>
+              </div>
             )}
           </div>
 

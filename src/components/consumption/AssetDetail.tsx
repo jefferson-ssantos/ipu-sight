@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Download, FileText, Filter, ArrowUp, ArrowDown } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Search, Download, FileText, Filter, ArrowUp, ArrowDown, Info } from 'lucide-react';
 import { CYCLE_FILTER_OPTIONS } from '@/lib/cycleFilterOptions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -442,7 +443,7 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
     filterKey,
     filterOptions,
   }: {
-    title: string;
+    title: React.ReactNode;
     sortKey: keyof AssetData;
     filterKey?: string;
     filterOptions?: string[];
@@ -604,7 +605,22 @@ export function AssetDetail({ selectedOrg, selectedCycleFilter, availableOrgs = 
                     <SortableFilterHeader title="Data" sortKey="consumption_date" filterOptions={uniqueFilterValues.consumption_date} />
                     <SortableFilterHeader title="IPU" sortKey="consumption_ipu" />
                     <SortableFilterHeader title="Custo" sortKey="cost" />
-                    <SortableFilterHeader title="Tendência" sortKey="trendPercentage" />
+                    <SortableFilterHeader
+                      title={
+                        <div className="flex items-center gap-1">
+                          Tendência
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs text-sm">A tendência é calculada comparando o consumo de IPU do dia atual com a média de consumo dos últimos dias (até 6 dias) para o mesmo asset.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      }
+                      sortKey="trendPercentage"
+                    />
                   </TableRow>
                 </TableHeader>
                 <TableBody>

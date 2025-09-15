@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { useState, useEffect } from 'react';
+import { useMemo } from "react";
+import { usePageHeader } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Dialog, 
   DialogContent, 
@@ -21,7 +21,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Database, Plus, Pencil, Trash2, Building, Cable } from 'lucide-react';
+import { Plus, Pencil, Trash2, Cable } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -44,6 +44,18 @@ export default function ConfigConnections() {
   const [loading, setLoading] = useState(true);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<IDMCConfig | null>(null);
+
+  const pageTitle = useMemo(() => (
+    <div className="flex items-center gap-3">
+      <Cable className="h-8 w-8 text-primary" />
+      <div>
+        <h1 className="text-3xl font-bold">Configurações IDMC</h1>
+      </div>
+    </div>
+  ), []);
+ usePageHeader(pageTitle);
+
+
 
   const [configForm, setConfigForm] = useState({
     apelido_configuracao: '',
@@ -151,32 +163,18 @@ export default function ConfigConnections() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-lg">Carregando...</div>
-        </div>
-      </AppLayout>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-lg">Carregando...</div>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Database className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Configurações IDMC</h1>
-            <p className="text-muted-foreground">
-              Gerencie suas configurações de conexão com o IDMC
-            </p>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+    <div className="p-6 space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Cable className="h-5 w-5" />
-              Conexões IDMC
+               Conexões Criadas
             </CardTitle>
             <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
               <DialogTrigger asChild>
@@ -342,8 +340,7 @@ export default function ConfigConnections() {
               </Table>
             )}
           </CardContent>
-        </Card>
-      </div>
-    </AppLayout>
+      </Card>
+    </div>
   );
 }
