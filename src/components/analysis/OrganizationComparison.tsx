@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, LabelList } from "recharts";
 import { ArrowUpDown, Download, Calendar, Filter } from "lucide-react";
 import html2canvas from "html2canvas";
@@ -82,29 +82,7 @@ export function OrganizationComparison({
   onOrgChange,
   onCycleFilterChange
 }: OrganizationComparisonProps) {
-  // Using optimized dashboard context for better performance
-  const { dashboardData: data, loading, getChartData } = useDashboard();
-  
-  // Early return if context is not ready
-  if (!getChartData) {
-    return (
-      <Card className="bg-gradient-card shadow-medium">
-        <CardHeader>
-          <CardTitle className="text-lg font-heading font-bold">
-            Análise Custos por Organização
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-sm text-muted-foreground">Inicializando contexto...</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const { data, loading, getChartData } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
   const [metric, setMetric] = useState("cost");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [chartData, setChartData] = useState<any[]>([]);
@@ -144,9 +122,7 @@ export function OrganizationComparison({
     let timeoutId: NodeJS.Timeout;
 
     const fetchCycleData = async () => {
-      if (!getChartData) {
-        return;
-      }
+      if (!getChartData) return;
       
       // Debounce para evitar chamadas excessivas
       timeoutId = setTimeout(async () => {

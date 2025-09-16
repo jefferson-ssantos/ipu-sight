@@ -8,7 +8,7 @@ import { Download, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from "recharts";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
 import { useChartSync } from "@/hooks/useChartSync";
 
@@ -57,8 +57,8 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [pricePerIpu, setPricePerIpu] = useState<number>(0);
   const { maxYValue, updateChartData, isReady } = useChartSync();
 
-  // Use optimized dashboard context
-  const { getChartData: getDashboardChartData, dashboardData } = useDashboard();
+  // Use useDashboardData hook to fetch data
+  const { getChartData: getDashboardChartData, availableCycles, data: dashboardData } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
