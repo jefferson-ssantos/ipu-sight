@@ -414,7 +414,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const getChartData = useCallback(async (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedCycleFilter?: string) => {
-    if (!user) return [];
+    if (!user) {
+      return [];
+    }
 
     const cacheKey = `chart_${type}_${user.id}_${selectedOrg || 'all'}_${selectedCycleFilter || '1'}`;
     const now = Date.now();
