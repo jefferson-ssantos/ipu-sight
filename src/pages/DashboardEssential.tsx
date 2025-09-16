@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,35 +9,24 @@ import { ProjectChart } from "@/components/dashboard/ProjectChart";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { OrganizationComparison } from "@/components/analysis/OrganizationComparison";
 import { ChartSyncProvider } from "@/hooks/useChartSync";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 import { usePageHeader } from "@/components/layout/AppLayout";
 import { DollarSign, Activity, Building2, Calendar, BarChart3 } from "lucide-react";
 
-export default function DashboardEssential() {
-  const { user } = useAuth();
+// Memoized dashboard content component
+const DashboardContent = React.memo(() => {
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedOrgKPI, setSelectedOrgKPI] = useState<string>("all");
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("12");
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
-  const [availableOrgs, setAvailableOrgs] = useState<Array<{
-    value: string;
-    label: string;
-  }>>([]);
   
   const {
-    data: dashboardData,
+    dashboardData,
+    availableOrgs,
     loading,
     error,
-    refetch,
-  } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
-  
-  // KPI-specific data hook
-  const {
-    data: kpiData,
-    loading: kpiLoading
-  } = useDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter);
+    fetchDashboardData
+  } = useDashboard();
 
   const pageTitle = useMemo(() => (
     <>
@@ -49,57 +38,24 @@ export default function DashboardEssential() {
   ), []);
   usePageHeader(pageTitle);
 
-  // Fetch available organizations
+  // Fetch initial data and set production org as default
   useEffect(() => {
-    if (!user) return;
-    const fetchOrganizations = async () => {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('cliente_id')
-          .eq('id', user.id)
-          .single();
-        if (!profile?.cliente_id) return;
-
-        const { data: configs } = await supabase
-          .from('api_configuracaoidmc')
-          .select('id')
-          .eq('cliente_id', profile.cliente_id);
-        if (!configs || configs.length === 0) return;
-        
-        const configIds = configs.map(config => config.id);
-        const { data: orgs } = await supabase
-          .from('api_consumosummary')
-          .select('org_id, org_name')
-          .in('configuracao_id', configIds)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage');
-        
-        if (orgs) {
-          const uniqueOrgs = Array.from(
-            new Map(orgs.map(org => [org.org_id, org])).values()
-          ).filter(org => org.org_id && org.org_name);
-          
-          setAvailableOrgs([
-            { value: "all", label: "Todas as Organizações" },
-            ...uniqueOrgs.map(org => ({
-              value: org.org_id,
-              label: org.org_name || org.org_id
-            }))
-          ]);
-
-          const prodOrg = uniqueOrgs.find(org => 
-            org.org_name?.toLowerCase().includes('produção') || 
-            org.org_name?.toLowerCase().includes('production')
-          );
-          if (prodOrg) {
-            setSelectedOrg(prodOrg.org_id);
-          }
-        }
-      } catch (error) {
+    if (availableOrgs.length > 0 && selectedOrg === "all") {
+      const prodOrg = availableOrgs.find(org => 
+        org.label.toLowerCase().includes('produção') || 
+        org.label.toLowerCase().includes('production')
+      );
+      if (prodOrg && prodOrg.value !== "all") {
+        setSelectedOrg(prodOrg.value);
+        setSelectedOrgKPI(prodOrg.value);
       }
-    };
-    fetchOrganizations();
-  }, [user]);
+    }
+  }, [availableOrgs, selectedOrg]);
+
+  // Fetch dashboard data when filters change
+  useEffect(() => {
+    fetchDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter);
+  }, [selectedOrgKPI, selectedCycleFilter, fetchDashboardData]);
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -135,7 +91,9 @@ export default function DashboardEssential() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-destructive mb-4">Erro ao carregar dados: {error}</p>
-          <Button onClick={refetch}>Tentar novamente</Button>
+          <Button onClick={() => fetchDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter, true)}>
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
@@ -186,25 +144,25 @@ export default function DashboardEssential() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <KPICard 
                 title="Custo Total" 
-                value={formatCurrency(kpiData?.totalCost || 0)} 
+                value={formatCurrency(dashboardData?.totalCost || 0)} 
                 icon={DollarSign} 
                 variant="cost" 
-                contractedValue={formatCurrency((kpiData?.contractedIPUs || 0) * (kpiData?.pricePerIPU || 0))} 
-                consumptionPercentage={kpiData?.contractedIPUs && kpiData?.pricePerIPU ? (kpiData?.totalCost || 0) / ((kpiData?.contractedIPUs || 0) * (kpiData?.pricePerIPU || 0)) * 100 : 0} 
+                contractedValue={formatCurrency((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0))} 
+                consumptionPercentage={dashboardData?.contractedIPUs && dashboardData?.pricePerIPU ? (dashboardData?.totalCost || 0) / ((dashboardData?.contractedIPUs || 0) * (dashboardData?.pricePerIPU || 0)) * 100 : 0} 
               />
               
               <KPICard 
                 title="Custo Médio Diário" 
-                value={formatCurrency(kpiData?.avgDailyCost || 0)} 
+                value={formatCurrency(dashboardData?.avgDailyCost || 0)} 
                 icon={Activity} 
                 variant="default" 
-                historicalComparison={kpiData?.historicalComparison} 
-                baselineValue={formatCurrency(kpiData?.historicalAvgDailyCost || 0)} 
+                historicalComparison={dashboardData?.historicalComparison} 
+                baselineValue={formatCurrency(dashboardData?.historicalAvgDailyCost || 0)} 
               />
               
               <KPICard 
                 title="Organizações Ativas" 
-                value={kpiData?.activeOrgs || 0} 
+                value={dashboardData?.activeOrgs || 0} 
                 subtitle="Com consumo no período" 
                 icon={Building2} 
                 variant="default" 
@@ -247,5 +205,15 @@ export default function DashboardEssential() {
         )}
       </div>
     </ChartSyncProvider>
+  );
+});
+
+DashboardContent.displayName = 'DashboardContent';
+
+export default function DashboardEssential() {
+  return (
+    <DashboardProvider>
+      <DashboardContent />
+    </DashboardProvider>
   );
 }

@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { useDashboard } from "@/contexts/DashboardContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, LabelList } from "recharts";
 import { ArrowUpDown, Download, Calendar, Filter } from "lucide-react";
 import html2canvas from "html2canvas";
@@ -82,7 +82,7 @@ export function OrganizationComparison({
   onOrgChange,
   onCycleFilterChange
 }: OrganizationComparisonProps) {
-  const { data, loading, getChartData } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+  const { dashboardData: data, loading } = useDashboard();
   const [metric, setMetric] = useState("cost");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [chartData, setChartData] = useState<any[]>([]);

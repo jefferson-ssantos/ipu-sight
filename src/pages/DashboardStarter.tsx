@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,27 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { ConsolidatedChartStarter } from "@/components/dashboard/ConsolidatedChartStarter";
 import { ConsolidatedChartMetric } from "@/components/dashboard/ConsolidatedChartMetric";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 import { usePageHeader } from "@/components/layout/AppLayout";
 import { DollarSign, Building2, Calendar, BarChart3 } from "lucide-react";
 
-export default function DashboardStarter() {
-  const { user } = useAuth();
+// Memoized starter content component
+const DashboardStarterContent = React.memo(() => {
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("12");
-  const [availableOrgs, setAvailableOrgs] = useState<Array<{
-    value: string;
-    label: string;
-  }>>([]);
   
   const {
-    data: dashboardData,
+    dashboardData,
+    availableOrgs,
     loading,
     error,
-    refetch,
-  } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+    fetchDashboardData
+  } = useDashboard();
 
   const pageTitle = useMemo(() => (
     <>
@@ -38,57 +33,23 @@ export default function DashboardStarter() {
   ), []);
   usePageHeader(pageTitle);
 
-  // Fetch available organizations
+  // Fetch dashboard data when filters change
   useEffect(() => {
-    if (!user) return;
-    const fetchOrganizations = async () => {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('cliente_id')
-          .eq('id', user.id)
-          .single();
-        if (!profile?.cliente_id) return;
+    fetchDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+  }, [selectedOrg, selectedCycleFilter, fetchDashboardData]);
 
-        const { data: configs } = await supabase
-          .from('api_configuracaoidmc')
-          .select('id')
-          .eq('cliente_id', profile.cliente_id);
-        if (!configs || configs.length === 0) return;
-        
-        const configIds = configs.map(config => config.id);
-        const { data: orgs } = await supabase
-          .from('api_consumosummary')
-          .select('org_id, org_name')
-          .in('configuracao_id', configIds)
-          .neq('meter_name', 'Sandbox Organizations IPU Usage');
-        
-        if (orgs) {
-          const uniqueOrgs = Array.from(
-            new Map(orgs.map(org => [org.org_id, org])).values()
-          ).filter(org => org.org_id && org.org_name);
-          
-          setAvailableOrgs([
-            { value: "all", label: "Todas as Organizações" },
-            ...uniqueOrgs.map(org => ({
-              value: org.org_id,
-              label: org.org_name || org.org_id
-            }))
-          ]);
-
-          const prodOrg = uniqueOrgs.find(org => 
-            org.org_name?.toLowerCase().includes('produção') || 
-            org.org_name?.toLowerCase().includes('production')
-          );
-          if (prodOrg) {
-            setSelectedOrg(prodOrg.org_id);
-          }
-        }
-      } catch (error) {
+  // Set production org as default
+  useEffect(() => {
+    if (availableOrgs.length > 0 && selectedOrg === "all") {
+      const prodOrg = availableOrgs.find(org => 
+        org.label.toLowerCase().includes('produção') || 
+        org.label.toLowerCase().includes('production')
+      );
+      if (prodOrg && prodOrg.value !== "all") {
+        setSelectedOrg(prodOrg.value);
       }
-    };
-    fetchOrganizations();
-  }, [user]);
+    }
+  }, [availableOrgs, selectedOrg]);
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -115,7 +76,9 @@ export default function DashboardStarter() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-destructive mb-4">Erro ao carregar dados: {error}</p>
-          <Button onClick={refetch}>Tentar novamente</Button>
+          <Button onClick={() => fetchDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter, true)}>
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
@@ -195,5 +158,15 @@ export default function DashboardStarter() {
 
       </div>
     </div>
+  );
+});
+
+DashboardStarterContent.displayName = 'DashboardStarterContent';
+
+export default function DashboardStarter() {
+  return (
+    <DashboardProvider>
+      <DashboardStarterContent />
+    </DashboardProvider>
   );
 }
