@@ -83,7 +83,14 @@ export function AppSidebar() {
   const getMainNavItems = () => {
     const items = [];
     
-    if (permissions?.canAccessDashboardStarter) {
+    if (permissions?.canAccessDashboardEssential) {
+      items.push({
+        title: "Dashboard",
+        url: "/dashboard",
+        icon: BarChart3,
+        description: "Visão geral dos custos e consumo"
+      });
+    } else if (permissions?.canAccessDashboardStarter) {
       items.push({
         title: "Dashboard",
         url: "/dashboard-starter",
@@ -92,20 +99,8 @@ export function AppSidebar() {
       });
     }
     
-    if (permissions?.canAccessDashboardEssential) {
-      items.push({
-        title: "Dashboard",
-        url: "/dashboard",
-        icon: BarChart3,
-        description: "Visão geral dos custos e consumo"
-      });
-    }
-    
-    // Análise de Custos will be handled separately with submenu
-    
     return items;
   };
-
 
   const getConfigItems = () => {
     if (!permissions?.canAccessConfiguration) return [];
@@ -154,8 +149,8 @@ export function AppSidebar() {
 
   const mainNavItems = getMainNavItems();
   const configItems = getConfigItems();
-  const detailItems = getDetailItems();
   const analysisItems = getAnalysisItems();
+  const detailItems = getDetailItems();
 
   const isActive = (path: string) => currentPath === path;
   const isAnalysisActive = currentPath.startsWith('/analysis');
@@ -227,7 +222,7 @@ export function AppSidebar() {
 
       <SidebarContent className="flex flex-col h-full">
         {/* Main Navigation */}
-        {mainNavItems.length > 0 && (
+        {(mainNavItems.length > 0 || analysisItems.length > 0 || detailItems.length > 0) && (
           <SidebarGroup
             className={
               !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
@@ -257,23 +252,10 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
-        {/* Analysis Section */}
-        {analysisItems.length > 0 && (
-          <SidebarGroup
-            className={
-              !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
-            }
-          >
-            <SidebarGroupLabel className={!open ? "sr-only" : ""}>
-              Análise
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
+                {/* Analysis Section */}
+                {analysisItems.length > 0 && (
+                  <Fragment>
                 {/* Parent Analysis Item */}
                 <SidebarMenuItem>
                   <SidebarMenuButton 
@@ -347,23 +329,10 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+                  </Fragment>
+                )}
 
-        {/* Detail Items */}
-        {detailItems.length > 0 && (
-          <SidebarGroup
-            className={
-              !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
-            }
-          >
-            <SidebarGroupLabel className={!open ? "sr-only" : ""}>
-              Detalhamento
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
+                {/* Detalhamento Item */}
                 {detailItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild className="h-12">
@@ -383,6 +352,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

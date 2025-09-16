@@ -47,6 +47,7 @@ export function UpgradePlanModal({ open, onOpenChange, permissions }: UpgradePla
   const isPro = permissions?.canAccessAnalysis && permissions?.canAccessDetalhamento;
   const isEssential = permissions?.canAccessDashboardEssential && !isPro;
   const isStarter = permissions?.canAccessDashboardStarter && !isEssential && !isPro;
+  const isLoggedIn = permissions !== null;
 
   const renderFeature = (value: string | boolean, isProColumn = false) => {
     if (typeof value === 'string') {
@@ -64,7 +65,7 @@ export function UpgradePlanModal({ open, onOpenChange, permissions }: UpgradePla
           <DialogTitle className="text-2xl font-bold">
             Compare Nossos Planos
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="px-6">
             {isPro
               ? "Você já possui nosso plano mais completo. Obrigado por ser um cliente Pro!"
               : "Desbloqueie todo o potencial da plataforma com um upgrade de plano."}
@@ -116,7 +117,11 @@ export function UpgradePlanModal({ open, onOpenChange, permissions }: UpgradePla
         </div>
 
         <DialogFooter>
-          {isPro ? (
+          {!isLoggedIn ? (
+            <Button type="button" className="w-full bg-primary hover:bg-primary/90" disabled>
+              Fale com Vendas para contratar
+            </Button>
+          ) : isPro ? (
             <Button type="button" className="w-full" disabled>
               Você já está no plano Pro
             </Button>
@@ -124,9 +129,9 @@ export function UpgradePlanModal({ open, onOpenChange, permissions }: UpgradePla
             <Button type="button" className="w-full bg-primary hover:bg-primary/90" disabled>
               Fazer Upgrade para o Pro
             </Button>
-          ) : ( // isStarter
+          ) : (
             <Button type="button" className="w-full bg-primary hover:bg-primary/90" disabled>
-              Fazer Upgrade para o Essential
+              Fale com Vendas para fazer o upgrade
             </Button>
           )}
         </DialogFooter>
