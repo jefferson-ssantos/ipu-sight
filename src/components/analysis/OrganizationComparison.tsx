@@ -10,6 +10,7 @@ import { ArrowUpDown, Download, Calendar, Filter } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
+import { useChartSync } from "@/hooks/useChartSync";
 
 interface OrganizationComparisonProps {
   selectedOrg?: string;
@@ -90,6 +91,7 @@ export function OrganizationComparison({
   const [selectedCycleData, setSelectedCycleData] = useState<{period: string, organizations: Array<{name: string, value: number, color: string}>} | null>(null);
   const [pricePerIpu, setPricePerIpu] = useState<number>(0);
   const chartRef = useRef<HTMLDivElement>(null);
+  const { maxYValue, updateChartData, isReady } = useChartSync();
 
   const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -170,16 +172,21 @@ export function OrganizationComparison({
     (metric === 'cost' ? (data.contractedIPUs * data.pricePerIPU) : data.contractedIPUs) : 0),
   [data, metric]);
 
-  // Determine the max value for the Y-axis to ensure the reference line is visible
+  // Calculate max value and update sync context
+  useEffect(() => {
+    if (chartData.length > 0) {
+      const maxDataValue = Math.max(...chartData.map(d => d.displayTotal));
+      updateChartData('organizationComparison', {
+        maxValue: maxDataValue,
+        contractedValue: contractedReferenceValue
+      });
+    }
+  }, [chartData, contractedReferenceValue, updateChartData]);
+
+  // Use synchronized Y-axis domain
   const yAxisDomainMax = useMemo(() => {
-    const yAxisMaxValue = chartData.length > 0
-      ? Math.max(
-          ...chartData.map(d => d.displayTotal),
-          contractedReferenceValue
-        )
-      : contractedReferenceValue;
-    return yAxisMaxValue > 0 ? yAxisMaxValue * 1.2 : 'auto';
-  }, [chartData, contractedReferenceValue]);
+    return isReady && maxYValue > 0 ? maxYValue : 'auto';
+  }, [maxYValue, isReady]);
 
   // Color palette for different organizations
 const colors = [

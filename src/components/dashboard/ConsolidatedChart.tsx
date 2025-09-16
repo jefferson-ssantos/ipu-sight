@@ -10,6 +10,7 @@ import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
+import { useChartSync } from "@/hooks/useChartSync";
 
 interface ConsolidatedChartProps {
   selectedOrg?: string;
@@ -54,6 +55,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCycleData, setSelectedCycleData] = useState<{period: string, metrics: Array<{name: string, value: number, color: string}>} | null>(null);
   const [pricePerIpu, setPricePerIpu] = useState<number>(0);
+  const { maxYValue, updateChartData, isReady } = useChartSync();
 
   // Use useDashboardData hook to fetch data
   const { getChartData: getDashboardChartData, availableCycles, data: dashboardData } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
@@ -163,23 +165,30 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     return { ...d, displayTotal };
   });
 
-  const yAxisDomain = () => {
-    if (chartDataWithDisplayTotal.length === 0) return [0, 1000]; // Default if no data
+  // Calculate max value and update sync context
+  useEffect(() => {
+    if (chartDataWithDisplayTotal.length > 0) {
+      let maxVal = 0;
+      chartDataWithDisplayTotal.forEach(d => {
+        const total = d.displayTotal || 0;
+        if (total > maxVal) {
+          maxVal = total;
+        }
+      });
 
-    let maxVal = 0;
-    chartDataWithDisplayTotal.forEach(d => {
-      const total = d.displayTotal || 0;
-      if (total > maxVal) {
-        maxVal = total;
-      }
-    });
-
-    // Include contracted value in domain calculation when showing in default view
-    if (selectedOrgLocal === "all" && selectedMetric === "all" && contractedValue > 0) {
-      maxVal = Math.max(maxVal, contractedValue);
+      updateChartData('consolidatedChart', {
+        maxValue: maxVal,
+        contractedValue: contractedValue
+      });
     }
+  }, [chartDataWithDisplayTotal, contractedValue, updateChartData]);
 
-    return [0, maxVal * 1.1]; // Add 10% padding
+  // Use synchronized Y-axis domain
+  const yAxisDomain = () => {
+    if (isReady && maxYValue > 0) {
+      return [0, maxYValue];
+    }
+    return [0, 1000]; // Default if no data
   };
 
   const renderCustomizedLabel = (props: any) => {
