@@ -82,7 +82,8 @@ export function OrganizationComparison({
   onOrgChange,
   onCycleFilterChange
 }: OrganizationComparisonProps) {
-  const { dashboardData: data, loading } = useDashboard();
+  // Using optimized dashboard context for better performance
+  const { dashboardData: data, loading, getChartData } = useDashboard();
   const [metric, setMetric] = useState("cost");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [chartData, setChartData] = useState<any[]>([]);
