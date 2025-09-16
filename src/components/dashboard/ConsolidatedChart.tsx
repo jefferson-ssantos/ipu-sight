@@ -436,6 +436,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     valueType === 'cost' ? formatCurrency(value) : formatIPU(value)
                   }
                   domain={yAxisDomain()}
+                  tickCount={5}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 

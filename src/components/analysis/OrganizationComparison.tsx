@@ -381,6 +381,7 @@ const colors = [
                   tickLine={false}
                   tickFormatter={yAxisTickFormatter}
                   domain={[0, yAxisDomainMax]}
+                  tickCount={5}
                 />
                 <Tooltip content={renderTooltip} />
                 
