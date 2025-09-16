@@ -118,50 +118,71 @@ export function OrganizationComparison({
 
   // Fetch evolution data to get cycles with organization breakdown
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const fetchCycleData = async () => {
       if (!getChartData) return;
       
-      setChartLoading(true);
-      try {
-        const evolutionData = await getChartData('evolution', selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+      // Debounce para evitar chamadas excessivas
+      timeoutId = setTimeout(async () => {
+        if (!isMounted) return;
         
-        // Check if evolutionData is an array
-        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
-        
-        if (dataArray.length === 0) {
-          setChartData([]);
-          return;
+        setChartLoading(true);
+        try {
+          const evolutionData = await getChartData('evolution', selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+          
+          if (!isMounted) return;
+          
+          // Check if evolutionData is an array
+          const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
+          
+          if (dataArray.length === 0) {
+            setChartData([]);
+            return;
+          }
+
+          // Get price per IPU
+          const pricePerIPU = data?.pricePerIPU || 1;
+          setPricePerIpu(pricePerIPU);
+
+          // For now, we'll create dummy organization data per cycle
+          // In a real scenario, you'd need to modify getChartData to return organization breakdown per cycle
+          const processedData = dataArray.map((item: any) => ({
+            cycle: item.period,
+            displayTotal: metric === 'cost' ? item.cost : item.ipu,
+            totalIPU: item.ipu,
+            totalCost: item.cost,
+            // For demonstration, we'll split data proportionally based on current org distribution
+            ...(data?.organizations?.reduce((acc, org, index) => {
+              const orgKey = org.org_name.replace(/\s+/g, '_');
+              const proportion = org.percentage / 100;
+              acc[orgKey] = metric === 'cost' ? (item.cost * proportion) : (item.ipu * proportion);
+              return acc;
+            }, {} as any) || {})
+          }));
+
+          if (isMounted) {
+            setChartData(processedData);
+          }
+        } catch (error) {
+          if (isMounted) {
+            setChartData([]);
+          }
+        } finally {
+          if (isMounted) {
+            setChartLoading(false);
+          }
         }
-
-        // Get price per IPU
-        const pricePerIPU = data?.pricePerIPU || 1;
-        setPricePerIpu(pricePerIPU);
-
-        // For now, we'll create dummy organization data per cycle
-        // In a real scenario, you'd need to modify getChartData to return organization breakdown per cycle
-        const processedData = dataArray.map((item: any) => ({
-          cycle: item.period,
-          displayTotal: metric === 'cost' ? item.cost : item.ipu,
-          totalIPU: item.ipu,
-          totalCost: item.cost,
-          // For demonstration, we'll split data proportionally based on current org distribution
-          ...(data?.organizations?.reduce((acc, org, index) => {
-            const orgKey = org.org_name.replace(/\s+/g, '_');
-            const proportion = org.percentage / 100;
-            acc[orgKey] = metric === 'cost' ? (item.cost * proportion) : (item.ipu * proportion);
-            return acc;
-          }, {} as any) || {})
-        }));
-
-        setChartData(processedData);
-      } catch (error) {
-        setChartData([]);
-      } finally {
-        setChartLoading(false);
-      }
+      }, 200); // Debounce de 200ms
     };
 
     fetchCycleData();
+    
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [getChartData, selectedOrg, selectedCycleFilter, metric, data?.organizations, data?.pricePerIPU]);
 
   // Get unique organizations for creating bars

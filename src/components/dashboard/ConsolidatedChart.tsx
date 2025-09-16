@@ -74,69 +74,96 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const result = await getDashboardChartData('billing-periods', selectedOrgLocal, period);
-        if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
-          // Get price per IPU for conversion
-          const pricePerIPU = dashboardData?.pricePerIPU || 1;
-          setPricePerIpu(pricePerIPU);
-          
-          // Process data based on value type
-          let processedData = result.data;
-          if (valueType === 'ipu' && pricePerIPU > 0) {
-            // Convert cost values to IPU values
-            processedData = result.data.map((item: any) => {
-              const convertedItem = { ...item };
-              // Convert all metric values from cost to IPU
-              if (result.meters) {
-                result.meters.forEach((meter: string) => {
-                  if (convertedItem[meter]) {
-                    convertedItem[meter] = convertedItem[meter] / pricePerIPU;
-                  }
-                });
-              }
-              return convertedItem;
-            });
-          }
-          
-          // Handle object result with data property
-          setChartData(processedData);
-          setAllDataKeys(result.meters || []);
-          
-          // Convert contracted value based on value type
-          let adjustedContractedValue = result.contractedReferenceValue || 0;
-          if (valueType === 'ipu' && pricePerIPU > 0) {
-            adjustedContractedValue = adjustedContractedValue / pricePerIPU;
-          }
-          setContractedValue(adjustedContractedValue);
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
-          // Update metric options based on fetched meters
-          const newMetricOptions = (result.meters || []).map((meter: string) => ({ value: meter, label: meter }));
-          setMetricOptions([{ value: "all", label: "Todas as Métricas" }, ...newMetricOptions]);
-        } else if (result && Array.isArray(result)) {
-          // Handle array result - try to convert to ChartDataItem format
-          const convertedData = result.filter(item => item && typeof item === 'object' && 'period' in item) as ChartDataItem[];
-          setChartData(convertedData);
-          setAllDataKeys([]);
-          setContractedValue(0);
-          setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
-        } else {
-          setChartData([]);
-          setAllDataKeys([]);
-          setContractedValue(0);
-          setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+    const fetchData = async () => {
+      // Debounce para evitar chamadas excessivas
+      timeoutId = setTimeout(async () => {
+        if (!isMounted) return;
+        
+        setLoading(true);
+        try {
+          const result = await getDashboardChartData('billing-periods', selectedOrgLocal, period);
+          
+          if (!isMounted) return;
+          
+          if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
+            // Get price per IPU for conversion
+            const pricePerIPU = dashboardData?.pricePerIPU || 1;
+            setPricePerIpu(pricePerIPU);
+            
+            // Process data based on value type
+            let processedData = result.data;
+            if (valueType === 'ipu' && pricePerIPU > 0) {
+              // Convert cost values to IPU values
+              processedData = result.data.map((item: any) => {
+                const convertedItem = { ...item };
+                // Convert all metric values from cost to IPU
+                if (result.meters) {
+                  result.meters.forEach((meter: string) => {
+                    if (convertedItem[meter]) {
+                      convertedItem[meter] = convertedItem[meter] / pricePerIPU;
+                    }
+                  });
+                }
+                return convertedItem;
+              });
+            }
+            
+            if (isMounted) {
+              // Handle object result with data property
+              setChartData(processedData);
+              setAllDataKeys(result.meters || []);
+              
+              // Convert contracted value based on value type
+              let adjustedContractedValue = result.contractedReferenceValue || 0;
+              if (valueType === 'ipu' && pricePerIPU > 0) {
+                adjustedContractedValue = adjustedContractedValue / pricePerIPU;
+              }
+              setContractedValue(adjustedContractedValue);
+
+              // Update metric options based on fetched meters
+              const newMetricOptions = (result.meters || []).map((meter: string) => ({ value: meter, label: meter }));
+              setMetricOptions([{ value: "all", label: "Todas as Métricas" }, ...newMetricOptions]);
+            }
+          } else if (result && Array.isArray(result)) {
+            if (isMounted) {
+              // Handle array result - try to convert to ChartDataItem format
+              const convertedData = result.filter(item => item && typeof item === 'object' && 'period' in item) as ChartDataItem[];
+              setChartData(convertedData);
+              setAllDataKeys([]);
+              setContractedValue(0);
+              setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+            }
+          } else {
+            if (isMounted) {
+              setChartData([]);
+              setAllDataKeys([]);
+              setContractedValue(0);
+              setMetricOptions([{ value: "all", label: "Todas as Métricas" }]);
+            }
+          }
+        } catch (error) {
+          if (isMounted) {
+            console.error('Erro ao carregar dados do gráfico:', error);
+          }
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
         }
-      } catch (error) {
-        toast.error('Erro ao carregar dados do gráfico');
-      } finally {
-        setLoading(false);
-      }
+      }, 200); // Debounce de 200ms
     };
+
     if (getDashboardChartData) {
       fetchData();
     }
+    
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [selectedOrgLocal, period, getDashboardChartData, valueType, dashboardData?.pricePerIPU]);
 
   // Update selectedOrgLocal when selectedOrg prop changes

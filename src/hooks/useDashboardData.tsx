@@ -353,8 +353,32 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
     }
   }, [user, selectedOrg, selectedCycleFilter]);
 
+  // Otimização: usar useRef para evitar re-renders desnecessários
+  const stableUser = useRef(user);
+  const stableSelectedOrg = useRef(selectedOrg);
+  const stableSelectedCycleFilter = useRef(selectedCycleFilter);
+
   useEffect(() => {
-    fetchDashboardData();
+    stableUser.current = user;
+    stableSelectedOrg.current = selectedOrg;
+    stableSelectedCycleFilter.current = selectedCycleFilter;
+  });
+
+  useEffect(() => {
+    // Prevenir chamadas desnecessárias na mudança de foco da janela
+    let timeoutId: NodeJS.Timeout;
+    
+    const delayedFetch = () => {
+      timeoutId = setTimeout(() => {
+        fetchDashboardData();
+      }, 100); // Pequeno delay para evitar chamadas em rajada
+    };
+
+    delayedFetch();
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [fetchDashboardData]);
 
   const getChartData = useCallback(async (type: 'evolution' | 'distribution' | 'billing-periods', selectedOrg?: string, selectedCycleFilter?: string) => {

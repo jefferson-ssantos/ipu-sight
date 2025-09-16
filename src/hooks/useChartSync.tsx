@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import { useWindowFocus } from './useWindowFocus';
 
 interface ChartSyncContextType {
   maxYValue: number;
@@ -16,8 +17,15 @@ export function ChartSyncProvider({ children }: ChartSyncProviderProps) {
   const [chartData, setChartData] = useState<Record<string, { maxValue: number; contractedValue: number }>>({});
   const [maxYValue, setMaxYValue] = useState<number>(0);
   const [isReady, setIsReady] = useState(false);
+  const isWindowFocused = useWindowFocus();
+  const lastUpdateRef = useRef<number>(0);
 
   const updateChartData = (componentId: string, data: { maxValue: number; contractedValue: number }) => {
+    const now = Date.now();
+    // Throttle updates to prevent excessive re-calculations
+    if (now - lastUpdateRef.current < 100) return;
+    
+    lastUpdateRef.current = now;
     setChartData(prev => ({ ...prev, [componentId]: data }));
   };
 
