@@ -198,9 +198,9 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
       // Get organization details for hierarchical structure
       const { data: orgData, error: orgError } = await supabase
-        .rpc('get_organization_details_data', {
-          start_date: currentCycle?.billing_period_start_date,
-          end_date: currentCycle?.billing_period_end_date
+        .rpc('get_organization_details_data_with_virtual_tag', {
+          org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null,
+          virtual_tag_filter: selectedVirtualTag || null
         });
 
       if (orgError) throw orgError;
@@ -352,17 +352,19 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
     } finally {
       setLoading(false);
     }
-  }, [user, selectedOrg, selectedCycleFilter]);
+  }, [user, selectedOrg, selectedCycleFilter, selectedVirtualTag]);
 
   // Otimização: usar useRef para evitar re-renders desnecessários
   const stableUser = useRef(user);
   const stableSelectedOrg = useRef(selectedOrg);
   const stableSelectedCycleFilter = useRef(selectedCycleFilter);
+  const stableSelectedVirtualTag = useRef(selectedVirtualTag);
 
   useEffect(() => {
     stableUser.current = user;
     stableSelectedOrg.current = selectedOrg;
     stableSelectedCycleFilter.current = selectedCycleFilter;
+    stableSelectedVirtualTag.current = selectedVirtualTag;
   });
 
   useEffect(() => {
@@ -457,9 +459,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         if (type === 'evolution') {
           // Use optimized function for cost evolution
           const { data: evolutionData, error: evolutionError } = await supabase
-            .rpc('get_cost_evolution_data', { 
+            .rpc('get_cost_evolution_data_with_virtual_tag', { 
               cycle_limit: cycleLimit,
-              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null,
+              virtual_tag_filter: selectedVirtualTag || null
             });
 
           if (evolutionError) {

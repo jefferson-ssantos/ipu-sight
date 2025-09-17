@@ -1077,6 +1077,18 @@ export type Database = {
           org_name: string
         }[]
       }
+      get_cost_evolution_data_with_virtual_tag: {
+        Args: {
+          cycle_limit?: number
+          org_filter?: string
+          virtual_tag_filter?: string
+        }
+        Returns: {
+          billing_period_end_date: string
+          billing_period_start_date: string
+          consumption_ipu: number
+        }[]
+      }
       get_dashboard_kpis: {
         Args: { end_date?: string; org_filter?: string; start_date?: string }
         Returns: {
@@ -1109,6 +1121,15 @@ export type Database = {
           consumption_ipu: number
           org_id: string
           org_name: string
+        }[]
+      }
+      get_organization_details_data_with_virtual_tag: {
+        Args: { org_filter?: string; virtual_tag_filter?: string }
+        Returns: {
+          meter_count: number
+          org_id: string
+          org_name: string
+          total_consumption_ipu: number
         }[]
       }
       get_project_consumption_data: {
