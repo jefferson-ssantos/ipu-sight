@@ -4,6 +4,8 @@ import { AppSidebar } from "./AppSidebar";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { UserDropdown } from "./UserDropdown";
 import { GlobalSearch } from "../../../GlobalSearch";
+import { VirtualTagsFilter } from "../dashboard/VirtualTagsFilter";
+import { VirtualTagProvider, useVirtualTagContext } from "@/contexts/VirtualTagContext";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -31,8 +33,9 @@ export function usePageHeader(header: React.ReactNode) {
   }, [header, context.setHeader]);
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+function AppLayoutContent({ children }: AppLayoutProps) {
   const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
+  const { selectedVirtualTag, setSelectedVirtualTag } = useVirtualTagContext();
 
   const headerContextValue = useMemo(() => ({
     setHeader: setHeaderContent,
@@ -50,6 +53,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               <div className="flex items-center justify-between h-full px-6">
                 <div className="flex items-center gap-4">{headerContent}</div>
                 <div className="flex items-center gap-3">
+                  <VirtualTagsFilter 
+                    selectedVirtualTag={selectedVirtualTag}
+                    onVirtualTagChange={setSelectedVirtualTag}
+                  />
                   <GlobalSearch />
 
                   {/* Notifications */}
@@ -69,5 +76,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </PageHeaderContext.Provider>
     </SidebarProvider>
+  );
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
+  return (
+    <VirtualTagProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </VirtualTagProvider>
   );
 }
