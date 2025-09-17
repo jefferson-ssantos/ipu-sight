@@ -28,7 +28,7 @@ export default function DashboardStarter() {
     loading,
     error,
     refetch,
-  } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+  } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter, selectedVirtualTag);
 
   const pageTitle = useMemo(() => (
     <>

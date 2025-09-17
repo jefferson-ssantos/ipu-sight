@@ -70,7 +70,7 @@ const createHierarchicalStructure = (orgs: Array<any>) => {
   return hierarchicalOrgs;
 };
 
-export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: string) {
+export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: string, selectedVirtualTag?: string) {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +92,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
       return;
     }
 
-    const cacheKey = `dashboard_${user.id}_${selectedOrg || 'all'}`;
+    const cacheKey = `dashboard_${user.id}_${selectedOrg || 'all'}_${selectedVirtualTag || 'no-tag'}`;
     const now = Date.now();
 
     // Verificar cache se não for forçado
@@ -190,7 +190,8 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         .rpc('get_dashboard_kpis', {
           start_date: currentCycle?.billing_period_start_date,
           end_date: currentCycle?.billing_period_end_date,
-          org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+          org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null,
+          virtual_tag_filter: selectedVirtualTag || null
         });
 
       if (kpiError) throw kpiError;

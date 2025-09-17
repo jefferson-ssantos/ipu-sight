@@ -33,13 +33,13 @@ export default function DashboardEssential() {
     loading,
     error,
     refetch,
-  } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+  } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter, selectedVirtualTag);
   
   // KPI-specific data hook
   const {
     data: kpiData,
     loading: kpiLoading
-  } = useDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter);
+  } = useDashboardData(selectedOrgKPI === "all" ? undefined : selectedOrgKPI, selectedCycleFilter, selectedVirtualTag);
 
   const pageTitle = useMemo(() => (
     <>
