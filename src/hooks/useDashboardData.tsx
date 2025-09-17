@@ -237,11 +237,10 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         return;
       }
 
-      // Calculate total IPU consumption for KPIs (already filtered by optimized functions)
-      const totalIPU = kpiConsumption.reduce((sum, item) => sum + (item.total_ipu || 0), 0);
-      
-      // Calculate total cost for KPIs
-      const totalCost = totalIPU * client.preco_por_ipu;
+      // Process KPI data from optimized function (returns single row with aggregated data)
+      const kpiResult = kpiConsumption[0] || { total_ipu: 0, total_cost: 0, active_orgs: 0 };
+      const totalIPU = kpiResult.total_ipu || 0;
+      const totalCost = kpiResult.total_cost || 0;
 
       // Calculate average daily cost
       const days = currentCycle ? 
@@ -261,10 +260,11 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
         for (const cycle of historicalCycles) {
           const { data: historicalKpiData, error: historicalKpiError } = await supabase
-            .rpc('get_dashboard_kpis', {
+            .rpc('get_dashboard_kpis_with_virtual_tag', {
               start_date: cycle.billing_period_start_date,
               end_date: cycle.billing_period_end_date,
-              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null
+              org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null,
+              virtual_tag_filter: selectedVirtualTag || null
             });
 
           if (historicalKpiError) {
@@ -272,8 +272,9 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
           }
 
           if (historicalKpiData && historicalKpiData.length > 0) {
-            const cycleTotalIPU = historicalKpiData.reduce((sum, item) => sum + (item.total_ipu || 0), 0);
-            const cycleCost = cycleTotalIPU * client.preco_por_ipu;
+            const historicalResult = historicalKpiData[0] || { total_ipu: 0, total_cost: 0 };
+            const cycleTotalIPU = historicalResult.total_ipu || 0;
+            const cycleCost = historicalResult.total_cost || 0;
             
             const cycleDays = Math.max(1, Math.ceil(
               (new Date(cycle.billing_period_end_date).getTime() - new Date(cycle.billing_period_start_date).getTime()) / (1000 * 60 * 60 * 24)
@@ -326,7 +327,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
         totalIPU,
         avgDailyCost,
         historicalComparison,
-        activeOrgs: organizations.length,
+        activeOrgs: kpiResult.active_orgs || organizations.length,
         contractedIPUs: client.qtd_ipus_contratadas || 0,
         pricePerIPU: client.preco_por_ipu,
         historicalAvgDailyCost,
