@@ -33,7 +33,7 @@ export function usePageHeader(header: React.ReactNode) {
   }, [header, context.setHeader]);
 }
 
-function AppLayoutContent({ children }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
   const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
   const { selectedVirtualTag, setSelectedVirtualTag } = useVirtualTagContext();
 
@@ -42,8 +42,8 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   }), []);
 
   return (
-    <SidebarProvider>
-      <PageHeaderContext.Provider value={headerContextValue}>
+    <PageHeaderContext.Provider value={headerContextValue}>
+      <SidebarProvider>
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar />
           
@@ -74,15 +74,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
             </main>
           </div>
         </div>
-      </PageHeaderContext.Provider>
-    </SidebarProvider>
-  );
-}
-
-export function AppLayout({ children }: AppLayoutProps) {
-  return (
-    <VirtualTagProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </VirtualTagProvider>
+      </SidebarProvider>
+    </PageHeaderContext.Provider>
   );
 }

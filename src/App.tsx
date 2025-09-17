@@ -15,6 +15,7 @@ import Detalhamento from "./pages/Detalhamento";
 import ConfigConnections from "./pages/ConfigConnections";
 import VirtualTags from "./pages/VirtualTags";
 import { AppLayout } from "./components/layout/AppLayout";
+import { VirtualTagProvider } from "./contexts/VirtualTagContext";
 import { useAuth } from "./hooks/useAuth";
 import { usePermissions } from "./hooks/usePermissions";
 
@@ -84,7 +85,8 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <VirtualTagProvider>
+      <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -184,6 +186,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </VirtualTagProvider>
   </QueryClientProvider>
 );
 
