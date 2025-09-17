@@ -18,6 +18,7 @@ export interface PermissionConfig {
   canAccessDetalhamento: boolean;
   canAccessConsumption: boolean;
   canAccessConfiguration: boolean;
+  canAccessVirtualTags: boolean;
 }
 
 export function usePermissions() {
@@ -63,6 +64,7 @@ export function usePermissions() {
         canAccessDetalhamento: false,
         canAccessConsumption: true,
         canAccessConfiguration: false,
+        canAccessVirtualTags: false,
       });
     } finally {
       setLoading(false);
@@ -73,6 +75,7 @@ export function usePermissions() {
     const basePermissions = {
       canAccessConsumption: true,
       canAccessConfiguration: userRole === 'admin',
+      canAccessVirtualTags: false, // Only available for enterprise plan (pro)
     };
 
     switch (planType) {
@@ -104,6 +107,7 @@ export function usePermissions() {
           canAccessDashboardEssential: true,
           canAccessAnalysis: true,
           canAccessDetalhamento: true,
+          canAccessVirtualTags: true, // Virtual Tags available only on Pro plan
         };
 
       default:

@@ -871,6 +871,161 @@ export type Database = {
           },
         ]
       }
+      virtual_tag_rule_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          custom_value: string | null
+          id: string
+          megabill_key: string | null
+          rule_id: string
+          tag_color: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          custom_value?: string | null
+          id?: string
+          megabill_key?: string | null
+          rule_id: string
+          tag_color?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          custom_value?: string | null
+          id?: string
+          megabill_key?: string | null
+          rule_id?: string
+          tag_color?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_virtual_tag_rule_actions_rule"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tag_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      virtual_tag_rule_conditions: {
+        Row: {
+          condition_order: number
+          created_at: string
+          field_name: string
+          id: string
+          logical_operator: string | null
+          operator: string
+          rule_id: string
+          values: string[] | null
+        }
+        Insert: {
+          condition_order?: number
+          created_at?: string
+          field_name: string
+          id?: string
+          logical_operator?: string | null
+          operator: string
+          rule_id: string
+          values?: string[] | null
+        }
+        Update: {
+          condition_order?: number
+          created_at?: string
+          field_name?: string
+          id?: string
+          logical_operator?: string | null
+          operator?: string
+          rule_id?: string
+          values?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_virtual_tag_rule_conditions_rule"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tag_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      virtual_tag_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          rule_name: string
+          rule_order: number
+          updated_at: string
+          virtual_tag_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          rule_name: string
+          rule_order?: number
+          updated_at?: string
+          virtual_tag_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          rule_name?: string
+          rule_order?: number
+          updated_at?: string
+          virtual_tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_virtual_tag_rules_virtual_tag"
+            columns: ["virtual_tag_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      virtual_tags: {
+        Row: {
+          active: boolean
+          configuracao_id: number
+          created_at: string
+          description: string | null
+          id: string
+          updated_at: string
+          virtual_tag_name: string
+        }
+        Insert: {
+          active?: boolean
+          configuracao_id: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+          virtual_tag_name: string
+        }
+        Update: {
+          active?: boolean
+          configuracao_id?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+          virtual_tag_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_virtual_tags_configuracao"
+            columns: ["configuracao_id"]
+            isOneToOne: false
+            referencedRelation: "api_configuracaoidmc"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

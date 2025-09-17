@@ -13,6 +13,7 @@ import AnalysisTrends from "./pages/analysis/AnalysisTrends";
 import AnalysisForecast from "./pages/analysis/AnalysisForecast";
 import Detalhamento from "./pages/Detalhamento";
 import ConfigConnections from "./pages/ConfigConnections";
+import VirtualTags from "./pages/VirtualTags";
 import { AppLayout } from "./components/layout/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 import { usePermissions } from "./hooks/usePermissions";
@@ -152,6 +153,15 @@ const App = () => (
               <PermissionRoute permission="canAccessDetalhamento">
                 <AppLayout>
                   <Detalhamento />
+                </AppLayout>
+              </PermissionRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/virtual-tags" element={
+            <ProtectedRoute>
+              <PermissionRoute permission="canAccessVirtualTags">
+                <AppLayout>
+                  <VirtualTags />
                 </AppLayout>
               </PermissionRoute>
             </ProtectedRoute>

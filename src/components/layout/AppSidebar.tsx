@@ -11,7 +11,8 @@ import {
   Activity,
   Target,
   PanelLeft,
-  Sparkles
+  Sparkles,
+  Tags
 } from "lucide-react";
 import orysLogo from "@/assets/logo-laranja.png";
 import orysLogoCollapsed from "@/assets/orys-logo.png";
@@ -128,6 +129,19 @@ export function AppSidebar() {
     ];
   };
 
+  const getVirtualTagItems = () => {
+    if (!permissions?.canAccessVirtualTags) return [];
+    
+    return [
+      {
+        title: "Virtual Tags",
+        url: "/virtual-tags",
+        icon: Tags,
+        description: "Tags virtuais baseadas em regras"
+      }
+    ];
+  };
+
   const getAnalysisItems = () => {
     if (!permissions?.canAccessAnalysis) return [];
     
@@ -151,6 +165,7 @@ export function AppSidebar() {
   const configItems = getConfigItems();
   const analysisItems = getAnalysisItems();
   const detailItems = getDetailItems();
+  const virtualTagItems = getVirtualTagItems();
 
   const isActive = (path: string) => currentPath === path;
   const isAnalysisActive = currentPath.startsWith('/analysis');
@@ -222,7 +237,7 @@ export function AppSidebar() {
 
       <SidebarContent className="flex flex-col h-full">
         {/* Main Navigation */}
-        {(mainNavItems.length > 0 || analysisItems.length > 0 || detailItems.length > 0) && (
+        {(mainNavItems.length > 0 || analysisItems.length > 0 || detailItems.length > 0 || virtualTagItems.length > 0) && (
           <SidebarGroup
             className={
               !open ? "border-t border-border/50 pt-2 mt-2 first:border-t-0 first:mt-0 first:pt-0" : ""
@@ -334,6 +349,27 @@ export function AppSidebar() {
 
                 {/* Detalhamento Item */}
                 {detailItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild className="h-12">
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url)}
+                        title={!open ? item.description : undefined}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        {open && (
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{item.title}</span>
+                            <span className="text-xs opacity-70">{item.description}</span>
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+
+                {/* Virtual Tags Item */}
+                {virtualTagItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild className="h-12">
                       <NavLink
