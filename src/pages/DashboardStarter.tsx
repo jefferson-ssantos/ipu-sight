@@ -11,11 +11,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageHeader } from "@/components/layout/AppLayout";
 import { DollarSign, Building2, Calendar, BarChart3 } from "lucide-react";
+import { VirtualTagsFilter } from "@/components/dashboard/VirtualTagsFilter";
 
 export default function DashboardStarter() {
   const { user } = useAuth();
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("12");
+  const [selectedVirtualTag, setSelectedVirtualTag] = useState<string>("");
   const [availableOrgs, setAvailableOrgs] = useState<Array<{
     value: string;
     label: string;
@@ -145,6 +147,10 @@ export default function DashboardStarter() {
               </div>
               
               <div className="flex items-center gap-3">
+                <VirtualTagsFilter 
+                  selectedVirtualTag={selectedVirtualTag}
+                  onVirtualTagChange={setSelectedVirtualTag}
+                />
                 <Select value={selectedOrg} onValueChange={setSelectedOrg}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
