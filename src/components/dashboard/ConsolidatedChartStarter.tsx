@@ -163,7 +163,7 @@ export function ConsolidatedChartStarter({ selectedOrg, availableOrgs }: Consoli
               Análise Consolidada de Custos
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
-              Custos totais consolidados ao longo dos ciclos
+              Custos totais consolidados ao longo dos ciclos(3 ciclos)
             </div>
           </div>
           <Button

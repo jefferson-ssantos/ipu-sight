@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
-import { TrendingUp, BarChart3, PieChart, Building2 } from "lucide-react";
-import orysLogo from "@/assets/orys-logo.png";
+import { TrendingUp, BarChart3, PieChart, Building2, ShieldCheck } from "lucide-react";
 import orysLogoLaranjaBranca from "@/assets/logo-laranja-branca.png";
+import { UpgradePlanModal } from "@/components/layout/UpgradePlanModal";
+import { Button } from "@/components/ui/button";
 
 export default function Auth() {
   const [isSignup, setIsSignup] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
@@ -91,6 +93,17 @@ export default function Auth() {
                 <div className="text-sm text-primary-foreground/70">Monitoramento</div>
               </div>
             </div>
+
+            {/* View Plans Button */}
+            <div className="pt-6 text-center lg:text-left">
+                <Button 
+                    variant="outline" 
+                    className="border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground bg-transparent backdrop-blur-sm"
+                    onClick={() => setIsUpgradeModalOpen(true)}
+                >
+                    <ShieldCheck className="h-4 w-4 mr-2" /> Conheça Nossos Planos
+                </Button>
+            </div>
           </div>
 
           {/* Right Side - Auth Form */}
@@ -104,6 +117,11 @@ export default function Auth() {
         </div>
 
       </div>
+      <UpgradePlanModal 
+        open={isUpgradeModalOpen} 
+        onOpenChange={setIsUpgradeModalOpen} 
+        permissions={null}
+      />
     </div>
   );
 }

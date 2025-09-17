@@ -1,11 +1,9 @@
 import { useState, createContext, useContext, useMemo, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
-import { SearchModal } from "./SearchModal";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { UserDropdown } from "./UserDropdown";
+import { GlobalSearch } from "../../../GlobalSearch";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -34,7 +32,6 @@ export function usePageHeader(header: React.ReactNode) {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
   const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
 
   const headerContextValue = useMemo(() => ({
@@ -48,15 +45,12 @@ export function AppLayout({ children }: AppLayoutProps) {
           <AppSidebar />
           
           <div className="flex-1 flex flex-col">
-            {/* Top Header */}
-            <header className="h-16 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+            {/* Top Header - Fixed */}
+            <header className="sticky top-0 z-50 h-16 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
               <div className="flex items-center justify-between h-full px-6">
                 <div className="flex items-center gap-4">{headerContent}</div>
                 <div className="flex items-center gap-3">
-                  {/* Search */}
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => setSearchOpen(true)}>
-                    <Search className="h-4 w-4" />
-                  </Button>
+                  <GlobalSearch />
 
                   {/* Notifications */}
                   <NotificationsDropdown />
@@ -72,8 +66,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               {children}
             </main>
           </div>
-          
-          <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
         </div>
       </PageHeaderContext.Provider>
     </SidebarProvider>

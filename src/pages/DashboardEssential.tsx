@@ -8,6 +8,7 @@ import { ConsolidatedChart } from "@/components/dashboard/ConsolidatedChart";
 import { ProjectChart } from "@/components/dashboard/ProjectChart";
 import { OrgDetailsModal } from "@/components/dashboard/OrgDetailsModal";
 import { OrganizationComparison } from "@/components/analysis/OrganizationComparison";
+import { ChartSyncProvider } from "@/hooks/useChartSync";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,10 +43,7 @@ export default function DashboardEssential() {
     <>
       <BarChart3 className="h-6 w-6 text-primary" />
       <div>
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Análise de custos e consumo.
-        </p>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
     </>
   ), []);
@@ -144,8 +142,9 @@ export default function DashboardEssential() {
   }
   
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <div className="flex-1 p-6 space-y-6">
+    <ChartSyncProvider>
+      <div className="flex flex-col min-h-screen bg-background">
+        <div className="flex-1 p-6 space-y-6">
         {/* KPI Section - Essential Level */}
         <Card className="border bg-gradient-card shadow-medium">
           <CardHeader className="pb-4">
@@ -236,16 +235,17 @@ export default function DashboardEssential() {
           selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
           availableOrgs={availableOrgs} 
         />
-      </div>
+        </div>
 
-      {/* Organization Details Modal */}
-      {selectedOrgForDetails && (
-        <OrgDetailsModal 
-          orgId={selectedOrgForDetails} 
-          onClose={() => setSelectedOrgForDetails(null)} 
-          billingPeriod={dashboardData?.currentCycle} 
-        />
-      )}
-    </div>
+        {/* Organization Details Modal */}
+        {selectedOrgForDetails && (
+          <OrgDetailsModal 
+            orgId={selectedOrgForDetails} 
+            onClose={() => setSelectedOrgForDetails(null)} 
+            billingPeriod={dashboardData?.currentCycle} 
+          />
+        )}
+      </div>
+    </ChartSyncProvider>
   );
 }

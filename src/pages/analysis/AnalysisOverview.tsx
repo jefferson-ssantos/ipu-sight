@@ -1,21 +1,26 @@
+import { useMemo } from "react";
+import { usePageHeader } from "@/components/layout/AppLayout";
 import { Link } from "react-router-dom";
 import { TrendingUp, Activity, Target, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function AnalysisOverview() {
+  const pageTitle = useMemo(() => (
+    <div className="flex items-center gap-3">
+      <TrendingUp className="h-8 w-8 text-primary" />
+      <div>
+        <h1 className="text-3xl font-bold">Análise de Custos</h1>
+      </div>
+    </div>
+  ), []);
+  usePageHeader(pageTitle);
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <TrendingUp className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Análise de Custos</h1>
-          <p className="text-muted-foreground">
-            Escolha o tipo de análise que deseja realizar sobre seus custos do IDMC
-          </p>
-        </div>
-      </div>
-
+      <p className="text-muted-foreground text-center max-w-2xl mx-auto">
+        Escolha o tipo de análise que deseja realizar sobre seus custos do IDMC
+      </p>
       <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {/* Card Análise de Tendências */}
         <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-2 hover:border-primary/20">

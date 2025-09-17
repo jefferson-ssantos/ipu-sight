@@ -6,9 +6,9 @@ const corsHeaders = {
 }
 
 interface RequestBody {
-  cycleLimit: number;
-  selectedMeters: string[];
-  selectedMetric: string;
+  cycleLimit?: number;
+  selectedMeters?: string[];
+  selectedMetric?: string;
   dimension?: 'meter' | 'project';
   selectedItems?: string[];
 }
@@ -22,10 +22,18 @@ Deno.serve(async (req) => {
   try {
     console.log('🚀 Starting get-multi-series-data function');
     
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase environment variables');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -50,8 +58,39 @@ Deno.serve(async (req) => {
 
     console.log('✅ User authenticated:', user.id);
 
-    const { cycleLimit, selectedMeters, selectedMetric, dimension = 'meter', selectedItems }: RequestBody = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      console.error('❌ Error parsing JSON:', jsonError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const { 
+      cycleLimit = 12, 
+      selectedMeters = [], 
+      selectedMetric = 'ipu', 
+      dimension = 'meter', 
+      selectedItems = [] 
+    } = body || {};
+    
     console.log('📊 Request params:', { cycleLimit, selectedMeters, selectedMetric, dimension, selectedItems });
+    
+    // Validate and normalize parameters
+    const normalizedMeters = Array.isArray(selectedMeters) ? selectedMeters : [];
+    const normalizedItems = Array.isArray(selectedItems) ? selectedItems : [];
+    const normalizedMetric = selectedMetric || 'ipu';
+    
+    console.log('🔧 Normalized params:', { 
+      cycleLimit, 
+      normalizedMeters, 
+      normalizedItems, 
+      normalizedMetric, 
+      dimension 
+    });
 
     // Get user profile and client data
     const { data: profile } = await supabase
@@ -261,8 +300,8 @@ Deno.serve(async (req) => {
       console.log('🏷️ Available projects:', availableItems.length);
 
       // Determine which projects to include
-      const includeAll = selectedItems?.includes('all') || selectedMeters.includes('all');
-      itemsToInclude = includeAll ? availableItems : (selectedItems || selectedMeters).filter(m => m !== 'all');
+      const includeAll = normalizedItems.includes('all') || normalizedMeters.includes('all');
+      itemsToInclude = includeAll ? availableItems : [...normalizedItems, ...normalizedMeters].filter(m => m !== 'all');
     } else {
       availableItems = [...new Set(
         allConsumptionData
@@ -274,8 +313,8 @@ Deno.serve(async (req) => {
       console.log('🏷️ Available meters:', availableItems.length);
 
       // Determine which metrics to include
-      const includeAll = selectedMeters.includes('all');
-      itemsToInclude = includeAll ? availableItems : selectedMeters.filter(m => m !== 'all');
+      const includeAll = normalizedMeters.includes('all');
+      itemsToInclude = includeAll ? availableItems : normalizedMeters.filter(m => m !== 'all');
     }
 
     console.log('📋 Items to include:', itemsToInclude);

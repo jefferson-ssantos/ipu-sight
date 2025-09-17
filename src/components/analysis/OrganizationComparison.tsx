@@ -10,6 +10,7 @@ import { ArrowUpDown, Download, Calendar, Filter } from "lucide-react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { CYCLE_FILTER_OPTIONS } from "@/lib/cycleFilterOptions";
+import { useChartSync } from "@/hooks/useChartSync";
 
 interface OrganizationComparisonProps {
   selectedOrg?: string;
@@ -90,6 +91,7 @@ export function OrganizationComparison({
   const [selectedCycleData, setSelectedCycleData] = useState<{period: string, organizations: Array<{name: string, value: number, color: string}>} | null>(null);
   const [pricePerIpu, setPricePerIpu] = useState<number>(0);
   const chartRef = useRef<HTMLDivElement>(null);
+  const { maxYValue, updateChartData, isReady } = useChartSync();
 
   const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -116,50 +118,71 @@ export function OrganizationComparison({
 
   // Fetch evolution data to get cycles with organization breakdown
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const fetchCycleData = async () => {
       if (!getChartData) return;
       
-      setChartLoading(true);
-      try {
-        const evolutionData = await getChartData('evolution', selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+      // Debounce para evitar chamadas excessivas
+      timeoutId = setTimeout(async () => {
+        if (!isMounted) return;
         
-        // Check if evolutionData is an array
-        const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
-        
-        if (dataArray.length === 0) {
-          setChartData([]);
-          return;
+        setChartLoading(true);
+        try {
+          const evolutionData = await getChartData('evolution', selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
+          
+          if (!isMounted) return;
+          
+          // Check if evolutionData is an array
+          const dataArray = Array.isArray(evolutionData) ? evolutionData : [];
+          
+          if (dataArray.length === 0) {
+            setChartData([]);
+            return;
+          }
+
+          // Get price per IPU
+          const pricePerIPU = data?.pricePerIPU || 1;
+          setPricePerIpu(pricePerIPU);
+
+          // For now, we'll create dummy organization data per cycle
+          // In a real scenario, you'd need to modify getChartData to return organization breakdown per cycle
+          const processedData = dataArray.map((item: any) => ({
+            cycle: item.period,
+            displayTotal: metric === 'cost' ? item.cost : item.ipu,
+            totalIPU: item.ipu,
+            totalCost: item.cost,
+            // For demonstration, we'll split data proportionally based on current org distribution
+            ...(data?.organizations?.reduce((acc, org, index) => {
+              const orgKey = org.org_name.replace(/\s+/g, '_');
+              const proportion = org.percentage / 100;
+              acc[orgKey] = metric === 'cost' ? (item.cost * proportion) : (item.ipu * proportion);
+              return acc;
+            }, {} as any) || {})
+          }));
+
+          if (isMounted) {
+            setChartData(processedData);
+          }
+        } catch (error) {
+          if (isMounted) {
+            setChartData([]);
+          }
+        } finally {
+          if (isMounted) {
+            setChartLoading(false);
+          }
         }
-
-        // Get price per IPU
-        const pricePerIPU = data?.pricePerIPU || 1;
-        setPricePerIpu(pricePerIPU);
-
-        // For now, we'll create dummy organization data per cycle
-        // In a real scenario, you'd need to modify getChartData to return organization breakdown per cycle
-        const processedData = dataArray.map((item: any) => ({
-          cycle: item.period,
-          displayTotal: metric === 'cost' ? item.cost : item.ipu,
-          totalIPU: item.ipu,
-          totalCost: item.cost,
-          // For demonstration, we'll split data proportionally based on current org distribution
-          ...(data?.organizations?.reduce((acc, org, index) => {
-            const orgKey = org.org_name.replace(/\s+/g, '_');
-            const proportion = org.percentage / 100;
-            acc[orgKey] = metric === 'cost' ? (item.cost * proportion) : (item.ipu * proportion);
-            return acc;
-          }, {} as any) || {})
-        }));
-
-        setChartData(processedData);
-      } catch (error) {
-        setChartData([]);
-      } finally {
-        setChartLoading(false);
-      }
+      }, 200); // Debounce de 200ms
     };
 
     fetchCycleData();
+    
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [getChartData, selectedOrg, selectedCycleFilter, metric, data?.organizations, data?.pricePerIPU]);
 
   // Get unique organizations for creating bars
@@ -170,16 +193,21 @@ export function OrganizationComparison({
     (metric === 'cost' ? (data.contractedIPUs * data.pricePerIPU) : data.contractedIPUs) : 0),
   [data, metric]);
 
-  // Determine the max value for the Y-axis to ensure the reference line is visible
+  // Calculate max value and update sync context
+  useEffect(() => {
+    if (chartData.length > 0) {
+      const maxDataValue = Math.max(...chartData.map(d => d.displayTotal));
+      updateChartData('organizationComparison', {
+        maxValue: maxDataValue,
+        contractedValue: contractedReferenceValue
+      });
+    }
+  }, [chartData, contractedReferenceValue, updateChartData]);
+
+  // Use synchronized Y-axis domain
   const yAxisDomainMax = useMemo(() => {
-    const yAxisMaxValue = chartData.length > 0
-      ? Math.max(
-          ...chartData.map(d => d.displayTotal),
-          contractedReferenceValue
-        )
-      : contractedReferenceValue;
-    return yAxisMaxValue > 0 ? yAxisMaxValue * 1.2 : 'auto';
-  }, [chartData, contractedReferenceValue]);
+    return isReady && maxYValue > 0 ? maxYValue : 'auto';
+  }, [maxYValue, isReady]);
 
   // Color palette for different organizations
 const colors = [
@@ -374,6 +402,7 @@ const colors = [
                   tickLine={false}
                   tickFormatter={yAxisTickFormatter}
                   domain={[0, yAxisDomainMax]}
+                  tickCount={5}
                 />
                 <Tooltip content={renderTooltip} />
                 

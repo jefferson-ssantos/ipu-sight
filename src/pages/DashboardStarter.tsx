@@ -32,10 +32,7 @@ export default function DashboardStarter() {
     <>
       <BarChart3 className="h-6 w-6 text-primary" />
       <div>
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Visão geral de custos e consumo.
-        </p>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
     </>
   ), []);

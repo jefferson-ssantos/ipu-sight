@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import DashboardEssential from "./pages/DashboardEssential";
-import DashboardDetailed from "./pages/DashboardDetailed";
 import DashboardStarter from "./pages/DashboardStarter";
 import AnalysisOverview from "./pages/analysis/AnalysisOverview";
 import AnalysisTrends from "./pages/analysis/AnalysisTrends";
@@ -103,15 +102,6 @@ const App = () => (
               </PermissionRoute>
             </ProtectedRoute>
           } />
-          <Route path="/dashboard-detailed" element={
-            <ProtectedRoute>
-              <PermissionRoute permission="canAccessDashboard">
-                <AppLayout>
-                  <DashboardDetailed />
-                </AppLayout>
-              </PermissionRoute>
-            </ProtectedRoute>
-          } />
           <Route path="/dashboard-starter" element={
             <ProtectedRoute>
               <PermissionRoute permission="canAccessDashboardStarter">
@@ -169,7 +159,9 @@ const App = () => (
           <Route path="/config/connections" element={
             <ProtectedRoute>
               <PermissionRoute permission="canAccessConfiguration">
-                <ConfigConnections />
+                <AppLayout>
+                  <ConfigConnections />
+                </AppLayout>
               </PermissionRoute>
             </ProtectedRoute>
           } />

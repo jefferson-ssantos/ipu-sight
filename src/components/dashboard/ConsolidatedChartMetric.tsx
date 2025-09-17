@@ -309,7 +309,7 @@ export function ConsolidatedChartMetric({ selectedOrg, availableOrgs }: Consolid
               Análise Consolidada por Métrica
             </CardTitle>
             <div className="text-sm text-muted-foreground mt-1">
-              IPUs por métrica ao longo dos últimos ciclos
+              IPUs por métrica ao longo dos últimos ciclos (3 Ciclos)
             </div>
           </div>
           <Button
