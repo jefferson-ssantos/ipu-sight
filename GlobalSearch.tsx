@@ -51,7 +51,7 @@ const pages = [
   {
     id: "config",
     name: "Configurações",
-    path: "/config/connections",
+    path: "/config",
     permission: "canAccessConfiguration",
     icon: <Settings className="mr-2 h-4 w-4" />,
   },

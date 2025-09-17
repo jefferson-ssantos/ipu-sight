@@ -22,7 +22,7 @@ export function UserDropdown() {
   };
 
   const handleSettings = () => {
-    navigate('/config/tags');
+    navigate('/config/connections');
   };
 
   const userInitials = user?.email?.split('@')[0]?.slice(0, 2)?.toUpperCase() || 'U';
