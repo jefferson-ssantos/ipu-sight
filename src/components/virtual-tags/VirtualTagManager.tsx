@@ -24,6 +24,7 @@ interface VirtualTag {
   created_at: string;
   updated_at: string;
   rules?: VirtualTagRule[];
+  virtual_tag_rules?: VirtualTagRule[];
 }
 
 interface VirtualTagRule {
@@ -117,7 +118,12 @@ export function VirtualTagManager() {
         throw error;
       }
 
-      setVirtualTags(tags || []);
+      // Map virtual_tag_rules to rules for consistency
+      const mappedTags = (tags || []).map(tag => ({
+        ...tag,
+        rules: tag.virtual_tag_rules || []
+      }));
+      setVirtualTags(mappedTags);
     } catch (error) {
       console.error('Error in fetchVirtualTags:', error);
       toast.error('Erro ao carregar Virtual Tags');

@@ -14,6 +14,7 @@ interface VirtualTag {
   id: string;
   virtual_tag_name: string;
   rules?: VirtualTagRule[];
+  virtual_tag_rules?: VirtualTagRule[];
 }
 
 interface VirtualTagRule {
@@ -279,7 +280,7 @@ export function VirtualTagRuleBuilder({ virtualTag, onRulesChange }: VirtualTagR
     }
   };
 
-  const rules = virtualTag.rules || [];
+  const rules = virtualTag.virtual_tag_rules || virtualTag.rules || [];
 
   return (
     <div className="space-y-4">
