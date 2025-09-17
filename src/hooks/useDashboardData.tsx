@@ -187,7 +187,7 @@ export function useDashboardData(selectedOrg?: string, selectedCycleFilter?: str
 
       // Use optimized function for KPIs
       const { data: kpiData, error: kpiError } = await supabase
-        .rpc('get_dashboard_kpis', {
+        .rpc('get_dashboard_kpis_with_virtual_tag', {
           start_date: currentCycle?.billing_period_start_date,
           end_date: currentCycle?.billing_period_end_date,
           org_filter: selectedOrg && selectedOrg !== 'all' ? selectedOrg : null,

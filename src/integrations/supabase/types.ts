@@ -1087,6 +1087,22 @@ export type Database = {
           total_ipu: number
         }[]
       }
+      get_dashboard_kpis_with_virtual_tag: {
+        Args: {
+          end_date?: string
+          org_filter?: string
+          start_date?: string
+          virtual_tag_filter?: string
+        }
+        Returns: {
+          active_orgs: number
+          avg_daily_cost: number
+          avg_execution_time: number
+          total_cost: number
+          total_executions: number
+          total_ipu: number
+        }[]
+      }
       get_organization_details_data: {
         Args: { end_date?: string; start_date?: string }
         Returns: {
