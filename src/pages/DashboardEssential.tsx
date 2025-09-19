@@ -20,6 +20,7 @@ export default function DashboardEssential() {
   const [selectedOrg, setSelectedOrg] = useState<string>("all");
   const [selectedOrgKPI, setSelectedOrgKPI] = useState<string>("all");
   const [selectedCycleFilter, setSelectedCycleFilter] = useState<string>("12");
+  const [sharedMetric, setSharedMetric] = useState<"cost" | "ipu">("cost");
   const [selectedOrgForDetails, setSelectedOrgForDetails] = useState<string | null>(null);
   const [availableOrgs, setAvailableOrgs] = useState<Array<{
     value: string;
@@ -221,12 +222,16 @@ export default function DashboardEssential() {
             availableOrgs={availableOrgs}
             onOrgChange={setSelectedOrg}
             onCycleFilterChange={setSelectedCycleFilter}
+            metric={sharedMetric}
+            onMetricChange={setSharedMetric}
           />
 
           {/* Consolidated Chart Section */}
           <ConsolidatedChart 
             selectedOrg={selectedOrg === "all" ? undefined : selectedOrg} 
             availableOrgs={availableOrgs} 
+            metric={sharedMetric}
+            onMetricChange={setSharedMetric}
           />
         </div>
 
