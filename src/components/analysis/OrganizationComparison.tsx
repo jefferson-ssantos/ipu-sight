@@ -18,6 +18,8 @@ interface OrganizationComparisonProps {
   availableOrgs?: Array<{ value: string; label: string }>;
   onOrgChange?: (value: string) => void;
   onCycleFilterChange?: (value: string) => void;
+  metric?: "cost" | "ipu";
+  onMetricChange?: (metric: "cost" | "ipu") => void;
 }
 
 const CustomTooltip = ({ active, payload, label, metric, formatCurrency, formatIPU, uniqueOrgs, colors }: any) => {
@@ -80,10 +82,12 @@ export function OrganizationComparison({
   selectedCycleFilter = "12",
   availableOrgs = [],
   onOrgChange,
-  onCycleFilterChange
+  onCycleFilterChange,
+  metric: controlledMetric,
+  onMetricChange
 }: OrganizationComparisonProps) {
   const { data, loading, getChartData } = useDashboardData(selectedOrg === "all" ? undefined : selectedOrg, selectedCycleFilter);
-  const [metric, setMetric] = useState("cost");
+  const [uncontrolledMetric, setUncontrolledMetric] = useState<"cost" | "ipu">("cost");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
@@ -92,6 +96,10 @@ export function OrganizationComparison({
   const [pricePerIpu, setPricePerIpu] = useState<number>(0);
   const chartRef = useRef<HTMLDivElement>(null);
   const { maxYValue, updateChartData, isReady } = useChartSync();
+
+  // Use controlled state if provided, otherwise use internal state
+  const metric = controlledMetric ?? uncontrolledMetric;
+  const setMetric = onMetricChange ?? setUncontrolledMetric;
 
   const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -342,7 +350,7 @@ const colors = [
             </SelectContent>
           </Select>
 
-          <Select value={metric} onValueChange={setMetric}>
+          <Select value={metric} onValueChange={(value) => setMetric(value as "cost" | "ipu")}>
             <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
