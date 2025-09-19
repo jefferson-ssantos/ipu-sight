@@ -15,6 +15,8 @@ import { useChartSync } from "@/hooks/useChartSync";
 interface ConsolidatedChartProps {
   selectedOrg?: string;
   availableOrgs: Array<{value: string, label: string}>;
+  metric?: "cost" | "ipu";
+  onMetricChange?: (metric: "cost" | "ipu") => void;
 }
 
 interface ChartDataItem {
@@ -42,11 +44,11 @@ const colors = [
   'hsl(340 60% 65%)', // Rose
 ];
 
-export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedChartProps) {
+export function ConsolidatedChart({ selectedOrg, availableOrgs, metric: controlledMetric, onMetricChange }: ConsolidatedChartProps) {
   const [selectedOrgLocal, setSelectedOrgLocal] = useState<string>(selectedOrg || "all");
   const [period, setPeriod] = useState("12");
   const [selectedMetric, setSelectedMetric] = useState<string>("all");
-  const [valueType, setValueType] = useState<"cost" | "ipu">("cost");
+  const [uncontrolledMetric, setUncontrolledMetric] = useState<"cost" | "ipu">("cost");
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [metricOptions, setMetricOptions] = useState<MetricOption[]>([]);
@@ -56,6 +58,9 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
   const [selectedCycleData, setSelectedCycleData] = useState<{period: string, metrics: Array<{name: string, value: number, color: string}>} | null>(null);
   const [pricePerIpu, setPricePerIpu] = useState<number>(0);
   const { maxYValue, updateChartData, isReady } = useChartSync();
+
+  const metric = controlledMetric ?? uncontrolledMetric;
+  const setMetric = onMetricChange ?? setUncontrolledMetric;
 
   // Use useDashboardData hook to fetch data
   const { getChartData: getDashboardChartData, availableCycles, data: dashboardData } = useDashboardData(selectedOrgLocal === "all" ? undefined : selectedOrgLocal);
@@ -95,7 +100,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             
             // Process data based on value type
             let processedData = result.data;
-            if (valueType === 'ipu' && pricePerIPU > 0) {
+            if (metric === 'ipu' && pricePerIPU > 0) {
               // Convert cost values to IPU values
               processedData = result.data.map((item: any) => {
                 const convertedItem = { ...item };
@@ -118,7 +123,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
               
               // Convert contracted value based on value type
               let adjustedContractedValue = result.contractedReferenceValue || 0;
-              if (valueType === 'ipu' && pricePerIPU > 0) {
+              if (metric === 'ipu' && pricePerIPU > 0) {
                 adjustedContractedValue = adjustedContractedValue / pricePerIPU;
               }
               setContractedValue(adjustedContractedValue);
@@ -164,7 +169,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
       isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [selectedOrgLocal, period, getDashboardChartData, valueType, dashboardData?.pricePerIPU]);
+  }, [selectedOrgLocal, period, getDashboardChartData, metric, dashboardData?.pricePerIPU]);
 
   // Update selectedOrgLocal when selectedOrg prop changes
   useEffect(() => {
@@ -223,7 +228,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
     if (value > 0) {
         return (
             <text x={x + width / 2} y={y} fill="#3a3a3a" textAnchor="middle" dy={-6} fontSize={12} fontWeight="bold">
-                {valueType === 'cost' ? formatCurrency(value) : formatIPU(value)}
+                {metric === 'cost' ? formatCurrency(value) : formatIPU(value)}
             </text>
         );
     }
@@ -282,19 +287,19 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
         <div className="bg-background border border-border rounded-lg shadow-lg p-4 max-w-md">
           <p className="font-medium text-foreground mb-3">{label}</p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {displayMetrics.map((metric: any, index: number) => (
+          {displayMetrics.map((metricItem: any, index: number) => (
               <div key={index} className="flex items-center justify-between gap-3 text-sm">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div
                     className="w-3 h-3 rounded flex-shrink-0"
-                    style={{ backgroundColor: metric.color }}
+                  style={{ backgroundColor: metricItem.color }}
                   />
                   <span className="text-muted-foreground truncate">
-                    {metric.name}
+                  {metricItem.name}
                   </span>
                 </div>
                 <span className="font-medium text-foreground flex-shrink-0">
-                  {valueType === 'cost' ? formatCurrency(metric.value) : formatIPU(metric.value)}
+                {metric === 'cost' ? formatCurrency(metricItem.value) : formatIPU(metricItem.value)}
                 </span>
               </div>
             ))}
@@ -307,7 +312,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
           <div className="border-t border-border mt-3 pt-3">
             <div className="flex justify-between items-center text-sm font-medium">
               <span>Total:</span>
-              <span>{valueType === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
+              <span>{metric === 'cost' ? formatCurrency(total) : formatIPU(total)}</span>
             </div>
           </div>
         </div>
@@ -401,7 +406,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
             </SelectContent>
           </Select>
 
-          <Select value={valueType} onValueChange={(value: "cost" | "ipu") => setValueType(value)}>
+          <Select value={metric} onValueChange={(value: "cost" | "ipu") => setMetric(value)}>
             <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
@@ -460,7 +465,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                   tick={{ fontSize: 12 }} 
                   tickLine={false}
                   tickFormatter={(value) => 
-                    valueType === 'cost' ? formatCurrency(value) : formatIPU(value)
+                    metric === 'cost' ? formatCurrency(value) : formatIPU(value)
                   }
                   domain={yAxisDomain()}
                   tickCount={5}
@@ -475,7 +480,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     strokeDasharray="5 5" 
                     strokeWidth={2}
                     label={{ 
-                      value: `${valueType === 'cost' ? 'Valor Contratado' : 'IPUs Contratadas'}: ${valueType === 'cost' ? formatCurrency(contractedValue) : formatIPU(contractedValue)}`, 
+                      value: `${metric === 'cost' ? 'Valor Contratado' : 'IPUs Contratadas'}: ${metric === 'cost' ? formatCurrency(contractedValue) : formatIPU(contractedValue)}`, 
                       position: "insideTopRight",
                       fill: "hsl(var(--destructive))",
                       fontSize: 12,
@@ -530,13 +535,13 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     <Card className="bg-gradient-card shadow-medium">
                       <CardContent className="p-6 text-center">
                         <div className="text-3xl font-bold text-primary mb-2">
-                          {valueType === 'cost' 
+                          {metric === 'cost' 
                             ? formatCurrency(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0))
                             : formatIPU(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0))
                           }
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {valueType === 'cost' ? 'Custo Total' : 'IPUs Totais'}
+                          {metric === 'cost' ? 'Custo Total' : 'IPUs Totais'}
                         </div>
                       </CardContent>
                     </Card>
@@ -544,7 +549,7 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                     <Card className="bg-gradient-card shadow-medium">
                       <CardContent className="p-6 text-center">
                         <div className="text-3xl font-bold text-primary mb-2">
-                          {valueType === 'cost' 
+                          {metric === 'cost' 
                             ? formatCurrency(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0) / selectedCycleData.metrics.length)
                             : formatIPU(selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0) / selectedCycleData.metrics.length)
                           }
@@ -558,29 +563,29 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs }: ConsolidatedCh
                   <div className="grid gap-4">
                     <h3 className="font-semibold text-lg mb-2">Métricas do Ciclo</h3>
                     <div className="grid gap-3">
-                      {selectedCycleData.metrics.map((metric, index) => (
+                      {selectedCycleData.metrics.map((metricItem, index) => (
                         <div key={index} className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 min-w-0 flex-1">
                               <div
                                 className="w-5 h-5 rounded-full flex-shrink-0 shadow-sm"
-                                style={{ backgroundColor: metric.color }}
+                                style={{ backgroundColor: metricItem.color }}
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="font-medium text-foreground truncate">
-                                  {metric.name}
+                                  {metricItem.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  {((metric.value / selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0)) * 100).toFixed(1)}% do total
+                                  {((metricItem.value / selectedCycleData.metrics.reduce((sum, m) => sum + m.value, 0)) * 100).toFixed(1)}% do total
                                 </div>
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
                               <div className="font-semibold text-lg">
-                                {valueType === 'cost' ? formatCurrency(metric.value) : formatIPU(metric.value)}
+                                {metric === 'cost' ? formatCurrency(metricItem.value) : formatIPU(metricItem.value)}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {formatIPU(valueType === 'cost' ? metric.value / pricePerIpu : metric.value)} IPUs
+                                {formatIPU(metric === 'cost' ? metricItem.value / pricePerIpu : metricItem.value)} IPUs
                               </div>
                             </div>
                           </div>
