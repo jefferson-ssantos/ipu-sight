@@ -264,7 +264,7 @@ export function SignupForm() {
 
             <Button 
               onClick={handleNextStep}
-              className="w-full"
+              className="w-full bg-[#283a86] text-white hover:bg-[#283a86]/90 border border-white/20"
               size="lg"
             >
               Próximo: Configurações IDMC
@@ -357,7 +357,7 @@ export function SignupForm() {
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 bg-[#283a86] text-white hover:bg-[#283a86]/90 border border-white/20"
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Criar Conta

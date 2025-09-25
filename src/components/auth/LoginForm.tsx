@@ -52,7 +52,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
 
       toast({
         title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao IPU-Sight FinOps Dashboard",
+        description: "Bem-vindo ao FinData",
       });
     } catch (error: any) {
       toast({
@@ -122,7 +122,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-[#283a86] text-white hover:bg-[#283a86]/90 border border-white/20"
             size="lg"
             disabled={isLoading}
           >

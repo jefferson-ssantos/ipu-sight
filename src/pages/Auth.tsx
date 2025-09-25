@@ -11,7 +11,7 @@ export default function Auth() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#283a86] flex items-center justify-center p-4">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMS41Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
       
@@ -97,8 +97,8 @@ export default function Auth() {
             {/* View Plans Button */}
             <div className="pt-6 text-center lg:text-left">
                 <Button 
-                    variant="outline" 
-                    className="border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground bg-transparent backdrop-blur-sm"
+                    variant="secondary" 
+                    className="border border-secondary hover:bg-transparent hover:text-secondary backdrop-blur-sm"
                     onClick={() => setIsUpgradeModalOpen(true)}
                 >
                     <ShieldCheck className="h-4 w-4 mr-2" /> Conheça Nossos Planos
