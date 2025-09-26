@@ -567,16 +567,18 @@ export function CostTrendAnalysis() {
                   <RechartsTooltip content={<CustomTooltip />} />
                   
                   {/* Linha total pontilhada */}
-                  <Line 
-                    type="monotone" 
-                    dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={3}
-                    strokeDasharray="5 5"
-                    name={selectedMetric === 'cost' ? 'Custo Total' : 'IPUs Totais'}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
-                  />
+                  {selectedMeters.includes('all') && (
+                    <Line 
+                      type="monotone" 
+                      dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={3}
+                      strokeDasharray="5 5"
+                      name={selectedMetric === 'cost' ? 'Custo Total' : 'IPUs Totais'}
+                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                    />
+                  )}
                   
                   {/* Linhas coloridas para cada métrica */}
                   {(() => {

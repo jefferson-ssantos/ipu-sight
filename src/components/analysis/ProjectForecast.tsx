@@ -791,17 +791,19 @@ export function ProjectForecast() {
                     <Tooltip content={<CustomTooltip />} />
                     
                     {/* Linha total */}
-                    <Line
-                      type="monotone"
-                      dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      strokeDasharray="8 4"
-                      name={getMetricLabel()}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 1, r: 3 }}
-                      activeDot={{ r: 5, stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
-                      connectNulls={true}
-                    />
+                    {selectedProjects.includes('all') && (
+                      <Line
+                        type="monotone"
+                        dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={3}
+                        strokeDasharray="8 4"
+                        name={getMetricLabel()}
+                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 1, r: 3 }}
+                        activeDot={{ r: 5, stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
+                        connectNulls={true}
+                      />
+                    )}
                     
                     {/* Linhas individuais para cada projeto */}
                     {availableProjects

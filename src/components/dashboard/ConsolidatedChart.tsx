@@ -217,10 +217,25 @@ export function ConsolidatedChart({ selectedOrg, availableOrgs, metric: controll
 
   // Use synchronized Y-axis domain
   const yAxisDomain = () => {
-    if (isReady && maxYValue > 0) {
+    // Se "Todas as Métricas" estiver selecionado, sincroniza o eixo Y com outros gráficos.
+    if (selectedMetric === "all" && isReady && maxYValue > 0) {
       return [0, maxYValue];
     }
-    return [0, 1000]; // Default if no data
+
+    // Se uma métrica específica for selecionada, calcula o domínio localmente.
+    if (chartDataWithDisplayTotal.length === 0) {
+      return [0, 1000]; // Default se não houver dados
+    }
+
+    let maxVal = 0;
+    chartDataWithDisplayTotal.forEach(d => {
+      const total = d.displayTotal || 0;
+      if (total > maxVal) {
+        maxVal = total;
+      }
+    });
+
+    return [0, maxVal * 1.1]; // Adiciona 10% de preenchimento
   };
 
   const renderCustomizedLabel = (props: any) => {

@@ -463,7 +463,23 @@ export function ProjectTrendAnalysis() {
 
       {/* Gráfico */}
       <Card className="bg-gradient-card shadow-medium" id="project-trend-container">
-        <CardHeader className="flex flex-row items-center justify-end">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              Análise de Tendências por Projeto
+              <Badge variant={trend.isStable ? "outline" : trend.isPositive ? "destructive" : "default"}>
+                {trend.isStable ? (
+                  <div className="h-3 w-3 bg-blue-500 rounded-full mr-1" />
+                ) : trend.isPositive ? (
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                )}
+                {trend.growthRate.toFixed(1)}%
+              </Badge>
+            </CardTitle>
+          </div>
+
           <div className="flex flex-wrap items-center gap-4">
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-60">
@@ -560,15 +576,17 @@ export function ProjectTrendAnalysis() {
                   <RechartsTooltip content={<CustomTooltip />} />
                   
                   {/* Linha total (pontilhada) */}
-                  <Line
-                    type="monotone"
-                    dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={3}
-                    strokeDasharray="8 4"
-                    name={getMetricLabel()}
-                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                  />
+                  {selectedProjects.includes('all') && (
+                    <Line
+                      type="monotone"
+                      dataKey={selectedMetric === 'cost' ? 'totalCost' : 'totalIPU'}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      strokeDasharray="8 4"
+                      name={getMetricLabel()}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                    />
+                  )}
                   
                   {/* Linhas individuais para cada projeto */}
                   {availableProjects
